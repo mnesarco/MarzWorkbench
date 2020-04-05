@@ -90,6 +90,10 @@ Just add objects (Instrument, Fretboard, Neck, Body, etc...) from the toolbar an
 
 ![Workbenck](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/toolbar.png)
 
+## Requirements
+
+FreeCAD 0.19+
+https://github.com/FreeCAD/FreeCAD/releases/
 
 ## Install
 
