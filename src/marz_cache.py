@@ -22,10 +22,7 @@ from marz_freecad import isVersion19
 CACHE_LIFE              = 60*5
 MAX_CACHE_SIZE          = 100
 MAIN_CACHE              = {}
-
-# For some Reason, Cache does not work with FreeCAD 0.18
-# So, performance in 0.18 is significatively poor compared to 0.19
-CACHE_ENABLED = isVersion19() 
+CACHE_ENABLED           = True
 
 def cacheKey(name, *args, **kwargs):
     segs = [name] + [repr(arg) for arg in args]
