@@ -143,7 +143,7 @@ class Intersection:
         self.onLine2 = False
 
 def lineIntersection(line1, line2):
-
+    #! Credits: justin_c_rounds https://stackoverflow.com/a/60368757/1524027
     # if the lines intersect, the result contains the x and y of the intersection 
     # (treating the lines as infinite) and booleans for whether line segment 1 or line segment 2 contain the point
     result = Intersection()
