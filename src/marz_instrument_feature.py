@@ -95,7 +95,7 @@ class MarzInstrument:
         finally:
             App.ActiveDocument.RecomputesFrozen = disabledAutoRecompute
             if not disabledAutoRecompute:
-                runDeferred(lambda: App.ActiveDocument.recompute(None, True, True), 500)
+                runDeferred(lambda: App.ActiveDocument.recompute(), 500)
             bar.stop()
 
     def onChanged(self, fp, prop):

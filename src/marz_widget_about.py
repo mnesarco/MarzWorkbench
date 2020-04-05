@@ -72,13 +72,6 @@ class MarzAboutWindow(QtGui.QDialog):
         if event.button() == QtCore.Qt.LeftButton:
             self.close()
 
-    def paintEvent(self, event):
-        opt = QtGui.QStyleOption()
-        opt.init(self)
-        painter = QtGui.QPainter(self)
-        self.style().drawPrimitive(QtGui.QStyle.PE_Widget, opt, painter, self)
-
-
     @classmethod
     def execute(cls, frame = True, timeout = None):
         MarzAboutWindow(frame, timeout).show()

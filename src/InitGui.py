@@ -28,6 +28,7 @@ class MarzWorkbench (Workbench):
 
     def Initialize(self):
         import marz_reloader
+        from marz_freecad import isVersion19
         marz_reloader.reloadAll(lambda name: name.startswith('marz_cmd_'))
         cmds = [
             "MarzCmdCreateInstrument", 
@@ -35,9 +36,10 @@ class MarzWorkbench (Workbench):
             "MarzCmdCreateNeck", 
             "MarzCmdCreateBody",
             "MarzCmdCreateConstructionLines", 
-            #"MarzCmdCreateNeckPlanes", 
-            "MarzCmdToggleAutocompute",
+            #"MarzCmdCreateNeckPlanes", TODO: Fix
         ]
+        if isVersion19():
+            cmds.append("MarzCmdToggleAutocompute")
         self.appendToolbar("Marz", cmds)
         self.appendMenu("Marz", cmds + ['MarzCmdShowAboutWindow'])
 

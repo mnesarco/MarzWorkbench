@@ -12,6 +12,7 @@ __maintainer__   = "https://github.com/mnesarco"
 import gc
 import hashlib
 from time import time
+from marz_freecad import isVersion19
 
 #!-----------------------------------------------------------------------------
 #! Poor man's cache implementation. Not too good but better than nothing.
@@ -21,6 +22,10 @@ from time import time
 CACHE_LIFE              = 60*5
 MAX_CACHE_SIZE          = 100
 MAIN_CACHE              = {}
+
+# For some Reason, Cache does not work with FreeCAD 0.18
+# So, performance in 0.18 is significatively poor compared to 0.19
+CACHE_ENABLED = isVersion19() 
 
 def cacheKey(name, *args, **kwargs):
     segs = [name] + [repr(arg) for arg in args]
@@ -50,17 +55,20 @@ def cleanCache():
 #! This decorator adds a small overhead to the function, so
 #! use it only in costly functions.
 def PureFunctionCache(f):
-    def wrapper(*args, **kwargs):
-        key = cacheKey(str(id(f)), *args, **kwargs)
-        (cached, _) = MAIN_CACHE.get(key) or (None, 0)
-        cleanCache()
-        if cached:
-            return cached
-        else:
-            cached = f(*args, **kwargs)
-            MAIN_CACHE[key] = (cached, time())
-            return cached
-    return wrapper
+    if CACHE_ENABLED:
+        def wrapper(*args, **kwargs):
+            key = cacheKey(str(id(f)), *args, **kwargs)
+            (cached, _) = MAIN_CACHE.get(key) or (None, 0)
+            cleanCache()
+            if cached:
+                return cached
+            else:
+                cached = f(*args, **kwargs)
+                MAIN_CACHE[key] = (cached, time())
+                return cached
+        return wrapper
+    else:
+        return f
 
 def getCachedObject(baseName, *args):
     """This function is for direct calls to cache
@@ -74,9 +82,12 @@ def getCachedObject(baseName, *args):
     Returns:
         {tuple} -- (cachedObject, updateFunction)
     """
-    key = cacheKey(baseName, *args)
-    (cached, ts) = MAIN_CACHE.get(key) or (None, 0)    
-    cleanCache()
-    def setf(v):
-        MAIN_CACHE[key] = (v, time())
-    return (cached, setf)
+    if CACHE_ENABLED:
+        key = cacheKey(baseName, *args)
+        (cached, ts) = MAIN_CACHE.get(key) or (None, 0)    
+        cleanCache()
+        def setf(v):
+            MAIN_CACHE[key] = (v, time())
+        return (cached, setf)
+    else:
+        return (None, lambda x: None)

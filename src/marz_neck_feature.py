@@ -132,7 +132,7 @@ def barrell(neckd, fret):
 @PureFunctionCache
 def cutHeadstockSides(line, lenght, width, transitionLength):
     hsLine = line.lerpLineTo(-lenght)
-    hsTop = hsLine.rectSym(width-0.01)   
+    hsTop = hsLine.rectSym(width-0.1)   
     # Side cut 1
     (a,b,c,d,_) = hsTop
     s1 = [vxy(a.x-transitionLength, a.y), vxy(a.x-transitionLength, 4*a.y), vxy(d.x, 4*d.y), d]
@@ -620,12 +620,14 @@ class NeckFeature:
 
         # Then move and cut top      
         cutThickness = extrusionDepth * math.cos(neckAngleRad)
-        naSide = naSide.translate(Vector(
+        #naSide = 
+        naSide.translate(Vector(
             (inst.body.backThickness+cutThickness)*math.sin(neckAngleRad),
             0,
             (inst.body.backThickness+cutThickness)*math.cos(neckAngleRad)
         ))
-        naSide = naSide.translate(Vector(
+        #naSide = 
+        naSide.translate(Vector(
             (inst.body.length-lengthDelta)*math.cos(neckAngleRad),
             0,
             (inst.body.length-lengthDelta)*math.sin(neckAngleRad)

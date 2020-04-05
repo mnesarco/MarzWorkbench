@@ -87,7 +87,7 @@ def featureToBody(feature, name = None):
     Gui.activeView().setActiveObject('pdbody', body)
     Gui.Selection.clearSelection()
     Gui.Selection.addSelection(body)
-    feature.Visibility = False
+    feature.ViewObject.Visibility = False
 
 def runDeferred(block, delay=500):
     QtCore.QTimer.singleShot(delay, block)
