@@ -97,6 +97,8 @@ https://github.com/FreeCAD/FreeCAD/releases/
 
 ## Install
 
+Download latest version from releases: https://github.com/mnesarco/MarzWorkbench/releases
+
 As any FreeCAD extension, download the code of src dir and copy into FreeCAD's Mod directory: https://wiki.freecadweb.org/Installing_more_workbenches
 
 ### Linux
