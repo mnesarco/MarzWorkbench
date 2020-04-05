@@ -95,6 +95,12 @@ Just add objects (Instrument, Fretboard, Neck, Body, etc...) from the toolbar an
 FreeCAD 0.19+
 https://github.com/FreeCAD/FreeCAD/releases/
 
+FreeCAD 0.18.x 
+This project was designed for 0.19.x, so 0.18.x support is very experimental but it works most of the time.
+https://www.freecadweb.org/downloads.php
+
+The user experience in 0.19.x is significantly better.
+
 ## Install
 
 Download latest version from releases: https://github.com/mnesarco/MarzWorkbench/releases
@@ -109,6 +115,8 @@ As any FreeCAD extension, download the code of src dir and copy into FreeCAD's M
 ### Windows/Mac
 
 I have no idea. But if you have installed other FreeCAD Extensions manually, the procedure is the same: https://wiki.freecadweb.org/Installing_more_workbenches
+
+All the development and testing is done in Linux, I have no Windows or Mac Hardware. It should work in those environments but I have not tested it.
 
 ### FreeCAD Addon Manager
 
