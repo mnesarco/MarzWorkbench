@@ -118,7 +118,7 @@ If you find problems, please report the issue here in Github. I will try to fix/
 
 ## Multicore multiprocessing in Python
 
-In order to make the code more perfomant, I coded it to be multithreaded, but python threads runs all on the same core, so they are not suitable for CPU bound tasks, so I used QT Treads to ovbercome this limitation. The code itself is very clean and reusable and could be a good library for other FreeCAD extensions.
+In order to make the code more perfomant, I coded it to be multithreaded, but python threads runs all on the same core, so they are not suitable for CPU bound tasks, so I used QT Treads to overcome this limitation. The code itself is very clean and reusable and could be a good library for other FreeCAD extensions.
 
 ## Cache Management
 
