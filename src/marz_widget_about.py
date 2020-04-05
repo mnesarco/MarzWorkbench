@@ -57,7 +57,7 @@ class MarzAboutWindow(QtGui.QDialog):
             color: #eeeeee; 
             font-size: 12px; 
             background-color: #101010;
-            background: url(%s) no-repeat center top fixed;
+            background: url("%s") no-repeat center top fixed;
             padding: 260px 10px 10px 10px;
         """ % ui.graphicsPath('logo.svg'))
         layout.addWidget(content)
