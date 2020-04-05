@@ -97,11 +97,11 @@ https://github.com/FreeCAD/FreeCAD/releases/
 
 ## Install
 
-As any FreeCAD extension, download the code and copy into FreeCAD's Mod directory: https://wiki.freecadweb.org/Installing_more_workbenches
+As any FreeCAD extension, download the code of src dir and copy into FreeCAD's Mod directory: https://wiki.freecadweb.org/Installing_more_workbenches
 
 ### Linux
 
-1. Copy the code in: $HOME/.FreeCAD/Mod/MarzWorkbench
+1. Copy the src dir to: $HOME/.FreeCAD/Mod/MarzWorkbench
 2. Restart FreeCAD
 
 ### Windows/Mac
