@@ -37,12 +37,12 @@ class MarzAboutWindow(QtGui.QDialog):
         
         # Layout
         layout = QtGui.QStackedLayout(self)
-        layout.setAlignment(QtGui.Qt.AlignBottom)
+        layout.setAlignment(QtCore.Qt.AlignBottom)
         self.setLayout(layout)
 
         # Content
         content = QtGui.QLabel(self)
-        content.setTextInteractionFlags(QtGui.Qt.TextBrowserInteraction)
+        content.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         content.setOpenExternalLinks(True)
         content.setText(f"""<p>
             A FreeCAD Workbenck for Guitar design. Version {ui.MARZ_VERSION}
@@ -52,7 +52,7 @@ class MarzAboutWindow(QtGui.QDialog):
             <br />All Rights Reserved.
             </p>
         """)
-        content.setAlignment(QtGui.Qt.AlignBottom | QtGui.Qt.AlignCenter)
+        content.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignCenter)
         content.setStyleSheet("""
             color: #eeeeee; 
             font-size: 12px; 
