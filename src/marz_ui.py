@@ -17,7 +17,7 @@ from PySide import QtCore, QtGui
 import time
 from marz_threading import RunInUIThread
  
-MARZ_VERSION       = "0.0.5-alpha"
+MARZ_VERSION       = "0.0.6-alpha"
 MARZ_WINDOW_LABEL  = f"FreeCAD :: Marz Workbench {MARZ_VERSION}"
 MARZ_REPOSITORY    = "https://github.com/mnesarco/MarzWorkbench/"
 

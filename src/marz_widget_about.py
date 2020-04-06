@@ -45,7 +45,7 @@ class MarzAboutWindow(QtGui.QDialog):
         content.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         content.setOpenExternalLinks(True)
         content.setText(f"""<p>
-            A FreeCAD Workbenck for Guitar design. Version {ui.MARZ_VERSION}
+            A FreeCAD Workbench for Guitar design. Version {ui.MARZ_VERSION}
             <br/><a href="https://github.com/mnesarco/MarzWorkbench/" style="color: #0088AA;">https://github.com/mnesarco/MarzWorkbench</a>
             <br/>Author: {__author__}
             <br/>{__copyright__}

@@ -1,11 +1,11 @@
-# Marz Guitar Design Workbenck
+# Marz Guitar Design Workbench
 
-## What is Marz Guitar Design Workbenck
+## What is Marz Guitar Design Workbench
 
 This is a custom FreeCAD Workbench for Electric Guitar/Bass Parametric Design. It allows you to create Fretboards, 
 Necks, Nuts, ... based on a common set of parameters.
 
-![Workbenck](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/anim.gif)
+![Workbench](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/anim.gif)
 
 ## Features
 
