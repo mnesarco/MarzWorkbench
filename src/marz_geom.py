@@ -15,7 +15,6 @@ import FreeCADGui as Gui
 import FreeCAD as App
 from marz_ui import featureToBody
 import Show
-import DraftGeomUtils
 from marz_threading import RunInUIThread
 
 def vec(v, z = 0):

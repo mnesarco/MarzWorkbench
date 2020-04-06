@@ -13,14 +13,13 @@ __maintainer__   = "https://github.com/mnesarco"
 import FreeCAD
 import FreeCADGui
 
-class MarzWorkbench (Workbench):
-    "Marz Workbench"
+class Marz(Workbench):
 
     def __init__(self):
         import marz_ui, marz_threading
         self.__class__.Icon = marz_ui.iconPath('workbench.svg')
-        self.__class__.MenuText = "Marz Workbench"
-        self.__class__.ToolTip = "A Workbench for Guitar Design"
+        self.__class__.MenuText = "Marz Guitar Design"
+        self.__class__.ToolTip = "Guitar Design Workbench"
         self.showAbout = True
 
     def GetClassName(self):
@@ -40,8 +39,8 @@ class MarzWorkbench (Workbench):
         ]
         if isVersion19():
             cmds.append("MarzCmdToggleAutocompute")
-        self.appendToolbar("Marz", cmds)
-        self.appendMenu("Marz", cmds + ['MarzCmdShowAboutWindow'])
+        self.appendToolbar("Marz Guitar Design", cmds)
+        self.appendMenu("&Guitar", cmds + ['MarzCmdShowAboutWindow'])
 
     def Activated(self):
         if self.showAbout:
@@ -52,4 +51,4 @@ class MarzWorkbench (Workbench):
     def Deactivated(self):
         pass
 
-FreeCADGui.addWorkbench(MarzWorkbench)
+FreeCADGui.addWorkbench(Marz)
