@@ -18,13 +18,11 @@ import marz_geom as geom
 import marz_math as xmath
 from FreeCAD import Part, Placement, Rotation, Vector
 from marz_cache import PureFunctionCache, getCachedObject
-from marz_linexy import line as lineFromPointAndDir
 from marz_linexy import lineIntersection, linexy
 from marz_model import NeckJoint, deg, fret
 from marz_neck_data import NeckData
-from marz_neck_profile_list import getNeckProfile
 from marz_threading import Task
-from marz_ui import (createPartBody, errorDialog, recomputeActiveDocument,
+from marz_ui import (createPartBody, recomputeActiveDocument,
                      updatePartShape)
 from marz_utils import startTimeTrace
 from marz_vxy import angleVxy, vxy
@@ -597,7 +595,7 @@ class NeckFeature:
 
         # Neck Angle Cut (Bottom)
         extrusionDepth = 100
-        lengthDelta = xmath.max(inst.body.neckPocketLength, (fbd.neckFrame.midLine.length - start_d) - inst.neck.transitionLength/2)
+        lengthDelta = max(inst.body.neckPocketLength, (fbd.neckFrame.midLine.length - start_d) - inst.neck.transitionLength/2)
         naLineDir = linexy(vxy(0,0), angleVxy(neckAngleRad, lengthDelta))
         naLineDir = naLineDir.flipDirection().lerpLineTo(naLineDir.length+30).flipDirection()
         naAp = geom.vecxz(naLineDir.start)

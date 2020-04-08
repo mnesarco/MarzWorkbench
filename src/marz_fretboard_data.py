@@ -9,13 +9,8 @@ __copyright__    = "Copyright 2020, Frank D. Martinez. M."
 __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
-
-import hashlib
-
-import marz_math as xmath
 from marz_linexy import lineIntersection, linexy
 from marz_vxy import vxy
-
 
 class FretboardBox(object):
     """
@@ -36,13 +31,19 @@ class FretboardBox(object):
         super().__setattr__('bridge', bridge)
 
         # Calculate immutable hash
-        keys = ":".join([repr(v) for v in [bass, treble, nut, bridge]])
-        super().__setattr__('_ihash', hashlib.md5(keys.encode()).hexdigest())
+        ihash = hash((bass, treble, nut, bridge))
+        super().__setattr__('_ihash', ihash)
 
-    #! IMPORTANT: Used for caching
-    #! Must represent the complete state of the instance
-    def __repr__(self):
+    def __hash__(self):
         return self._ihash
+
+    def __eq__(self, other):
+        return (
+            self.bass == other.bass
+            and self.treble == other.treble
+            and self.nut == other.nut
+            and self.bridge == other.bridge
+        )
 
     def __setattr__(self, name, value):
         raise AttributeError(f"{self.__class__.__name__}.{name} is not writable.")
@@ -58,8 +59,8 @@ class FretboardBox(object):
     @property
     def midLineExtended(self):
         line = self.midLine
-        maxxp = xmath.max(self.treble.end.x, self.bass.start.x)
-        minxp = xmath.min(self.treble.start.x, self.bass.end.x)
+        maxxp = max(self.treble.end.x, self.bass.start.x)
+        minxp = min(self.treble.start.x, self.bass.end.x)
         return linexy(
             lineIntersection(linexy(vxy(maxxp, 0), vxy(maxxp, 1)), line).point,
             lineIntersection(linexy(vxy(minxp, 0), vxy(minxp, 1)), line).point
@@ -98,16 +99,25 @@ class FretboardData(object):
         super().__setattr__('bridgePos', bridgePos)
         
         # Calculate immutable hash
-        keys = ":".join([repr(v) for v in [frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame]])
-        super().__setattr__('_ihash', hashlib.md5(keys.encode()).hexdigest())
+        ihash = hash((frame, virtStrFrame, scaleFrame, nutFrame, neckFrame, (*frets,), bridgePos))
+        super().__setattr__('_ihash', ihash)
 
     def __setattr__(self, name, value):
         raise AttributeError(f"{self.__class__.__name__}.{name} is not writable.")
 
-    #! IMPORTANT: Used for caching
-    #! Must represent the complete state of the instance
-    def __repr__(self):
+    def __hash__(self):
         return self._ihash
+
+    def __eq__(self, other):
+        return (
+            self.frame == other.frame
+            and self.virtStrFrame == other.virtStrFrame
+            and self.scaleFrame == other.scaleFrame
+            and self.nutFrame == other.nutFrame
+            and self.neckFrame == other.neckFrame
+            and self.frets == other.frets
+            and self.bridgePos == other.bridgePos
+        )
 
     def translate(self, v):
         #! Does not change this instance, returns a new translated instance

@@ -12,7 +12,6 @@ __maintainer__   = "https://github.com/mnesarco"
 import traceback
 
 import FreeCAD as App
-import FreeCADGui as Gui
 from marz_model import Instrument, ModelException
 from marz_fretboard_feature import FretboardFeature
 from marz_instrument_properties import InstrumentProps
@@ -64,6 +63,7 @@ class MarzInstrument:
         disabledAutoRecompute = App.ActiveDocument.RecomputesFrozen
         App.ActiveDocument.RecomputesFrozen = True
         try:
+
             jobs = []
             ttrace = startTimeTrace('Total Execution Time')
 

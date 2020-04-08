@@ -10,7 +10,6 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 import math
-import marz_math as xmath
 
 class vxy:
     """
@@ -23,8 +22,11 @@ class vxy:
     * @credits zz85 / http://www.lab4games.net/zz85/blog
     """
 
-    def __repr__(self):
-        return f"{repr(self.x)};{repr(self.y)}"
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
+
+    def __hash__(self):
+        return hash((self.x, self.y))
 
     def __str__(self):
         return f"vxy({self.x},{self.y})"
@@ -100,29 +102,29 @@ class vxy:
         return self.multiplyScalar(1 / scalar)
 
     def min(self, v):
-        self.x = xmath.min(self.x, v.x)
-        self.y = xmath.min(self.y, v.y)
+        self.x = min(self.x, v.x)
+        self.y = min(self.y, v.y)
         return self
 
     def max(self, v):
-        self.x = xmath.max(self.x, v.x)
-        self.y = xmath.max(self.y, v.y)
+        self.x = max(self.x, v.x)
+        self.y = max(self.y, v.y)
         return self
 
     def clamp(self, min_, max_):
         # assumes min_ < max_, componentwise
-        self.x = xmath.max(min_.x, xmath.min(max_.x, self.x))
-        self.y = xmath.max(min_.y, xmath.min(max_.y, self.y))
+        self.x = max(min_.x, min(max_.x, self.x))
+        self.y = max(min_.y, min(max_.y, self.y))
         return self
 
     def clampScalar(self, minVal, maxVal):
-        self.x = xmath.max(minVal, xmath.min(maxVal, self.x))
-        self.y = xmath.max(minVal, xmath.min(maxVal, self.y))
+        self.x = max(minVal, min(maxVal, self.x))
+        self.y = max(minVal, min(maxVal, self.y))
         return self
 
     def clampLength(self, min_, max_):
         length = self.length
-        return self.divideScalar(length or 1).multiplyScalar(xmath.max(min_, xmath.min(max_, length)))
+        return self.divideScalar(length or 1).multiplyScalar(max(min_, min(max_, length)))
 
     def floor(self):
         self.x = math.floor(self.x)

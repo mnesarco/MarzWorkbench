@@ -10,13 +10,6 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 
-import hashlib
-
-import marz_math as xmath
-from marz_linexy import lineIntersection, linexy
-from marz_vxy import vxy
-from marz_neck_profile_list import getNeckProfile
-
 class BodyData(object):
     """
     Body reference constructions
@@ -44,7 +37,7 @@ class BodyData(object):
         super().__setattr__('neckd', neckd)
         
         # Calculate immutable hash
-        keys = ":".join([repr(v) for v in [
+        ihash = hash((
             inst.body.length, 
             inst.body.width, 
             inst.body.backThickness, 
@@ -53,16 +46,27 @@ class BodyData(object):
             inst.body.neckPocketLength,
             inst.neck.angle,
             neckd
-        ]])
-        super().__setattr__('_ihash', hashlib.md5(keys.encode()).hexdigest())
+        ))
+        super().__setattr__('_ihash', ihash)
 
     def __setattr__(self, name, value):
         raise AttributeError(f"{self.__class__.__name__}.{name} is not writable.")
 
-    #! IMPORTANT: Used for caching
-    #! Must represent the complete state of the instance
-    def __repr__(self):
+    def __hash__(self):
         return self._ihash
+
+    def __eq__(self, other):
+        return (
+            self.length == other.length
+            and self.width == other.width
+            and self.backThickness == other.backThickness
+            and self.topThickness == other.topThickness
+            and self.neckPocketDepth == other.neckPocketDepth
+            and self.neckPocketLength == other.neckPocketLength
+            and self.neckAngle == other.neckAngle
+            and self.topOffset == other.topOffset
+            and self.neckd == other.neckd
+        )
 
     def totalThickness(self):
         return self.topThickness + self.backThickness

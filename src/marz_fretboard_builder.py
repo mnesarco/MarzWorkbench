@@ -13,10 +13,8 @@ __maintainer__   = "https://github.com/mnesarco"
 from marz_fretboard_data import FretboardBox, FretboardData
 from marz_linexy import line, lineFrom, lineIntersection, lineTo, linexy
 from marz_vxy import vxy
-from marz_model import FretboardCut, fret, NutPosition, NutSpacing, NeckJoint
+from marz_model import FretboardCut, fret, NutPosition, NeckJoint
 import math
-import marz_math as xmath
-import hashlib
 
 def buildFretboardData(inst):
     """
@@ -145,16 +143,16 @@ def buildFretboardData(inst):
 
     # Neck Frame
     def calc_neck_frame():
-        x = xmath.max(frame.bass.start.x, frame.treble.end.x)
+        x = max(frame.bass.start.x, frame.treble.end.x)
         perp = linexy(vxy(x, 0), vxy(x, 1))
         p = lineIntersection(frame.bass, perp)
         q = lineIntersection(frame.treble, perp)
         nut = linexy(p.point, q.point)
 
         if inst.neck.joint is NeckJoint.THROUHG:
-            x = xmath.min(frame.bass.end.x, frame.treble.start.x) - inst.body.length
+            x = min(frame.bass.end.x, frame.treble.start.x) - inst.body.length
         else:
-            x = xmath.min(frame.bass.end.x, frame.treble.start.x)
+            x = min(frame.bass.end.x, frame.treble.start.x)
         perp = linexy(vxy(x, 0), vxy(x, 1))
         p = lineIntersection(frame.bass, perp)
         q = lineIntersection(frame.treble, perp)

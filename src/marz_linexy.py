@@ -9,10 +9,7 @@ __copyright__    = "Copyright 2020, Frank D. Martinez. M."
 __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
-
 from marz_vxy import vxy
-import math
-import marz_math as xmath
 
 class linexy:
 
@@ -20,8 +17,11 @@ class linexy:
         self.v1 = v1
         self.v2 = v2     
 
-    def __repr__(self):
-        return f"{repr(self.v1)}_{repr(self.v2)}"
+    def __hash__(self):
+        return hash((self.v1, self.v2))
+
+    def __eq__(self, other):
+        return self.v1 == other.v1 and self.v2 == other.v2
 
     def __str__(self):
         return f"linexy({self.v1}=>{self.v2})"

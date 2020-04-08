@@ -10,25 +10,34 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 import gc
-import hashlib
 from time import time
-from marz_freecad import isVersion19
+from threading import RLock
 
 #!-----------------------------------------------------------------------------
 #! Poor man's cache implementation. Not too good but better than nothing.
 #! This basic cache reduces execution time to half in average.
+#!
+#! functools.lru_cache won't work here because I need to support non hashable
+#! function arguments.
 #!-----------------------------------------------------------------------------
 
 CACHE_LIFE              = 60*5
-MAX_CACHE_SIZE          = 100
+MAX_CACHE_SIZE          = 1024
 MAIN_CACHE              = {}
 CACHE_ENABLED           = True
+CACHE_LOCK              = RLock()
+
+def dirtyHash(obj):
+    if obj.__hash__:
+        return hash(obj)
+    else:
+        return hash(repr(obj))
 
 def cacheKey(name, *args, **kwargs):
-    segs = [name] + [repr(arg) for arg in args]
+    segs = [name] + [dirtyHash(arg) for arg in args]
     for (kw, arg) in sorted(kwargs.items()):
-        segs.append(f"{kw}:{repr(arg)}")
-    return hashlib.md5('|'.join(segs).encode()).hexdigest()
+        segs.append(f"{kw}:{dirtyHash(arg)}")
+    return hash((*segs,))
 
 def cleanCache():
     global MAIN_CACHE
@@ -61,7 +70,8 @@ def PureFunctionCache(f):
                 return cached
             else:
                 cached = f(*args, **kwargs)
-                MAIN_CACHE[key] = (cached, time())
+                with CACHE_LOCK:
+                    MAIN_CACHE[key] = (cached, time())
                 return cached
         return wrapper
     else:
@@ -84,7 +94,8 @@ def getCachedObject(baseName, *args):
         (cached, ts) = MAIN_CACHE.get(key) or (None, 0)    
         cleanCache()
         def setf(v):
-            MAIN_CACHE[key] = (v, time())
+            with CACHE_LOCK:
+                MAIN_CACHE[key] = (v, time())
         return (cached, setf)
     else:
         return (None, lambda x: None)

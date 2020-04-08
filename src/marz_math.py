@@ -12,12 +12,6 @@ __maintainer__   = "https://github.com/mnesarco"
 import math
 from marz_cache import PureFunctionCache
 
-def min(a, b): 
-    return a if a < b else b
-
-def max(a, b): 
-    return a if a > b else b
-
 @PureFunctionCache
 def approxExpoFunctions(l, a, h1, hardClamp):  
     """
