@@ -34,7 +34,7 @@ class CmdCreateBody:
             App.ActiveDocument is not None 
             and App.ActiveDocument.getObject(MarzInstrument.NAME) is not None
             and App.ActiveDocument.getObject(BodyFeature.NAME + '_Top') is None
-            and App.ActiveDocument.getObject(BodyFeature.NAME + '_Body') is None
+            and App.ActiveDocument.getObject(BodyFeature.NAME + '_Back') is None
         )
 
     def Activated(self):

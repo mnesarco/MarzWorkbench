@@ -13,6 +13,7 @@ __maintainer__   = "https://github.com/mnesarco"
 import math
 import functools
 from enum import Enum
+from marz_transitions import TransitionFunction
 
 FRET_RATIO = 1.05946309436
 """Harmonic Constant for Fret calculations: 2^(1/12)"""
@@ -207,7 +208,7 @@ class Neck(Feature):
     def __init__(self, instrument, joint = NeckJoint.THROUHG, startThickness = 15,
                  endThickness = 17, jointFret = 16, topOffset = 0, angle = 3, tenonThickness = 10,
                  tenonLength = 10, tenonOffset = 2, profile = "C Classic", 
-                 transitionLength = 50, transitionTension = 10):
+                 transitionLength = 50, transitionTension = 10, transitionFunction=TransitionFunction.CATENARY):
         """
         Args:
             joint            : Type of Neck-Body Joint (NeckJoint)
@@ -235,6 +236,7 @@ class Neck(Feature):
         self.profile         = profile
         self.transitionLength = transitionLength
         self.transitionTension = transitionTension
+        self.transitionFunction = transitionFunction
 
 class Fretboard(Feature):
     """Fretboard Feature Specs"""

@@ -81,14 +81,17 @@ def getBodyByFeatureName(name):
 @RunInUIThread
 def featureToBody(feature, name = None):
     body = App.activeDocument().addObject('PartDesign::Body', name or getBodyName(feature.Label))
-    body.BaseFeature = feature
+
     Gui.activateView('Gui::View3DInventor', True)
     Gui.activeView().setActiveObject('pdbody', body)
     Gui.Selection.clearSelection()
     Gui.Selection.addSelection(body)
-    feature.ViewObject.Visibility = False
 
-def runDeferred(block, delay=500):
+    feature.adjustRelativeLinks(body)
+    body.ViewObject.dropObject(feature,None,'',[])
+
+@RunInUIThread
+def runDeferred(block, delay=0):
     QtCore.QTimer.singleShot(delay, block)
 
 @RunInUIThread

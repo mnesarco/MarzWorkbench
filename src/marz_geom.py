@@ -10,12 +10,13 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 
-from FreeCAD import Vector, Part
-import FreeCADGui as Gui
 import FreeCAD as App
-from marz_ui import featureToBody
+import FreeCADGui as Gui
 import Show
+from FreeCAD import Part, Placement, Rotation, Vector
 from marz_threading import RunInUIThread
+from marz_ui import featureToBody
+
 
 def vec(v, z = 0):
     """Convert vxy to Vector"""
@@ -97,13 +98,29 @@ def intersect3d(line1, line2):
     return s1.intersect(s2)
 
 @RunInUIThread
-def addOrUpdatePart(shape, name):
+def addOrUpdatePart(shape, name, label=None, visibility=True):
     obj = App.ActiveDocument.getObject(name)
     if obj is None:
         obj = App.ActiveDocument.addObject("Part::Feature", name)
+        if label:
+            obj.Label = label
+        obj.Visibility = visibility
     obj.Shape = shape
 
-
-
-
-
+def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True):
+    curve = edge.Curve
+    points = edge.discretize(Number=steps+1)
+    direction = curve.Direction
+    step = edge.Length/steps
+    rot = Rotation(Vector(0,0,1), direction)
+    def wire(i):
+        l = i * step
+        w = fnWidth(l)
+        h = fnHeight(l)
+        p = fnProfile(w,h)
+        p.Placement = Placement(points[i], rot)
+        return p
+    loft = Part.makeLoft([ wire(i) for i in range(steps+1) ], solid, ruled)
+    if limits:
+        loft = loft.common(limits)
+    return loft

@@ -11,8 +11,11 @@ __maintainer__   = "https://github.com/mnesarco"
 
 import time
 import FreeCAD as App
+import random
 
 def startTimeTrace(label):
     s = time.time()    
     return lambda: App.Console.PrintLog(f"[MARZ] {label}: {int((time.time() - s)*1000)} ms\n")
 
+def randomString(size=16, symbols="ABCDEFGHIJKLMNOPQRST"):
+    return "".join(( symbols[random.randint(0, size-1)] for i in range(size)))

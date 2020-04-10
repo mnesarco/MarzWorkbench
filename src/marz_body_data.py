@@ -21,7 +21,7 @@ class BodyData(object):
     #! so two instances created with same data will hit the same
     #! cache entry.
     __slots__ = ['neckd', 'length', 'width', 'backThickness', 'topOffset',
-        'topThickness', 'neckPocketDepth', 'neckAngle', 'neckPocketLength', '_ihash']
+        'topThickness', 'neckPocketDepth', 'neckAngle', 'neckPocketLength', 'joint', '_ihash']
 
     def __init__(self, inst, neckd):
 
@@ -34,6 +34,7 @@ class BodyData(object):
         super().__setattr__('neckPocketLength', inst.body.neckPocketLength)
         super().__setattr__('neckAngle', inst.neck.angle)
         super().__setattr__('topOffset', inst.neck.topOffset)
+        super().__setattr__('joint', inst.neck.joint)
         super().__setattr__('neckd', neckd)
         
         # Calculate immutable hash
@@ -45,6 +46,7 @@ class BodyData(object):
             inst.body.neckPocketDepth, 
             inst.body.neckPocketLength,
             inst.neck.angle,
+            inst.neck.joint,
             neckd
         ))
         super().__setattr__('_ihash', ihash)
@@ -66,6 +68,7 @@ class BodyData(object):
             and self.neckAngle == other.neckAngle
             and self.topOffset == other.topOffset
             and self.neckd == other.neckd
+            and self.joint == other.joint
         )
 
     def totalThickness(self):

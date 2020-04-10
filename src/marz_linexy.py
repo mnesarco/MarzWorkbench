@@ -67,7 +67,10 @@ class linexy:
         return vxy().lerpVectors(self.v1, self.v2, alpha)
 
     def lerpPointAt(self, d):
-        return self.lerp(d / self.vector.length)
+        if self.vector.length == 0:
+            return self.v1
+        else:
+            return self.lerp(d / self.vector.length)
 
     def lerpLineTo(self, d):
         return lineTo(self.v1.clone(), self.lerpPointAt(d))

@@ -24,7 +24,6 @@ from marz_model import NeckJoint, deg, fret
 from marz_body_data import BodyData
 from marz_neck_data import NeckData
 from marz_fretboard_data import FretboardData
-from marz_neck_profile_list import getNeckProfile
 from marz_threading import Task
 from marz_ui import (createPartBody, errorDialog, recomputeActiveDocument,
                      updatePartShape)
@@ -33,8 +32,7 @@ from marz_vxy import angleVxy, vxy
 from marz_neck_feature import NeckFeature
 
 def createBodyComp(bodyd, height, pos):
-    """Create Body Top or Back
-    
+    """Create Body Top or Back   
     Arguments:
         bodyd {BodyData} -- Body's data
         height {float} -- extrusion height
@@ -42,21 +40,34 @@ def createBodyComp(bodyd, height, pos):
     Returns:
         {Shape} -- blank
     """
+
     angle = deg(bodyd.neckAngle)
-    a = Vector(0, 0, 0)
-    b = Vector(-height*math.sin(angle), 0, height*math.cos(angle))
-    d = Vector(-bodyd.length*math.cos(angle), 0, -bodyd.length*math.sin(angle))
-    c = Vector(d.x, d.y, d.z).add(b)
-    points = [p.add(pos) for p in [a,b,c,d,a]]
-    return Part.Face(Part.makePolygon(points)).extrude(Vector(0, bodyd.width, 0))
+    contour = App.ActiveDocument.getObject('Marz_Body_Contour')
+    if contour:
+        pos = Vector(pos.x, 0, pos.z)
+        shape = contour.Shape
+        face = Part.Face(shape.copy())
+        solid = face.extrude(Vector(0, 0, height))
+        solid.Placement = Placement(pos, Rotation(Vector(0,1,0), -bodyd.neckAngle))
+        return solid
+    else:
+        a = Vector(0, 0, 0)
+        b = Vector(-height*math.sin(angle), 0, height*math.cos(angle))
+        d = Vector(-bodyd.length*math.cos(angle), 0, -bodyd.length*math.sin(angle))
+        c = Vector(d.x, d.y, d.z).add(b)
+        points = [p.add(pos) for p in [a,b,c,d,a]]
+        return Part.Face(Part.makePolygon(points)).extrude(Vector(0, bodyd.width, 0))
 
 def blanks(inst, bodyd):
+    
     angle = deg(bodyd.neckAngle)
     y = -bodyd.width/2
     x = bodyd.neckd.fbd.neckFrame.bridge.mid().x + bodyd.neckPocketLength
     b = Vector(x,y,0)
+
     b = b.add(Vector(bodyd.totalThicknessWithOffset()*math.sin(angle), 0, -bodyd.totalThicknessWithOffset()*math.cos(angle)))
     back = createBodyComp(bodyd, bodyd.backThickness, b)
+
     t = Vector(b.x - bodyd.backThickness*math.sin(angle), y, b.z + bodyd.backThickness*math.cos(angle))
     top = createBodyComp(bodyd, bodyd.topThickness, t) 
 
@@ -111,3 +122,18 @@ class BodyFeature:
                 updatePartShape(topPart, top)
             if backPart is not None:
                 updatePartShape(backPart, back)
+
+    @classmethod
+    def findAllParts(cls):
+        parts = []
+        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Top")
+        if fb:
+            parts.append(fb)
+        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Back")
+        if fb:
+            parts.append(fb)
+        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Contour")
+        if fb:
+            parts.append(fb)
+        return parts
+

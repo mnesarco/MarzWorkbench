@@ -221,7 +221,6 @@ class FretboardFeature:
     """
 
     NAME = "Marz_Fretboard"
-    CONSTRUCTION_PREFIX = "Marz_C_"
     CONSTRUCTION_NAMES = ['ScaleFrame', 'MidLine', 'ProjectionFrame', 'BridgePos', 'FretboardFrame', 'NeckFrame']
 
     def __init__(self, instrument):
@@ -317,8 +316,11 @@ class FretboardFeature:
         recomputeActiveDocument()
 
     @classmethod
-    def findAllConstructionParts(cls):
+    def findAllParts(cls):
         parts = []
+        fb = App.ActiveDocument.getObject(FretboardFeature.NAME)
+        if fb:
+            parts.append(fb)
         for name in FretboardFeature.CONSTRUCTION_NAMES:
             part = findDraftByLabel(name)
             if part is not None:

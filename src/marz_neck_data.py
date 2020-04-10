@@ -11,7 +11,7 @@ __maintainer__   = "https://github.com/mnesarco"
 
 
 from marz_linexy import lineIntersection, linexy
-from marz_neck_profile_list import getNeckProfile
+from marz_neck_profile import getNeckProfile
 
 class NeckData(object):
     """
@@ -23,7 +23,9 @@ class NeckData(object):
     #! this object will be cached as a hash calculated on creation,
     #! so two instances created with same data will hit the same
     #! cache entry.
-    __slots__ = ['fbd', 'thicknessSlope', 'startThickness', '_ihash', 'profileOffsetPercent', 'profileH2Percent', 'profileH2OffsetPercent']
+    __slots__ = ['fbd', 'thicknessSlope', 'startThickness', '_ihash', 'profileName', 
+        'profileOffsetPercent', 'profileH2Percent', 'profileH2OffsetPercent', 
+        'transitionFunction', 'transitionLength', 'transitionTension']
 
     def __init__(self, inst, fbd):
         
@@ -33,20 +35,27 @@ class NeckData(object):
 
         # Neck Profile
         profile = getNeckProfile(inst.neck.profile)
-        profileOffsetPercent = profile['center_offset'] or 0.0    # Percent of width/2
-        profileH2Percent = profile['h2'] or 0.75                  # Percent of height
-        profileH2OffsetPercent = profile['h2_offset'] or 0.5      # Percent of width/2
+        profileName = profile.name
+        profileOffsetPercent = profile.h1Offset
+        profileH2Percent = profile.h2
+        profileH2OffsetPercent = profile.h2Offset
 
         # Set immutable values
+        super().__setattr__('profileName', profileName)
         super().__setattr__('thicknessSlope', thicknessSlope)
         super().__setattr__('startThickness', startThickness)
         super().__setattr__('profileOffsetPercent', profileOffsetPercent)
         super().__setattr__('profileH2Percent', profileH2Percent)
         super().__setattr__('profileH2OffsetPercent', profileH2OffsetPercent)
+        super().__setattr__('transitionLength', inst.neck.transitionLength)
+        super().__setattr__('transitionTension', inst.neck.transitionTension)
+        super().__setattr__('transitionFunction', inst.neck.transitionFunction)
         super().__setattr__('fbd', fbd)
         
         # Calculate immutable hash
-        ihash = hash((thicknessSlope, startThickness, fbd, profileOffsetPercent, profileH2Percent, profileH2OffsetPercent))
+        ihash = hash((thicknessSlope, startThickness, fbd, profileName, 
+            profileOffsetPercent, profileH2Percent, profileH2OffsetPercent,
+            inst.neck.transitionLength, inst.neck.transitionTension, inst.neck.transitionFunction))
         super().__setattr__('_ihash', ihash)
 
     def __setattr__(self, name, value):
@@ -61,6 +70,9 @@ class NeckData(object):
             and self.profileOffsetPercent == other.profileOffsetPercent
             and self.profileH2Percent == other.profileH2Percent
             and self.profileH2OffsetPercent == other.profileH2OffsetPercent
+            and self.transitionLength == other.transitionLength
+            and self.transitionTension == other.transitionTension
+            and self.transitionFunction == other.transitionFunction
             and self.fbd == other.fbd)
 
     def widthAt(self, dist):

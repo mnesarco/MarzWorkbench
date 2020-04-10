@@ -10,6 +10,7 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 import traceback
+import importlib
 
 import FreeCAD as App
 from marz_model import Instrument, ModelException
@@ -102,11 +103,37 @@ class MarzInstrument:
         self.changed = InstrumentProps.propertiesToModel(self.model, self.obj)
 
     def __getstate__(self):
-        return InstrumentProps.getStateFromProperties(self.obj)
+        # Properties
+        state = InstrumentProps.getStateFromProperties(self.obj)
+        # Active Builders
+        builders = []
+        for p in self.partsToUpdate.values():
+            builders.append((p.__class__.__module__, p.__class__.__name__))
+        state['_builders_'] = builders
+        return state
 
     def __setstate__(self,state):
+
         self.model = Instrument()
         self.obj = App.ActiveDocument.getObject(state['_fc_name'])
+        self.obj.Proxy = self
+        self.partsToUpdate = {}
+        self.partsToCreate = {}
+        self.changed = False
+
+        # Restore active builders
+        builders = state.get('_builders_')
+        if builders:
+            for modName, clsName in builders:
+                print(f"[MARZ] Loading {modName}.{clsName}")
+                module = importlib.import_module(modName)
+                try:
+                    clsObj = getattr(module, clsName)
+                    self.partsToUpdate[clsName] = clsObj()
+                except:
+                    print(f"[MARZ] Error loading builder {clsName}")
+
+        # Load properties
         InstrumentProps.setPropertiesFromState(self.obj, state)
 
     def createFretboard(self): 
@@ -155,13 +182,9 @@ class MarzInstrumentVP:
 
     def claimChildren(self):
         children = []
-        fb = App.ActiveDocument.getObject(FretboardFeature.NAME)
-        if fb is not None:
-            children.append(fb)
-        fb = App.ActiveDocument.getObject(NeckFeature.NAME)
-        if fb is not None:
-            children.append(fb)
-        children.extend(FretboardFeature.findAllConstructionParts())
+        children.extend(FretboardFeature.findAllParts())
+        children.extend(NeckFeature.findAllParts())
+        children.extend(BodyFeature.findAllParts())
         return children
 
     def __getstate__(self):

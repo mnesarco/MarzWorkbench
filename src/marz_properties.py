@@ -129,3 +129,30 @@ class FreecadPropertiesHelper:
         for prop in self.properties:
             prop.reset(obj)
 
+    def printMarkdownDoc(self):
+        
+        # Group
+        sections = {}
+        for p in self.properties:
+            sec = sections.get(p.section)
+            if not sec:
+                sec = []
+                sections[p.section] = sec
+            sec.append(p)
+        
+        # Print
+        for sec, props in sections.items():
+            units = {'App::PropertyLength': 'mm', 'App::PropertyDistance': 'mm', 'App::PropertyAngle': 'degrees'}
+            print(f"\n## {sec}")
+            print("Parameter|Description|Example|Options")
+            print("---|---|---|---")
+            for p in props:
+                options = ''
+                val = p.default
+                unit = units.get(p.ui, '')
+                if p.enum:
+                    options = ", ".join([f"[{e.value}]" for e in list(p.enum)])
+                    val = p.default.value
+                elif p.options:
+                    options = ", ".join(p.options() + ['More by configuration...'])
+                print(f"{p.name.rpartition('_')[2]}|{p.description}|{val} {unit}|{options}")

@@ -35,6 +35,8 @@ class Marz(Workbench):
             "MarzCmdCreateNeck", 
             "MarzCmdCreateBody",
             "MarzCmdCreateConstructionLines", 
+            "MarzCmdImportBodyShape",
+            "MarzCmdImportHeadstockShape",
             #"MarzCmdCreateNeckPlanes", TODO: Fix
         ]
         if isVersion19():

@@ -9,8 +9,8 @@ __copyright__    = "Copyright 2020, Frank D. Martinez. M."
 __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
-import marz_neck_profile_list
-from marz_model import FretboardCut, NeckJoint, NutPosition, NutSpacing, inches
+from marz_neck_profile import NeckProfile
+from marz_model import FretboardCut, NeckJoint, NutPosition, NutSpacing, inches, TransitionFunction
 from marz_properties import FreecadPropertiesHelper
 from marz_properties import FreecadPropertyHelper as fcp
 
@@ -27,7 +27,7 @@ properties = [
     fcp('nut.position',                 NutPosition.PARALLEL, enum=NutPosition),
     fcp('nut.offset',                   0),
     fcp('nut.depth',                    5, 'Depth into the fretboard'),
-    fcp('nut.stringDistanceProj',       34.5, 'Distant from first to last String at average nut position'),
+    fcp('nut.stringDistanceProj',       34.5, 'Distance from first to last String at average nut position'),
 
     # Neck
     fcp('neck.joint',                   NeckJoint.SETIN, 'Joint Type', enum=NeckJoint),
@@ -39,9 +39,10 @@ properties = [
     fcp('neck.tenonThickness',          0, 'Tenon Thickness if Set In Neck'),
     fcp('neck.tenonLength',             0, 'Tenon Length if Set In Neck'),
     fcp('neck.tenonOffset',             0, 'Tenon Offset if Set In Neck'),
-    fcp('neck.profile',                 "C Classic", 'Neck profile', options=lambda: [p['name'] for p in marz_neck_profile_list.data]),
+    fcp('neck.profile',                 "C Classic", 'Neck profile', options=lambda: [p.name for p in NeckProfile.LIST.values()]),
     fcp('neck.transitionLength',        50, 'Length of the heel transition'),
     fcp('neck.transitionTension',       35, 'Tension of the heel transition'),
+    fcp('neck.transitionFunction',      TransitionFunction.CATENARY, 'Math function of the heel transition', enum=TransitionFunction),
 
     # Fretboard
     fcp('fretboard.thickness',          7, 'Board thickness'),

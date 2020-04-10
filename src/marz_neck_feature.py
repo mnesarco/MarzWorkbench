@@ -26,90 +26,8 @@ from marz_ui import (createPartBody, recomputeActiveDocument,
                      updatePartShape)
 from marz_utils import startTimeTrace
 from marz_vxy import angleVxy, vxy
-
-#--------------------------------------------------------------------------
-def createSection(width, height, offsetPercent, h2Percent, h2OffsetPercent):
-    """
-    Calculate Section curve control points.
-    
-    Args:
-        width: double
-        height: double
-        offsetPercent: center offset, percentage over width/2
-        h2Percent: control height, percentage over height
-        h2OffsetPercent: h2 offset, percentage over width/2
-    """
-    leftTop = vxy(-width/2, 0)
-    rightTop = vxy(width/2, 0)
-    h = vxy(width * offsetPercent/2, -height)
-    hl = vxy(h.x - width * h2OffsetPercent/2, -height*h2Percent)
-    hr = vxy(h.x + width * h2OffsetPercent/2, -height*h2Percent)
-    return [ leftTop, hl, h, hr, rightTop ]
-
-#--------------------------------------------------------------------------
-@PureFunctionCache
-def expoPoints(h1, l, a, n, cdir = 1, xl = 0, hardClamp = 500):
-    """
-    Generate points for a transition using a generated math function.
-
-    Args:
-        h1   : max height
-        l    : length
-        a    : function parameter (tension)
-        n    : number of points
-        cdir : order of points (1 = increasign, -1 decreasing)
-        xl   : Extension after l
-        hardClamp : Maximum allowed height, enforced
-    """
-
-    # Curve functions
-    (func1, func2) = xmath.approxExpoFunctions(l, a, h1, hardClamp)
-
-    # Generate points
-    step = l/n
-    points = [(i*step, func1(i*step if cdir == 1 else l-i*step)) for i in range(n+1)]
-
-    # Generate additional points
-    if xl > 0:
-        xn = int(xl/step) + 1
-        points = points + [(i*step, func2(i*step if cdir == 1 else l-i*step)) for i in range(n+1,n+xn+1)]
-
-    return points
-
-#--------------------------------------------------------------------------
-@PureFunctionCache
-def createSectionWire(neckd, line, pos, plus = 0, width = None, height = None, closed = True):
-    """
-    Create section wire.
-    #! IMPORTANT: if closed == True, returns a Wire, else returns a list of Vectors with interpolation points
-
-    Args:
-        neckd : NeckData
-        line  : linexy, section reference line
-        pos   : vxy|num, distance from line.sart
-        plus  : num, Added height
-        width : forced width
-        height: forced height
-        offsetPercent: center offset, percentage over width/2
-        h2Percent: control height, percentage over height
-        h2OffsetPercent: h2 offset, percentage over width/2
-    """
-    if isinstance(pos, (int, float)):
-        b = line.lerpPointAt(pos) # Traslation point
-        dist = pos
-    else:
-        b = pos
-        dist = line.start.distanceTo(pos)
-    width = width or neckd.widthAt(dist)
-    height = (height or neckd.thicknessAt(dist)) + plus
-    end = [ geom.vecyz(v).add(geom.vec(b)) for v in \
-        createSection(width, height, neckd.profileOffsetPercent, neckd.profileH2Percent, neckd.profileH2OffsetPercent) ]
-    if closed:
-        curve = Part.BSplineCurve()
-        curve.interpolate(end)
-        end_l = Part.LineSegment(end[0], end[-1])
-        end = Part.Wire(Part.Shape([curve, end_l]).Edges)
-    return end
+from marz_neck_profile import getNeckProfile
+from marz_transitions import transitionDatabase
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -121,10 +39,10 @@ def barrell(neckd, fret):
         necks   : NeckData
         fret    : end fret
     """
+    profile = getNeckProfile(neckd.profileName)
     line = neckd.lineToFret(fret)
-    start = createSectionWire(neckd, line, line.start)
-    end = createSectionWire(neckd, line, line.end)
-    return Part.makeLoft([start, end], True, True)        
+    wire = Part.Wire( Part.LineSegment(geom.vec(line.start), geom.vec(line.end)).toShape() )
+    return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=1)
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -141,52 +59,6 @@ def cutHeadstockSides(line, lenght, width, transitionLength):
     s1.append(s1[0])
     cut2 = geom.extrusion(s1, 10, [0, 0, -lenght])
     return Part.makeCompound([cut1, cut2]) # cut1 and cut2 does not intersect so compound is more efficient than fuse
-
-#--------------------------------------------------------------------------
-@PureFunctionCache
-def curveToRectLoft(neckd, point, width, base, height, dist, parts, xdist = 0, ruled = True):
-    line = linexy(vxy(0,0), vxy(dist,0))
-    step = dist/parts
-    xparts = int(xdist/step) + 1 if xdist > 0 else 0
-    wires = []
-    for i in range(parts+xparts+1):
-        
-        # Control Points
-        l = step*i
-        w = width(i)
-        h = height(i)
-        b = base(i)
-        curveHeight = h - b
-        
-        # BSpLine
-        spPoints = createSectionWire(neckd, line, l, width=w, height=curveHeight, closed=False)
-        
-        # Prepare Points
-        for v in spPoints: v.z -= b
-        bsPoints = [spPoints[0], Vector(l, -w/2, 0), Vector(l,  w/2, 0), spPoints[-1]]
-
-        # Translate to point
-        spPoints = [ v.add(point) for v in spPoints ]
-        bsPoints = [ v.add(point) for v in bsPoints ]
-
-        # BSpline
-        curve = Part.BSplineCurve()
-        curve.interpolate(spPoints)
-        elems = [curve]
-
-        # Base
-        if b > 0:
-            elems.append(Part.LineSegment( bsPoints[0], bsPoints[1] ))
-            elems.append(Part.LineSegment( bsPoints[1], bsPoints[2] ))
-            elems.append(Part.LineSegment( bsPoints[2], bsPoints[3] ))
-        else:
-            elems.append(Part.LineSegment( bsPoints[0], bsPoints[3] ))
-
-        # Make Wire
-        wires.append(Part.Wire(Part.Shape(elems).Edges))
-
-    #for w in wires: Part.show(w)
-    return Part.makeLoft(wires, True, ruled)                             
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -230,40 +102,20 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
     if transitionLength <= 0 or transitionTension <= 0:
         return None
 
-    # Sections
-    tranOverflow = 0
-    trpoints = expoPoints(tranOverflow + h, transitionLength, transitionTension, 10, -1)
-    trwires = [createSectionWire(neckd, line, x+startd, y) for x,y in trpoints]
-    # Replace First (imprecise) by a real neck section
-    trwires[0] = createSectionWire(neckd, line, startd)
+    trline = linexy(line.lerpPointAt(startd), line.lerpPointAt(startd+transitionLength*2))
+    length = trline.length
+    #transition = CatenaryTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+    Transition = transitionDatabase[neckd.transitionFunction]
+    transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+    profile = getNeckProfile(neckd.profileName)
+    wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
+    steps = int(trline.length/5)
 
-    maxWidth = neckd.fbd.frame.bridge.length
-    h = h + tranOverflow
-    nWires = 10
-    fnWidth = expoPoints(maxWidth, transitionLength, transitionTension, nWires)
-    fnHeight = expoPoints(h, transitionLength, transitionTension, nWires)
-    s = neckd.widthAt(startd)
+    limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
+    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=False)
 
-    def fnWidthClamped(i):
-        if i == nWires: return s
-        h2 = fnWidth[i][1] + s
-        return h2 if h2 < 150 else 150
+    return tr
 
-    def fnHeightClamped(i):
-        if i == nWires: return neckd.thicknessAt(startd)
-        h2 = fnHeight[i][1] + neckd.thicknessAt(startd)
-        return h2 if h2 < 150 else 150
-
-    transition = curveToRectLoft(
-        neckd, 
-        geom.vec(line.lerpPointAt(startd + transitionLength)),
-        fnWidthClamped,
-        lambda i: 0.0000,
-        fnHeightClamped,
-        transitionLength,
-        nWires
-    )
-    return transition
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -278,67 +130,26 @@ def headstockTransition(neckd, line,
     if transitionLength <= 0 or transitionTension <= 0:
         return None
 
-    h = headStockDepth + headStockThickness
-    nWires = 10
-    
-    heightDelta = expoPoints(
-        h, 
-        transitionLength, 
-        transitionTension, 
-        nWires, 
-        cdir=-1,
-        xl=xdist,
-        hardClamp=heightHardClamp
-    )
-    heightDelta[0] = (heightDelta[0][0], 0)
-    baseHeight = neckd.thicknessAt(heightDelta[0][0])
-    def fnHeight(i):           
-        h = baseHeight + heightDelta[i][1]
-        return h if i <= nWires else heightHardClamp + baseHeight
+    h = headStockDepth + headStockThickness   
+    startd = 0
+    trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
+    length = trline.length
+    def fnw(x):
+        w = neckd.widthAt(x+startd) + length*math.cosh(x/transitionTension)-length
+        return min(w, headStockWidth*2)
+    def fnh(x):
+        h = -(neckd.thicknessAt(x+startd) + length*math.cosh(x/transitionTension)-length)
+        return max(h, -100)
+    profile = getNeckProfile(neckd.profileName)
+    wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
+    steps = int(trline.length/3)
 
-    minWidth = neckd.widthAt(0)
-    widthDeltas = expoPoints(
-        headStockWidth, 
-        transitionLength, 
-        transitionTension, 
-        nWires, 
-        cdir=-1,
-        xl=xdist,
-        hardClamp=withHardClamp
-    )
-    widthDeltas[0] = (widthDeltas[0][0], 0)
-    baseWidth = neckd.widthAt(widthDeltas[0][0])
-    def fnWidth(i):           
-        w = baseWidth + widthDeltas[i][1]
-        if i > nWires: 
-            w = baseWidth + withHardClamp
-        return w
+    limitp = trline.lerpLineTo(transitionLength+transitionLength).rectSym(headStockWidth)
+    limit = geom.extrusion(limitp, 0, Vector(0,0,-h - (0 if cut else 30)))
+    tr = geom.makeTransition(wire.Edges[0], profile, fnw, fnh, steps=steps, limits=limit, ruled=False)
 
-    startPoint = geom.vec(line.lerpPointAt(transitionLength))
-    transition = curveToRectLoft(
-        neckd, 
-        startPoint,
-        fnWidth,
-        lambda i: 0.0000,
-        fnHeight,
-        transitionLength,
-        nWires,
-        xdist=xdist
-    )
+    return tr
 
-    # Transition Cut Excess 1 (Head side)
-    if cut:
-        h = headStockDepth + headStockThickness
-        trCut = geom.extrusion(
-            line.lerpLineTo(transitionLength).flipDirection()\
-                .lerpLineTo(transitionLength*2)\
-                    .rectSym(headStockWidth), 
-            -h, 
-            [0,0,-headStockWidth]
-        )
-        transition = transition.cut(trCut)
-
-    return transition
 
 
 class NeckFeature:
@@ -354,10 +165,31 @@ class NeckFeature:
 
     #--------------------------------------------------------------------------
     def headstock(self, neckd, line):
-        if self.instrument.headStock.angle == 0:
-            return self.flatHeadstock(neckd, line)
+
+        angle = self.instrument.headStock.angle
+        pos = Vector(line.start.x, line.start.y, 0)
+
+        if angle == 0:
+            basehs = self.flatHeadstock(neckd, line)
         else:
-            return self.angledHeadstock(neckd, line)
+            basehs = self.angledHeadstock(neckd, line)
+        
+        # Contour
+        contour = App.ActiveDocument.getObject('Marz_Headstock_Contour')
+        if contour:
+            shape = contour.Shape
+            face = Part.Face(shape.copy())
+            solid = face.extrude(Vector(0, 0, -50))
+            solid.Placement = Placement(pos, Rotation(Vector(0,1,0), angle))
+            basehs = basehs.common(solid)
+
+        # Holes
+        holes = App.ActiveDocument.getObject('Marz_Headstock_Holes')
+        if holes:
+            holes.Placement = Placement(pos, Rotation(Vector(0,1,0), angle))
+            basehs = basehs.cut(holes.Shape.copy())
+
+        return basehs
 
     #--------------------------------------------------------------------------
     def createShape(self):
@@ -567,14 +399,14 @@ class NeckFeature:
         fbd = neckd.fbd
         neckAngleRad = deg(inst.neck.angle)
         if inst.neck.joint is NeckJoint.THROUHG:
-            h = inst.body.backThickness + inst.body.topThickness + inst.neck.topOffset #! TODO Apply Neck Angle
+            h = inst.body.backThickness + inst.body.topThickness + inst.neck.topOffset
         else :
             h = inst.body.neckPocketDepth + inst.neck.topOffset
 
         # Curved Part
         start_p = lineIntersection(fbd.frets[inst.neck.jointFret], line).point
         start_d = linexy(line.start, start_p).length
-        curve = heelTransition(neckd, line, start_d, h, inst.neck.transitionLength, inst.neck.transitionTension)
+        transition = heelTransition(neckd, line, start_d, h, inst.neck.transitionLength, inst.neck.transitionTension)
 
         # Rect Part
         x = start_d + inst.neck.transitionLength
@@ -590,19 +422,21 @@ class NeckFeature:
             Part.LineSegment(geom.vec(a), geom.vec(b)),
         ] 
         part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
-        if curve:
-            part = curve.fuse(part)
+        if transition:
+            part = transition.fuse(part)
 
         # Neck Angle Cut (Bottom)
         extrusionDepth = 100
-        lengthDelta = max(inst.body.neckPocketLength, (fbd.neckFrame.midLine.length - start_d) - inst.neck.transitionLength/2)
+        lengthDelta = max(inst.body.neckPocketLength, (fbd.neckFrame.midLine.length - start_d) ) #- inst.neck.transitionLength/2
         naLineDir = linexy(vxy(0,0), angleVxy(neckAngleRad, lengthDelta))
         naLineDir = naLineDir.flipDirection().lerpLineTo(naLineDir.length+30).flipDirection()
         naAp = geom.vecxz(naLineDir.start)
         naBp = geom.vecxz(naLineDir.end)
         refp = geom.vec(fbd.frame.bridge.end, -h).add(Vector(0, -fbd.neckFrame.bridge.length/2, 0))
+
         if inst.neck.joint is NeckJoint.THROUHG:
             refp = refp.add(Vector(-inst.body.length*math.cos(neckAngleRad), 0, -inst.body.length*math.sin(neckAngleRad)))
+
         naSidePs = [
             naAp, 
             Vector(naAp.x, naAp.y, naAp.z-extrusionDepth),
@@ -612,19 +446,17 @@ class NeckFeature:
         ]
         naSidePs = [v.add(refp) for v in naSidePs]
         naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length*2, 0))
-        # Cut bottom
         
+        # Cut bottom       
         part = part.cut(naSide)
 
-        # Then move and cut top      
+        # Then move and cut top (Remove Top thickness)
         cutThickness = extrusionDepth * math.cos(neckAngleRad)
-        #naSide = 
         naSide.translate(Vector(
             (inst.body.backThickness+cutThickness)*math.sin(neckAngleRad),
             0,
             (inst.body.backThickness+cutThickness)*math.cos(neckAngleRad)
         ))
-        #naSide = 
         naSide.translate(Vector(
             (inst.body.length-lengthDelta)*math.cos(neckAngleRad),
             0,
@@ -633,28 +465,28 @@ class NeckFeature:
 
         part = part.cut(naSide)
 
-        # Cut excess side 1
-        segments = [fbd.neckFrame.bridge.end, fbd.neckFrame.nut.start]
-        segments.append(vxy(segments[-1].x, segments[-1].y+100))
-        segments.append(vxy(segments[0].x, segments[0].y+100))
-        segments.append(segments[0])
-        rect = geom.extrusion(segments, 0, (0,0,-h*2))
-        part = part.cut(rect)
+        # # Cut excess side 1
+        # segments = [fbd.neckFrame.bridge.end, fbd.neckFrame.nut.start]
+        # segments.append(vxy(segments[-1].x, segments[-1].y+100))
+        # segments.append(vxy(segments[0].x, segments[0].y+100))
+        # segments.append(segments[0])
+        # rect = geom.extrusion(segments, 0, (0,0,-h*2))
+        # part = part.cut(rect)
 
-        # Cut excess side 2
-        segments = [fbd.neckFrame.bridge.start, fbd.neckFrame.nut.end]
-        segments.append(vxy(segments[-1].x, segments[-1].y-100))
-        segments.append(vxy(segments[0].x, segments[0].y-100))
-        segments.append(segments[0])
-        rect = geom.extrusion(segments, 0, (0,0,-h*2))
-        part = part.cut(rect)
+        # # Cut excess side 2
+        # segments = [fbd.neckFrame.bridge.start, fbd.neckFrame.nut.end]
+        # segments.append(vxy(segments[-1].x, segments[-1].y-100))
+        # segments.append(vxy(segments[0].x, segments[0].y-100))
+        # segments.append(segments[0])
+        # rect = geom.extrusion(segments, 0, (0,0,-h*2))
+        # part = part.cut(rect)
 
         # Tenon
         tenon = self.tenon(inst, fbd, neckAngleRad, d, h)
         if tenon:
             part = part.fuse(tenon)
 
-        return part
+        return part.removeSplitter()
 
     def tenon(self, inst, fbd, neckAngleRad, posXY, h):
         if inst.neck.tenonThickness > 0 \
@@ -799,3 +631,11 @@ class NeckFeature:
                     App.Rotation(90, 90, 0)
                 )
             )
+
+    @classmethod
+    def findAllParts(cls):
+        parts = []
+        fb = App.ActiveDocument.getObject(NeckFeature.NAME)
+        if fb:
+            parts.append(fb)
+        return parts
