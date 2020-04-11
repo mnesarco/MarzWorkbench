@@ -16,7 +16,8 @@ import FreeCAD as App
 import marz_fretboard_builder as builder
 import marz_geom as geom
 import marz_math as xmath
-from FreeCAD import Part, Placement, Rotation, Vector
+from FreeCAD import Placement, Rotation, Vector
+import Part
 from marz_cache import PureFunctionCache, getCachedObject
 from marz_linexy import line as lineFromPointAndDir
 from marz_linexy import lineIntersection, linexy

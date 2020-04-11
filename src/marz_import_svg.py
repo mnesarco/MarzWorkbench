@@ -40,7 +40,8 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
 
     # Defered Imports to speedup Workbench activation
     import importSVG
-    from FreeCAD import Part, Vector
+    from FreeCAD import Vector
+    import Part
     import marz_geom as geom
     from marz_instrument_feature import MarzInstrument
     import marz_utils

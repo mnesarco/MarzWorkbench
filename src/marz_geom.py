@@ -13,7 +13,8 @@ __maintainer__   = "https://github.com/mnesarco"
 import FreeCAD as App
 import FreeCADGui as Gui
 import Show
-from FreeCAD import Part, Placement, Rotation, Vector
+from FreeCAD import Placement, Rotation, Vector
+import Part
 from marz_threading import RunInUIThread
 from marz_ui import featureToBody
 
