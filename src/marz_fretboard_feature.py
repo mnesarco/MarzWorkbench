@@ -17,7 +17,8 @@ import marz_fretboard_builder as builder
 import marz_geom as geom
 import marz_utils as utils
 import Draft
-from FreeCAD import Part, Vector
+import Part
+from FreeCAD import Vector
 from marz_linexy import lineIntersection, linexy
 from marz_model import ModelException, fret, todeg
 from marz_threading import Task, UIThread

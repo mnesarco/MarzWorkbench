@@ -35,7 +35,8 @@ def importHeadstockShape(filename):
 
     # Defered Imports to speedup Workbench activation
     import importSVG
-    from FreeCAD import Part, Vector
+    import Part
+    from FreeCAD import Vector
     import marz_geom as geom
 
     # Save Working doc

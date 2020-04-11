@@ -12,7 +12,8 @@ __maintainer__   = "https://github.com/mnesarco"
 
 import json
 from marz_ui import resourcePath, Msg
-from FreeCAD import Vector, Part
+import Part
+from FreeCAD import Vector
 
 class NeckProfile:
 
