@@ -184,7 +184,7 @@ class NeckFeature:
             basehs = basehs.common(solid)
 
         # Holes
-        holes = App.ActiveDocument.getObject('Marz_Headstock_Holes')
+        holes = App.ActiveDocument.getObject('Marz_Headstock_Pockets')
         if angle == 0: pos = Vector(pos.x, pos.y, -self.instrument.headStock.depth)
         if holes:
             holes.Placement = Placement(pos, Rotation(Vector(0,1,0), angle))

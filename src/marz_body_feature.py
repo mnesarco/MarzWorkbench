@@ -25,13 +25,13 @@ from marz_body_data import BodyData
 from marz_neck_data import NeckData
 from marz_fretboard_data import FretboardData
 from marz_threading import Task
-from marz_ui import (createPartBody, errorDialog, recomputeActiveDocument,
+from marz_ui import (createPartBody, errorDialog, recomputeActiveDocument, Log,
                      updatePartShape)
 from marz_utils import startTimeTrace
 from marz_vxy import angleVxy, vxy
 from marz_neck_feature import NeckFeature
 
-def createBodyComp(bodyd, height, pos):
+def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
     """Create Body Top or Back   
     Arguments:
         bodyd {BodyData} -- Body's data
@@ -41,22 +41,55 @@ def createBodyComp(bodyd, height, pos):
         {Shape} -- blank
     """
 
+    comp = None
     angle = deg(bodyd.neckAngle)
     contour = App.ActiveDocument.getObject('Marz_Body_Contour')
+    pos = Vector(pos.x, 0, pos.z)
     if contour:
-        pos = Vector(pos.x, 0, pos.z)
         shape = contour.Shape
         face = Part.Face(shape.copy())
         solid = face.extrude(Vector(0, 0, height))
-        solid.Placement = Placement(pos, Rotation(Vector(0,1,0), -bodyd.neckAngle))
-        return solid
+        comp = solid
     else:
-        a = Vector(0, 0, 0)
-        b = Vector(-height*math.sin(angle), 0, height*math.cos(angle))
-        d = Vector(-bodyd.length*math.cos(angle), 0, -bodyd.length*math.sin(angle))
-        c = Vector(d.x, d.y, d.z).add(b)
-        points = [p.add(pos) for p in [a,b,c,d,a]]
-        return Part.Face(Part.makePolygon(points)).extrude(Vector(0, bodyd.width, 0))
+        w2 = bodyd.width/2
+        h = bodyd.length
+        points = [
+            Vector(0,w2,0), Vector(-h,w2,0), Vector(-h,-w2,0), Vector(0,-w2,0), Vector(0,w2,0)
+        ]
+        comp = Part.Face( Part.makePolygon(points) ).extrude(Vector(0, 0, height))
+
+    pockets = App.ActiveDocument.getObject('Marz_Body_Pockets')
+    if pockets:
+        shape = pockets.Shape.copy()
+        shape.translate(Vector(0,0,height + topThickness))
+        try:
+            comp = comp.cut(shape)
+        except:
+            Log(f'Ignoring some pockets: {pockets.Name}')
+
+    if top:
+        pockets = App.ActiveDocument.getObject('Marz_Body_Pockets_Top')
+        if pockets:
+            shape = pockets.Shape.copy()
+            shape.translate(Vector(0,0,height))
+            try:
+                comp = comp.cut(shape)
+            except:
+                Log(f'Ignoring some pockets: {pockets.Name}')
+
+    if back:
+        pockets = App.ActiveDocument.getObject('Marz_Body_Pockets_Back')
+        if pockets:
+            shape = pockets.Shape.copy()
+            shape.translate(Vector(0,0,height))
+            try:
+                comp = comp.cut(shape)
+            except:
+                Log(f'Ignoring some pockets: {pockets.Name}')
+
+    comp.Placement = Placement(pos, Rotation(Vector(0,1,0), -bodyd.neckAngle))
+
+    return comp
 
 def blanks(inst, bodyd):
     
@@ -66,10 +99,10 @@ def blanks(inst, bodyd):
     b = Vector(x,y,0)
 
     b = b.add(Vector(bodyd.totalThicknessWithOffset()*math.sin(angle), 0, -bodyd.totalThicknessWithOffset()*math.cos(angle)))
-    back = createBodyComp(bodyd, bodyd.backThickness, b)
+    back = createBodyComp(bodyd, bodyd.backThickness, b, bodyd.topThickness, back=True)
 
     t = Vector(b.x - bodyd.backThickness*math.sin(angle), y, b.z + bodyd.backThickness*math.cos(angle))
-    top = createBodyComp(bodyd, bodyd.topThickness, t) 
+    top = createBodyComp(bodyd, bodyd.topThickness, t, 0, top=True) 
 
     # Pocket
     heel = NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine)
