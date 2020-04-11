@@ -172,7 +172,7 @@ class NeckFeature:
         if angle == 0:
             basehs = self.flatHeadstock(neckd, line)
         else:
-            basehs = self.angledHeadstock(neckd, line)
+            basehs = self.angledHeadstock(neckd, line)            
         
         # Contour
         contour = App.ActiveDocument.getObject('Marz_Headstock_Contour')
@@ -185,6 +185,7 @@ class NeckFeature:
 
         # Holes
         holes = App.ActiveDocument.getObject('Marz_Headstock_Holes')
+        if angle == 0: pos = Vector(pos.x, pos.y, -self.instrument.headStock.depth)
         if holes:
             holes.Placement = Placement(pos, Rotation(Vector(0,1,0), angle))
             basehs = basehs.cut(holes.Shape.copy())

@@ -27,8 +27,8 @@ HOLE_ID_PATTERN = re.compile(r'h\d*[_ ]+(\d+)[_ ]+(\d+)', re.IGNORECASE)
 def extractHole(obj, holes):
     m = HOLE_ID_PATTERN.match(obj.Name)
     if m:
-        start = float(int(m.group(1))/100)
-        length = float(int(m.group(2))/100)
+        start = int(m.group(1))/100
+        length = int(m.group(2))/100
         holes.append((obj, start, length))
     
 def importHeadstockShape(filename):
