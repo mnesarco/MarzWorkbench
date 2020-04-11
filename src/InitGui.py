@@ -29,18 +29,21 @@ class Marz(Workbench):
         import marz_reloader
         from marz_freecad import isVersion19
         marz_reloader.reloadAll(lambda name: name.startswith('marz_cmd_'))
+        
         cmds = [
             "MarzCmdCreateInstrument", 
             "MarzCmdCreateFretboard", 
             "MarzCmdCreateNeck", 
             "MarzCmdCreateBody",
             "MarzCmdCreateConstructionLines", 
-            "MarzCmdImportBodyShape",
-            "MarzCmdImportHeadstockShape",
             #"MarzCmdCreateNeckPlanes", TODO: Fix
         ]
+
         if isVersion19():
+            cmds.append("MarzCmdImportBodyShape")
+            cmds.append("MarzCmdImportHeadstockShape")
             cmds.append("MarzCmdToggleAutocompute")
+
         self.appendToolbar("Marz Guitar Design", cmds)
         self.appendMenu("&Guitar", cmds + ['MarzCmdShowAboutWindow'])
 

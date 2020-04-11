@@ -15,6 +15,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtCore, QtGui
 from marz_threading import RunInUIThread
+import marz_freecad as fc
  
 MARZ_VERSION       = "0.0.9-alpha"
 MARZ_WINDOW_LABEL  = f"FreeCAD :: Marz Workbench {MARZ_VERSION}"
@@ -87,9 +88,12 @@ def featureToBody(feature, name = None):
     Gui.Selection.clearSelection()
     Gui.Selection.addSelection(body)
 
-    feature.adjustRelativeLinks(body)
-    body.ViewObject.dropObject(feature,None,'',[])
-
+    if fc.isVersion19():
+        feature.adjustRelativeLinks(body)
+        body.ViewObject.dropObject(feature,None,'',[])
+    elif fc.isVersion18():
+        body.BaseFeature = feature
+        
 @RunInUIThread
 def runDeferred(block, delay=0):
     QtCore.QTimer.singleShot(delay, block)
