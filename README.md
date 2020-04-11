@@ -68,15 +68,14 @@ This is a work in progress project, this is the list of the currently implemente
   * Provide better options for transition curves
   * Create a Neck Profile repository
 
-* Documentation
-  * Currently there is no documentation, you should guess what to do and how to do it.
-
 ## Documentation
 
 Just add objects (Instrument, Fretboard, Neck, Body, etc...) from the toolbar and change parameters. All the parameters are on the Root Instrument Object. 
 
 
 ![ui](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/ui-elements.png)
+
+The Wiki contains some useful documents: [Wiki](https://github.com/mnesarco/MarzWorkbench/wiki)
 
 ## Requirements
 
