@@ -39,9 +39,9 @@ class Marz(Workbench):
             #"MarzCmdCreateNeckPlanes", TODO: Fix
         ]
 
+        cmds.append("MarzCmdImportBodyShape")
+        cmds.append("MarzCmdImportHeadstockShape")
         if isVersion19():
-            cmds.append("MarzCmdImportBodyShape")
-            cmds.append("MarzCmdImportHeadstockShape")
             cmds.append("MarzCmdToggleAutocompute")
 
         self.appendToolbar("Marz Guitar Design", cmds)

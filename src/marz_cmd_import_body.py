@@ -40,7 +40,7 @@ class CmdImportBodyShape:
     def Activated(self):
         from PySide import QtGui
         try:
-            name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(),'Select .svg file','*.svg')[0]
+            name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
             if name:
                 #importBodyShape(name)
                 extractCustomShape(name, 'Marz_Body')

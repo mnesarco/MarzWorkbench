@@ -105,8 +105,8 @@ def addOrUpdatePart(shape, name, label=None, visibility=True):
         obj = App.ActiveDocument.addObject("Part::Feature", name)
         if label:
             obj.Label = label
-        obj.Visibility = visibility
     obj.Shape = shape
+    obj.ViewObject.Visibility = visibility
 
 def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True):
     curve = edge.Curve
