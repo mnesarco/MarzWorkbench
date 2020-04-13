@@ -110,10 +110,10 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
     transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
     profile = getNeckProfile(neckd.profileName)
     wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-    steps = int(trline.length/5)
+    steps = int(trline.length)
 
     limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
-    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=False)
+    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=True)
 
     return tr
 
@@ -143,11 +143,11 @@ def headstockTransition(neckd, line,
         return max(h, -100)
     profile = getNeckProfile(neckd.profileName)
     wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-    steps = int(trline.length/3)
+    steps = int(trline.length)
 
     limitp = trline.lerpLineTo(transitionLength+transitionLength).rectSym(headStockWidth)
     limit = geom.extrusion(limitp, 0, Vector(0,0,-h - (0 if cut else 30)))
-    tr = geom.makeTransition(wire.Edges[0], profile, fnw, fnh, steps=steps, limits=limit, ruled=False)
+    tr = geom.makeTransition(wire.Edges[0], profile, fnw, fnh, steps=steps, limits=limit, ruled=True)
 
     return tr
 

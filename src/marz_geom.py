@@ -121,7 +121,9 @@ def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, so
         p = fnProfile(w,h)
         p.Placement = Placement(points[i], rot)
         return p
-    loft = Part.makeLoft([ wire(i) for i in range(steps+1) ], solid, ruled)
+    wires = [ wire(i) for i in range(steps+1) ]
+
+    loft = Part.makeLoft(wires, solid, ruled)
     if limits:
         loft = loft.common(limits)
     return loft

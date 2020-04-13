@@ -23,11 +23,11 @@ class CatenaryTransition:
   def __init__(self, wBase, hBase, wParam, hParam, start, length, wMax = 500, hMax = 500):
 
     def fnw(x):
-        w = wBase(x + start) + length * math.cosh(x/wParam) - length
+        w = wBase(x + start) + (length * math.cosh(x/wParam) - length)/4
         return w
 
     def fnh(x):
-        h = hBase(x + start) + length * math.cosh(x/hParam) - length
+        h = hBase(x + start) + (length * math.cosh(x/hParam) - length)/4
         return h
 
     self.width = fnw
