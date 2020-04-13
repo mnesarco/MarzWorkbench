@@ -28,7 +28,7 @@ from marz_ui import (createPartBody, recomputeActiveDocument,
 from marz_utils import startTimeTrace
 from marz_vxy import angleVxy, vxy
 from marz_neck_profile import getNeckProfile
-from marz_transitions import transitionDatabase
+from marz_transitions import transitionDatabase, CatenaryTransition
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -135,19 +135,16 @@ def headstockTransition(neckd, line,
     startd = 0
     trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
     length = trline.length
-    def fnw(x):
-        w = neckd.widthAt(x+startd) + length*math.cosh(x/transitionTension)-length
-        return min(w, headStockWidth*2)
-    def fnh(x):
-        h = -(neckd.thicknessAt(x+startd) + length*math.cosh(x/transitionTension)-length)
-        return max(h, -100)
+
+    transition = CatenaryTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+
     profile = getNeckProfile(neckd.profileName)
     wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
     steps = int(trline.length)
 
     limitp = trline.lerpLineTo(transitionLength+transitionLength).rectSym(headStockWidth)
     limit = geom.extrusion(limitp, 0, Vector(0,0,-h - (0 if cut else 30)))
-    tr = geom.makeTransition(wire.Edges[0], profile, fnw, fnh, steps=steps, limits=limit, ruled=True)
+    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, lambda x: -transition.height(x), steps=steps, limits=limit, ruled=True)
 
     return tr
 
