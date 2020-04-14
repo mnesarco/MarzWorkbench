@@ -259,6 +259,8 @@ class FretboardFeature:
         fbd = builder.buildFretboardData(self.instrument)
         ttrace()
         
+        inlaysTask = Task.execute(cutInlays, fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
+
         (fretboard, cache) = getCachedObject('FretboardFeature', 
             fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth, 
             inst.nut.depth, inst.fretboard.thickness, inst.fretboard.startRadius,
@@ -276,7 +278,7 @@ class FretboardFeature:
             ttrace()
             cache(fretboard)
 
-        inlays = cutInlays(fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
+        inlays = inlaysTask.get()
         if inlays:
             fretboard = fretboard.cut(inlays)
 
