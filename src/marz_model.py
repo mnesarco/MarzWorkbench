@@ -244,7 +244,7 @@ class Fretboard(Feature):
     def __init__(self, instrument, thickness = 7.0, startRadius = inches(10), endRadius = inches(14),
                  startMargin = 5.0, endMargin = 5.0, sideMargin = 3.0, cut = FretboardCut.PARALLEL,
                  frets = 24, fretNipping = 2, cutBassDistance = 400, cutTrebleDistance = 400,
-                 perpendicularFret = 7):
+                 perpendicularFret = 7, inlayDepth = 1):
         """
         Parameters:
             thickness   : Thickness of the fretboard
@@ -274,6 +274,7 @@ class Fretboard(Feature):
         self.cutBassDistance = cutBassDistance
         self.cutTrebleDistance = cutTrebleDistance
         self.perpendicularFret = perpendicularFret
+        self.inlayDepth = inlayDepth
 
     @property
     def perpendicularFret(self):

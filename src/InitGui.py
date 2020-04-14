@@ -36,11 +36,12 @@ class Marz(Workbench):
             "MarzCmdCreateNeck", 
             "MarzCmdCreateBody",
             "MarzCmdCreateConstructionLines", 
+            "MarzCmdImportBodyShape",
+            "MarzCmdImportHeadstockShape",
+            "MarzCmdImportFretInlays",
             #"MarzCmdCreateNeckPlanes", TODO: Fix
         ]
 
-        cmds.append("MarzCmdImportBodyShape")
-        cmds.append("MarzCmdImportHeadstockShape")
         if isVersion19():
             cmds.append("MarzCmdToggleAutocompute")
 

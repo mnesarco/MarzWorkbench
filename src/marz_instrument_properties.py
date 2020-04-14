@@ -54,6 +54,7 @@ properties = [
     fcp('fretboard.fretNipping',        2, 'Nipping distance'),
     fcp('fretboard.perpendicularFret',  7, 'Number of perpendicular fret', ui='App::PropertyInteger'),
     fcp('fretboard.frets',              24, 'Number of frets', ui='App::PropertyInteger'),
+    fcp('fretboard.inlayDepth',         1, 'Depth of inlay carvings'),
 
     #! TODO: Needs some refinements
     #! fcp('fretboard.cut',                FretboardCut.PARALLEL, 'End cut type', enum=FretboardCut),
@@ -70,9 +71,9 @@ properties = [
     fcp('headStock.width',              80, 'Max width'),
     fcp('headStock.length',             220, 'Max length'),
     fcp('headStock.thickness',          15, 'Thickness'),
-    fcp('headStock.depth',              5, 'Max width'),
-    fcp('headStock.transitionLength',   20, 'Max width'),
-    fcp('headStock.transitionTension',  12, 'Max width'),
+    fcp('headStock.depth',              5, 'Depth (Flat)'),
+    fcp('headStock.transitionLength',   20, 'Transition length'),
+    fcp('headStock.transitionTension',  8, 'Transition curve control'),
     fcp('headStock.voluteStart',        30, 'Volute Start distance'),
     fcp('headStock.angle',              9, 'Break Angle', ui='App::PropertyAngle'),
 

@@ -26,6 +26,29 @@ from marz_ui import createPartBody, recomputeActiveDocument, updatePartShape, up
 from marz_utils import startTimeTrace
 from marz_cache import PureFunctionCache, getCachedObject
 
+def fretPos(f, line, h):
+    scale = line.length
+    a = fret(f-1, scale)
+    b = fret(f, scale)
+    p = line.lerpPointAt((a+b)/2)
+    return Vector(p.x, p.y, h+1)
+
+def cutInlays(fbd, thickness, inlayDepth):
+
+    line = fbd.scaleFrame.midLine
+    shapes = []
+
+    for i in range(len(fbd.frets)):
+        inlay = App.ActiveDocument.getObject(f"Marz_FInlay_Fret{i}")
+        if inlay:
+            ishape = inlay.Shape.copy()
+            ishape.translate(fretPos(i, line, thickness))
+            shapes.append(ishape)
+
+    if shapes:
+        comp = Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
+        return comp
+
 #------------------------------------------------------------------------------
 @PureFunctionCache
 def fretboardSection(c, r, w, t, v):
@@ -252,6 +275,10 @@ class FretboardFeature:
                 fretboard = board.cut(fretSlots).removeSplitter().cut(nut)
             ttrace()
             cache(fretboard)
+
+        inlays = cutInlays(fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
+        if inlays:
+            fretboard = fretboard.cut(inlays)
 
         return fretboard
 

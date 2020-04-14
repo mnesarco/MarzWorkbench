@@ -18,7 +18,9 @@ import re
 import FreeCAD as App
 import FreeCADGui as Gui
 
-HOLE_ID_PATTERN = re.compile(r'h([tb]?)\d*[_ ]+(\d+)[_ ]+(\d+)', re.IGNORECASE)
+POCKET_ID_PATTERN = re.compile(r'h([tb]?)\d*_(\d+)_(\d+).*', re.IGNORECASE)
+
+FRET_INLAY_ID_PATTERN = re.compile(r'f(\d+)_.*', re.IGNORECASE)
 
 class Pocket:
     def __init__(self, obj, start, depth, target):
@@ -27,14 +29,49 @@ class Pocket:
         self.depth = depth
         self.target = target
 
+class FretInlay:
+
+    def __init__(self, part):
+        self.fret = part.fret
+        self.parts = [part]
+    
+    def add(self, part):
+        self.parts.append(part)
+    
+    def buildShape(self):
+        import Part
+        self.shape = Part.makeCompound([Part.Face(Part.Wire(part.edges)) for part in self.parts])
+        c = self.shape.BoundBox.Center
+        self.shape.translate(-c)
+    
+    def createPart(self, baseName):
+        import marz_geom as geom
+        geom.addOrUpdatePart(self.shape, f'{baseName}_Fret{self.fret}', f'FretInlay{self.fret}', visibility=False)
+
+class FretInlayPart:
+    def __init__(self, obj, fret):
+        self.fret = fret
+        self.edges = obj.Shape.copy().Edges
+
 def extractPocket(obj, pockets):
     """Appends (obj, startDepth, depth, part) to `holes` if id match hole pattern."""
-    m = HOLE_ID_PATTERN.match(obj.Name)
+    m = POCKET_ID_PATTERN.match(obj.Name)
     if m:
         part = m.group(1).lower()
         start = int(m.group(2))/100
         length = int(m.group(3))/100
         pockets.append(Pocket(obj, start, length, part))
+
+def extractInlay(obj, inlays):
+    m = FRET_INLAY_ID_PATTERN.match(obj.Name)
+    if m and obj.Shape.isClosed():
+        fret = int(m.group(1))
+        inlay = inlays.get(fret)
+        if inlay:
+            inlay.add(FretInlayPart(obj, fret))
+        else:
+            inlay = FretInlay(FretInlayPart(obj, fret))
+            inlays[fret] = inlay
 
 def extractCustomShape(filename, baseName, requireContour=True, requireMidline=True):
 
@@ -140,3 +177,43 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     App.ActiveDocument.getObject(MarzInstrument.NAME).touch()
     App.ActiveDocument.recompute()
 
+def extractInlays(filename, baseName):
+
+    # Defered Imports to speedup Workbench activation
+    import importSVG
+    from FreeCAD import Vector
+    import Part
+    import marz_geom as geom
+    from marz_instrument_feature import MarzInstrument
+    import marz_utils
+    import marz_ui
+
+    # Save Working doc
+    workingDoc = App.ActiveDocument
+
+    # Import SVG File
+    name = marz_utils.randomString(16)
+    importSVG.insert(filename, name)
+    doc = App.getDocument(name)
+
+    # Extract
+    inlays = {}
+    for obj in doc.Objects: extractInlay(obj, inlays)
+
+    if len(inlays) == 0:
+        marz_ui.errorDialog('The SVG File does not contain any inlay path')
+        return
+
+    # Build inlays
+    for fret, inlay in inlays.items(): inlay.buildShape()
+
+    # Restore Active Doc
+    App.setActiveDocument(workingDoc.Name)
+    App.closeDocument(doc.Name)
+
+    # Create parts
+    for fret, inlay in inlays.items(): inlay.createPart(baseName)
+
+    # Recalculate
+    App.ActiveDocument.getObject(MarzInstrument.NAME).touch()
+    App.ActiveDocument.recompute()
