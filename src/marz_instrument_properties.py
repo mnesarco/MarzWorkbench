@@ -74,7 +74,7 @@ properties = [
     fcp('headStock.depth',              5, 'Depth (Flat)'),
     fcp('headStock.transitionLength',   20, 'Transition length'),
     fcp('headStock.transitionTension',  8, 'Transition curve control'),
-    fcp('headStock.voluteStart',        30, 'Volute Start distance'),
+    fcp('headStock.voluteStart',        0, 'Volute Start distance'),
     fcp('headStock.angle',              9, 'Break Angle', ui='App::PropertyAngle'),
 
     # Truss Rod Channel
