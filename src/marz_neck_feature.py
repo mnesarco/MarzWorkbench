@@ -28,7 +28,7 @@ from marz_ui import (createPartBody, recomputeActiveDocument,
 from marz_utils import startTimeTrace
 from marz_vxy import angleVxy, vxy
 from marz_neck_profile import getNeckProfile
-from marz_transitions import transitionDatabase, CatenaryTransition
+from marz_transitions import transitionDatabase, HeadstockTransition
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -136,7 +136,7 @@ def headstockTransition(neckd, line,
     trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
     length = trline.length
 
-    transition = CatenaryTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+    transition = HeadstockTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
 
     profile = getNeckProfile(neckd.profileName)
     wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
@@ -238,9 +238,11 @@ class NeckFeature:
         inst = self.instrument
         fbd = neckd.fbd
 
-        line = line.lerpLineTo(-inst.headStock.transitionLength).flipDirection()
-        hsLine = line.lerpLineTo(-inst.headStock.length)
+        if inst.headStock.transitionLength > 0:
+            line = line.lerpLineTo(-inst.headStock.transitionLength).flipDirection()
 
+        hsLine = line.lerpLineTo(-inst.headStock.length)
+            
         # Extrude base
         #! Manually cached Object
         (blank, cache) = getCachedObject('flatHeadstock_base', \
