@@ -17,7 +17,7 @@ from FreeCAD import Placement, Rotation, Vector
 import Part
 from marz_threading import RunInUIThread
 from marz_ui import featureToBody
-
+from marz_utils import traceTime
 
 def vec(v, z = 0):
     """Convert vxy to Vector"""
@@ -109,21 +109,27 @@ def addOrUpdatePart(shape, name, label=None, visibility=True):
     obj.ViewObject.Visibility = visibility
 
 def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True):
-    curve = edge.Curve
-    points = edge.discretize(Number=steps+1)
-    direction = curve.Direction
-    step = edge.Length/steps
-    rot = Rotation(Vector(0,0,1), direction)
-    def wire(i):
-        l = i * step
-        w = fnWidth(l)
-        h = fnHeight(l)
-        p = fnProfile(w,h)
-        p.Placement = Placement(points[i], rot)
-        return p
-    wires = [ wire(i) for i in range(steps+1) ]
 
-    loft = Part.makeLoft(wires, solid, ruled)
+    with traceTime("Prepare transition geometry"):
+        curve = edge.Curve
+        points = edge.discretize(Number=steps+1)
+        direction = curve.Direction
+        step = edge.Length/steps
+        rot = Rotation(Vector(0,0,1), direction)
+        def wire(i):
+            l = i * step
+            w = fnWidth(l)
+            h = fnHeight(l)
+            p = fnProfile(w,h)
+            p.Placement = Placement(points[i], rot)
+            return p
+        wires = [ wire(i) for i in range(steps+1) ]
+
+    with traceTime("Make transition solid"):
+        loft = Part.makeLoft(wires, solid, ruled)
+    
     if limits:
-        loft = loft.common(limits)
+        with traceTime("Apply transition limits"):
+            loft = loft.common(limits)
+    
     return loft

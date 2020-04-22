@@ -12,7 +12,7 @@ __maintainer__   = "https://github.com/mnesarco"
 import FreeCAD as App
 from PySide import QtCore
 import math
-from marz_utils import startTimeTrace
+from marz_utils import traceTime
 from functools import reduce
 
 #! -----------------------------------------------------------------------------
@@ -71,15 +71,14 @@ class Task(QtCore.QRunnable):
         self.signals = TaskSignals()
 
     def run(self):
-        ttrace = startTimeTrace(self.fn.__name__)
-        try:
-            self.result = self.fn(*self.args, **self.kwargs)
-        except BaseException as ex:
-            self.error = ex
-        finally:
-            self._isTerminated = True
-            self.signals.onComplete.emit((self.result, self.error, self))
-        ttrace()
+        with traceTime(f"[Thread] {id(QtCore.QThread.currentThread())} {self.fn.__name__}"):
+            try:
+                self.result = self.fn(*self.args, **self.kwargs)
+            except BaseException as ex:
+                self.error = ex
+            finally:
+                self._isTerminated = True
+                self.signals.onComplete.emit((self.result, self.error, self))
 
     def get(self):
         """

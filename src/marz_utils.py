@@ -19,3 +19,15 @@ def startTimeTrace(label):
 
 def randomString(size=16, symbols="ABCDEFGHIJKLMNOPQRST"):
     return "".join(( symbols[random.randint(0, size-1)] for i in range(size)))
+
+class traceTime:
+
+    def __init__(self, label = ''):
+        self.label = label
+    
+    def __enter__(self):
+        self.t = time.time()
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        App.Console.PrintLog(f"[MARZ] {self.label}: {int((time.time() - self.t)*1000)} ms\n")

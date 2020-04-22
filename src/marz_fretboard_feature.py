@@ -11,20 +11,20 @@ __maintainer__   = "https://github.com/mnesarco"
 
 import math
 
+import Draft
 import FreeCAD as App
-import FreeCADGui as Gui
 import marz_fretboard_builder as builder
 import marz_geom as geom
-import marz_utils as utils
-import Draft
-from FreeCAD import Vector
 import Part
+from FreeCAD import Vector
+from marz_cache import PureFunctionCache, getCachedObject
 from marz_linexy import lineIntersection, linexy
 from marz_model import ModelException, fret, todeg
 from marz_threading import Task, UIThread
-from marz_ui import createPartBody, recomputeActiveDocument, updatePartShape, updateDraftPoints, findDraftByLabel, color as hexColor
-from marz_utils import startTimeTrace
-from marz_cache import PureFunctionCache, getCachedObject
+from marz_ui import color as hexColor
+from marz_ui import (createPartBody, findDraftByLabel, recomputeActiveDocument,
+                     updateDraftPoints, updatePartShape)
+from marz_utils import traceTime
 
 def fretPos(f, line, h):
     scale = line.length
@@ -33,21 +33,25 @@ def fretPos(f, line, h):
     p = line.lerpPointAt((a+b)/2)
     return Vector(p.x, p.y, h+1)
 
-def cutInlays(fbd, thickness, inlayDepth):
+def makeInlays(fbd, thickness, inlayDepth):
 
     line = fbd.scaleFrame.midLine
     shapes = []
 
-    for i in range(len(fbd.frets)):
-        inlay = App.ActiveDocument.getObject(f"Marz_FInlay_Fret{i}")
-        if inlay:
-            ishape = inlay.Shape.copy()
-            ishape.translate(fretPos(i, line, thickness))
-            shapes.append(ishape)
-
-    if shapes:
-        comp = Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
-        return comp
+    with traceTime("Prepare inlay pockets geometry"):
+        for i in range(len(fbd.frets)):
+            inlay = App.ActiveDocument.getObject(f"Marz_FInlay_Fret{i}")
+            if inlay:
+                ishape = inlay.Shape.copy()
+                ishape.translate(fretPos(i, line, thickness))
+                shapes.append(ishape)
+    
+    comp = None
+    with traceTime("Build inlay pockets substractive solid"):
+        if shapes:
+            comp = Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
+    
+    return comp
 
 #------------------------------------------------------------------------------
 @PureFunctionCache
@@ -129,16 +133,20 @@ def fretboardCone(startRadius, endRadius, thickness, fbd, top):
         return Vector(p.x, p.y, top - r)
 
     # Wires for the Loft
-    wires = []
-    vdir = geom.vec(line.vector)
-    for (l, width) in [(0, fbd.neckFrame.nut.length), (line.length, fbd.neckFrame.bridge.length)]:
-        radius = radiusFn(l)
-        center = centerFn(l, radius)
-        wire = fretboardSection(center, radius, width, thickness, vdir)
-        wires.append(wire)
+    with traceTime("Prepare fretboad conic geometry"):
+        wires = []
+        vdir = geom.vec(line.vector)
+        for (l, width) in [(0, fbd.neckFrame.nut.length), (line.length, fbd.neckFrame.bridge.length)]:
+            radius = radiusFn(l)
+            center = centerFn(l, radius)
+            wire = fretboardSection(center, radius, width, thickness, vdir)
+            wires.append(wire)
 
     # Solid
-    return Part.makeLoft(wires, True, True).removeSplitter()
+    with traceTime("Make fretboad conic solid"):
+        solid = Part.makeLoft(wires, True, True).removeSplitter()
+
+    return solid
 
 #------------------------------------------------------------------------------
 def fretsCut(inst, fbd):
@@ -161,16 +169,23 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
     jobs = []
     bladeHeight = thickness*4
 
-    # Generate Fret extrusions in parallel
-    for index, fret_i in enumerate(fbd.frets):
-        # Zero fret visibility
-        if not isZeroFret and index == 0:
-            continue
-        # Adjust Fret Size
-        fret = fret_i.extendSym(-nipping if nipping > 0 else 5)
-        # Extrude Fret
-        jobs.append(Task.execute(geom.extrusion, fret.rectSym(tangWidth), 0, [0,0,bladeHeight]))
-    
+    # Generate Fret extrusions
+    def generateFrets():
+        with traceTime('Generate all Fret slots'):
+            frets = []
+            for index, fret_i in enumerate(fbd.frets):
+                # Zero fret visibility
+                if not isZeroFret and index == 0:
+                    continue
+                # Adjust Fret Size
+                fret = fret_i.extendSym(-nipping if nipping > 0 else 5)
+                # Extrude Fret
+                frets.append(geom.extrusion(fret.rectSym(tangWidth), 0, [0,0,bladeHeight]))
+            return Part.makeCompound(frets)
+
+    # Generate Frets in parallel
+    fretsJob = Task.execute(generateFrets)
+
     # Generate Cone in parallel
     trimJob = Task.execute(
         fretboardCone, 
@@ -182,17 +197,10 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
     )
 
     # Join 
-    frets = Task.joinAll(jobs)
-    trim = trimJob.get()
+    (fretSlots, trim) = Task.joinAll([fretsJob, trimJob])
 
-    # Fuse All Fret slots
-    ttrace = startTimeTrace('Fuse All Fret slots')
-    fretSlots = Part.makeCompound(frets) # Frets do not intersect so compound is more efficient than fuse
-    ttrace()
-
-    ttrace = startTimeTrace('Trim Fret Slots')
-    result = fretSlots.cut(trim)
-    ttrace()
+    with traceTime('Trim Fret Slots'):
+        result = fretSlots.cut(trim)
 
     return result
 
@@ -203,23 +211,24 @@ def base(inst, fbd):
     """
     (board, cache) = getCachedObject('fretboard_base', fbd, inst.fretboard.startRadius, inst.fretboard.endRadius, inst.fretboard.thickness)
     if not board:
-        cone = fretboardCone(
-            inst.fretboard.startRadius, 
-            inst.fretboard.endRadius, 
-            inst.fretboard.thickness, 
-            fbd, 
-            inst.fretboard.thickness
-        )
-        f = fbd.frame
-        ps = [
-            f.bridge.start,
-            f.bass.start,
-            f.nut.start,
-            f.treble.start,
-            f.bridge.start
-        ]
-        cut = geom.extrusion(ps, 0, (0,0,inst.fretboard.thickness+1))
-        board = cone.common(cut)
+        with traceTime("Build fretboard base"):
+            cone = fretboardCone(
+                inst.fretboard.startRadius, 
+                inst.fretboard.endRadius, 
+                inst.fretboard.thickness, 
+                fbd, 
+                inst.fretboard.thickness
+            )
+            f = fbd.frame
+            ps = [
+                f.bridge.start,
+                f.bass.start,
+                f.nut.start,
+                f.treble.start,
+                f.bridge.start
+            ]
+            cut = geom.extrusion(ps, 0, (0,0,inst.fretboard.thickness+1))
+            board = cone.common(cut)
         cache(board)
     return board
 
@@ -233,10 +242,11 @@ def nutSlotPure(thickness, depth, fbd):
     Create a Nut Solid to be cutted from board
     """
     # Extend the nut frame to bleeding cut
-    nut = fbd.nutFrame.nut.clone().extendSym(5)
-    bridge = fbd.nutFrame.bridge.clone().extendSym(5)
-    polygon = [bridge.end, bridge.start, nut.end, nut.start, bridge.end] 
-    return geom.extrusion(polygon, thickness - depth, [0,0,thickness*4])
+    with traceTime("Nut slot solid"):
+        nut = fbd.nutFrame.nut.clone().extendSym(5)
+        bridge = fbd.nutFrame.bridge.clone().extendSym(5)
+        polygon = [bridge.end, bridge.start, nut.end, nut.start, bridge.end] 
+        return geom.extrusion(polygon, thickness - depth, [0,0,thickness*4])
 
 #------------------------------------------------------------------------------
 class FretboardFeature:
@@ -254,17 +264,17 @@ class FretboardFeature:
         """Create a Fretboard."""
 
         # Calculate model
-        ttrace = startTimeTrace('Calc Model')
-        inst = self.instrument
-        fbd = builder.buildFretboardData(self.instrument)
-        ttrace()
+        with traceTime('Calc Model'):
+            inst = self.instrument
+            fbd = builder.buildFretboardData(self.instrument)
         
-        inlaysTask = Task.execute(cutInlays, fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
+        inlaysTask = Task.execute(makeInlays, fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
 
         (fretboard, cache) = getCachedObject('FretboardFeature', 
             fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth, 
             inst.nut.depth, inst.fretboard.thickness, inst.fretboard.startRadius,
             inst.fretboard.endRadius)
+            
         if not fretboard:
 
             # Generate primitives in parallel. (They are independent)
@@ -272,15 +282,16 @@ class FretboardFeature:
             (board, nut, fretSlots) = Task.joinAll([Task.execute(t, self.instrument, fbd) for t in tasks])
 
             # Cut Slots
-            ttrace = startTimeTrace('Cut slots from fretboard')
-            if board and nut and fretSlots:
-                fretboard = board.cut(fretSlots).removeSplitter().cut(nut)
-            ttrace()
+            with traceTime('Cut slots from fretboard'):
+                if board and nut and fretSlots:
+                    fretboard = board.cut(fretSlots).removeSplitter().cut(nut)
+
             cache(fretboard)
 
         inlays = inlaysTask.get()
-        if inlays:
-            fretboard = fretboard.cut(inlays)
+        with traceTime("Cut fretboard inlays"):
+            if inlays:
+                fretboard = fretboard.cut(inlays)
 
         return fretboard
 
