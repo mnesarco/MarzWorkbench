@@ -43,7 +43,7 @@ def barrell(neckd, fret):
     profile = getNeckProfile(neckd.profileName)
     line = neckd.lineToFret(fret)
     wire = Part.Wire( Part.LineSegment(geom.vec(line.start), geom.vec(line.end)).toShape() )
-    return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=1)
+    return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=3)
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -105,12 +105,11 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
 
     trline = linexy(line.lerpPointAt(startd), line.lerpPointAt(startd+transitionLength*2))
     length = trline.length
-    #transition = CatenaryTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
     Transition = transitionDatabase[neckd.transitionFunction]
     transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
     profile = getNeckProfile(neckd.profileName)
     wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-    steps = int(trline.length)
+    steps = int(trline.length/2)+1
 
     limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
     tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=True)
@@ -248,6 +247,7 @@ class NeckFeature:
         (blank, cache) = getCachedObject('flatHeadstock_base', \
             hsLine, inst.headStock.length, inst.headStock.width, \
                 inst.headStock.depth, inst.headStock.thickness)
+
         if not blank:
             hsTop = hsLine.rectSym(inst.headStock.width)
             blank = geom.extrusion(hsTop, 0, [0, 0, -inst.headStock.depth - inst.headStock.thickness])
@@ -407,22 +407,28 @@ class NeckFeature:
         # Curved Part
         start_p = lineIntersection(fbd.frets[inst.neck.jointFret], line).point
         start_d = linexy(line.start, start_p).length
-        transition = heelTransition(neckd, line, start_d, h, inst.neck.transitionLength, inst.neck.transitionTension)
+        transitionJob = Task.execute(heelTransition, neckd, line, start_d, h, inst.neck.transitionLength, inst.neck.transitionTension)
 
-        # Rect Part
         x = start_d + inst.neck.transitionLength
         xperp = line.lerpLineTo(x).perpendicularCounterClockwiseEnd()
         a = lineIntersection(xperp, fbd.neckFrame.treble).point
         b = lineIntersection(xperp, fbd.neckFrame.bass).point
         c = fbd.neckFrame.bridge.end
         d = fbd.neckFrame.bridge.start
-        segments = [
-            Part.LineSegment(geom.vec(b), geom.vec(c)),
-            Part.LineSegment(geom.vec(c), geom.vec(d)),
-            Part.LineSegment(geom.vec(d), geom.vec(a)),
-            Part.LineSegment(geom.vec(a), geom.vec(b)),
-        ] 
-        part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
+
+        # Rect Part
+        def heelBase():
+            segments = [
+                Part.LineSegment(geom.vec(b), geom.vec(c)),
+                Part.LineSegment(geom.vec(c), geom.vec(d)),
+                Part.LineSegment(geom.vec(d), geom.vec(a)),
+                Part.LineSegment(geom.vec(a), geom.vec(b)),
+            ] 
+            part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
+            return part
+
+        (transition, part) = Task.joinAll([transitionJob, Task.execute(heelBase)])
+
         if transition:
             part = transition.fuse(part)
 
@@ -465,22 +471,6 @@ class NeckFeature:
         ))
 
         part = part.cut(naSide)
-
-        # # Cut excess side 1
-        # segments = [fbd.neckFrame.bridge.end, fbd.neckFrame.nut.start]
-        # segments.append(vxy(segments[-1].x, segments[-1].y+100))
-        # segments.append(vxy(segments[0].x, segments[0].y+100))
-        # segments.append(segments[0])
-        # rect = geom.extrusion(segments, 0, (0,0,-h*2))
-        # part = part.cut(rect)
-
-        # # Cut excess side 2
-        # segments = [fbd.neckFrame.bridge.start, fbd.neckFrame.nut.end]
-        # segments.append(vxy(segments[-1].x, segments[-1].y-100))
-        # segments.append(vxy(segments[0].x, segments[0].y-100))
-        # segments.append(segments[0])
-        # rect = geom.extrusion(segments, 0, (0,0,-h*2))
-        # part = part.cut(rect)
 
         # Tenon
         tenon = self.tenon(inst, fbd, neckAngleRad, d, h)

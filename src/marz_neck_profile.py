@@ -11,7 +11,7 @@ __maintainer__   = "https://github.com/mnesarco"
 
 
 import json
-from marz_ui import resourcePath, Msg
+from marz_ui import resourcePath
 from FreeCAD import Vector
 import Part
 
