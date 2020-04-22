@@ -25,7 +25,7 @@ from marz_neck_data import NeckData
 from marz_threading import Task
 from marz_ui import (createPartBody, recomputeActiveDocument,
                      updatePartShape)
-from marz_utils import startTimeTrace
+from marz_utils import traceTime
 from marz_vxy import angleVxy, vxy
 from marz_neck_profile import getNeckProfile
 from marz_transitions import transitionDatabase, HeadstockTransition
@@ -40,10 +40,11 @@ def barrell(neckd, fret):
         necks   : NeckData
         fret    : end fret
     """
-    profile = getNeckProfile(neckd.profileName)
-    line = neckd.lineToFret(fret)
-    wire = Part.Wire( Part.LineSegment(geom.vec(line.start), geom.vec(line.end)).toShape() )
-    return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=3)
+    with traceTime("Make Beck Barrell"):
+        profile = getNeckProfile(neckd.profileName)
+        line = neckd.lineToFret(fret)
+        wire = Part.Wire( Part.LineSegment(geom.vec(line.start), geom.vec(line.end)).toShape() )
+        return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=3)
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -66,26 +67,27 @@ def cutHeadstockSides(line, lenght, width, transitionLength):
 def trussRodChannel(line, start, length, width, depth, \
     headLength, headWidth, headDepth, tailLength, tailWidth, tailDepth):
 
-    if length <= 0 or width <= 0 or depth <= 0:
-        return None
+    with traceTime("Make Truss Rod Channel"):
+        if length <= 0 or width <= 0 or depth <= 0:
+            return None
 
-    # Base Channel
-    base = linexy(line.lerpPointAt(start), line.lerpPointAt(start+length)).rectSym(width)
-    base = geom.extrusion(base, 0, (0,0,-depth))
+        # Base Channel
+        base = linexy(line.lerpPointAt(start), line.lerpPointAt(start+length)).rectSym(width)
+        base = geom.extrusion(base, 0, (0,0,-depth))
 
-    # Head
-    if headLength > 0 and headWidth > 0 and headDepth > 0:
-        head = linexy(line.lerpPointAt(start), line.lerpPointAt(headLength+start)).rectSym(headWidth)
-        head = geom.extrusion(head, 0, (0,0,-headDepth))
-        base = base.fuse(head)
+        # Head
+        if headLength > 0 and headWidth > 0 and headDepth > 0:
+            head = linexy(line.lerpPointAt(start), line.lerpPointAt(headLength+start)).rectSym(headWidth)
+            head = geom.extrusion(head, 0, (0,0,-headDepth))
+            base = base.fuse(head)
 
-    # Tail
-    if tailLength > 0 and tailWidth > 0 and tailDepth > 0:
-        tail = linexy(line.lerpPointAt(start + length - tailLength), line.lerpPointAt(start + length)).rectSym(tailWidth)
-        tail = geom.extrusion(tail, 0, (0,0,-tailDepth))
-        base = base.fuse(tail)
+        # Tail
+        if tailLength > 0 and tailWidth > 0 and tailDepth > 0:
+            tail = linexy(line.lerpPointAt(start + length - tailLength), line.lerpPointAt(start + length)).rectSym(tailWidth)
+            tail = geom.extrusion(tail, 0, (0,0,-tailDepth))
+            base = base.fuse(tail)
 
-    return base
+        return base
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -100,21 +102,22 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
         h      : Heel height
     """
     
-    if transitionLength <= 0 or transitionTension <= 0:
-        return None
+    with traceTime("Make Heel Transition"):
+        if transitionLength <= 0 or transitionTension <= 0:
+            return None
 
-    trline = linexy(line.lerpPointAt(startd), line.lerpPointAt(startd+transitionLength*2))
-    length = trline.length
-    Transition = transitionDatabase[neckd.transitionFunction]
-    transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
-    profile = getNeckProfile(neckd.profileName)
-    wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-    steps = int(trline.length/2)+1
+        trline = linexy(line.lerpPointAt(startd), line.lerpPointAt(startd+transitionLength*2))
+        length = trline.length
+        Transition = transitionDatabase[neckd.transitionFunction]
+        transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+        profile = getNeckProfile(neckd.profileName)
+        wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
+        steps = int(trline.length/2)+1
 
-    limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
-    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=True)
+        limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
+        tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=True)
 
-    return tr
+        return tr
 
 
 #--------------------------------------------------------------------------
@@ -127,25 +130,26 @@ def headstockTransition(neckd, line,
     Create transition from neck to headstock shape.
     """
 
-    if transitionLength <= 0 or transitionTension <= 0:
-        return None
+    with traceTime("Make Headstock Transition"):
+        if transitionLength <= 0 or transitionTension <= 0:
+            return None
 
-    h = headStockDepth + headStockThickness   
-    startd = 0
-    trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
-    length = trline.length
+        h = headStockDepth + headStockThickness   
+        startd = 0
+        trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
+        length = trline.length
 
-    transition = HeadstockTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
+        transition = HeadstockTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
 
-    profile = getNeckProfile(neckd.profileName)
-    wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-    steps = int(trline.length)
+        profile = getNeckProfile(neckd.profileName)
+        wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
+        steps = int(trline.length)
 
-    limitp = trline.lerpLineTo(transitionLength+transitionLength).rectSym(headStockWidth)
-    limit = geom.extrusion(limitp, 0, Vector(0,0,-h - (0 if cut else 30)))
-    tr = geom.makeTransition(wire.Edges[0], profile, transition.width, lambda x: -transition.height(x), steps=steps, limits=limit, ruled=True)
+        limitp = trline.lerpLineTo(transitionLength+transitionLength).rectSym(headStockWidth)
+        limit = geom.extrusion(limitp, 0, Vector(0,0,-h - (0 if cut else 30)))
+        tr = geom.makeTransition(wire.Edges[0], profile, transition.width, lambda x: -transition.height(x), steps=steps, limits=limit, ruled=True)
 
-    return tr
+        return tr
 
 
 
@@ -318,24 +322,23 @@ class NeckFeature:
         p = Vector(line.start.x, line.start.y + inst.headStock.width/2, 0)
 
         # Transition
-        ttrace = startTimeTrace("Headstock transition")
-        transitionLine = line.lerpLineTo(-inst.headStock.transitionLength).flipDirection()
-        transition = headstockTransition(
-            neckd, 
-            transitionLine, 
-            inst.headStock.depth, inst.headStock.thickness, inst.headStock.width,
-            inst.headStock.transitionLength, inst.headStock.transitionTension,
-            cut = False
-        )
+        with traceTime("Headstock transition"):
+            transitionLine = line.lerpLineTo(-inst.headStock.transitionLength).flipDirection()
+            transition = headstockTransition(
+                neckd, 
+                transitionLine, 
+                inst.headStock.depth, inst.headStock.thickness, inst.headStock.width,
+                inst.headStock.transitionLength, inst.headStock.transitionTension,
+                cut = False
+            )
 
-        # Cut transition top excess angled
-        alpha = deg(inst.headStock.angle)
-        sidep = [vxy(0,0), vxy(inst.headStock.length * math.cos(alpha), 0)]
-        sidep = sidep + [vxy(sidep[-1].x, -inst.headStock.length * math.sin(alpha)), sidep[0]]
-        cut = Part.Face(Part.makePolygon([geom.vecxz(v).add(p) for v in sidep])).extrude(Vector(0, -3*inst.headStock.width, 0))
-        if transition:
-            transition = transition.cut(cut)
-        ttrace()
+            # Cut transition top excess angled
+            alpha = deg(inst.headStock.angle)
+            sidep = [vxy(0,0), vxy(inst.headStock.length * math.cos(alpha), 0)]
+            sidep = sidep + [vxy(sidep[-1].x, -inst.headStock.length * math.sin(alpha)), sidep[0]]
+            cut = Part.Face(Part.makePolygon([geom.vecxz(v).add(p) for v in sidep])).extrude(Vector(0, -3*inst.headStock.width, 0))
+            if transition:
+                transition = transition.cut(cut)
 
         # Headstock Side extrusion: generate side profile and extrude horizontally
         sidep = [vxy(inst.headStock.transitionLength * math.cos(alpha), - inst.headStock.transitionLength * math.sin(alpha)), sidep[2]]
@@ -480,26 +483,27 @@ class NeckFeature:
         return part.removeSplitter()
 
     def tenon(self, inst, fbd, neckAngleRad, posXY, h):
-        if inst.neck.tenonThickness > 0 \
-            and inst.neck.tenonLength > 0 \
-                and inst.neck.joint is NeckJoint.SETIN:
-            
-            naLineDir = linexy(vxy(0,0), angleVxy(math.pi+neckAngleRad, inst.neck.tenonLength))
-            naAp = geom.vecxz(naLineDir.start)
-            naBp = geom.vecxz(naLineDir.end)
-            refp = geom.vec(posXY, inst.neck.tenonOffset -h + inst.neck.tenonThickness)
-            naSidePs = [
-                naAp, 
-                Vector(naAp.x, naAp.y, naAp.z - inst.neck.tenonThickness),
-                Vector(naBp.x, naBp.y, naBp.z - inst.neck.tenonThickness),
-                naBp,
-                naAp
-            ]
-            naSidePs = [v.add(refp) for v in naSidePs]
-            naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length, 0))
-            return naSide
-        else:
-            return None
+        with traceTime("Tenon"):
+            if inst.neck.tenonThickness > 0 \
+                and inst.neck.tenonLength > 0 \
+                    and inst.neck.joint is NeckJoint.SETIN:
+                
+                naLineDir = linexy(vxy(0,0), angleVxy(math.pi+neckAngleRad, inst.neck.tenonLength))
+                naAp = geom.vecxz(naLineDir.start)
+                naBp = geom.vecxz(naLineDir.end)
+                refp = geom.vec(posXY, inst.neck.tenonOffset -h + inst.neck.tenonThickness)
+                naSidePs = [
+                    naAp, 
+                    Vector(naAp.x, naAp.y, naAp.z - inst.neck.tenonThickness),
+                    Vector(naBp.x, naBp.y, naBp.z - inst.neck.tenonThickness),
+                    naBp,
+                    naAp
+                ]
+                naSidePs = [v.add(refp) for v in naSidePs]
+                naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length, 0))
+                return naSide
+            else:
+                return None
 
     #--------------------------------------------------------------------------
     def createVoluteSolid(self, neckd, line, headstock, excessCut, baseCutZ, voluteHeight, voluteStart):
@@ -510,76 +514,77 @@ class NeckFeature:
             fbd   : FredboardData
             line  : linexy, reference line
         """
-        ttrace = startTimeTrace("Volute")
-        inst = self.instrument
-        fbd = neckd.fbd
-        transition = headstockTransition(
-            neckd, 
-            line, 
-            inst.headStock.depth, inst.headStock.thickness, inst.headStock.width,
-            inst.headStock.transitionLength, inst.headStock.transitionTension,
-            cut = False, 
-            xdist = voluteStart, 
-            withHardClamp = inst.headStock.width + 20, 
-            heightHardClamp = 100
-        )
+        with traceTime("Volute"):
 
-        # Cut Bottom /\
-        ml = fbd.neckFrame.midLine.lerpLineTo(-inst.headStock.length)
-        pos = - voluteHeight - neckd.thicknessAt(0)
-        (a,b,c,d,_) = [Vector(p.x, p.y, pos+5) for p in ml.rectSym(inst.headStock.width)]
+            inst = self.instrument
+            fbd = neckd.fbd
+            transition = headstockTransition(
+                neckd, 
+                line, 
+                inst.headStock.depth, inst.headStock.thickness, inst.headStock.width,
+                inst.headStock.transitionLength, inst.headStock.transitionTension,
+                cut = False, 
+                xdist = voluteStart, 
+                withHardClamp = inst.headStock.width + 20, 
+                heightHardClamp = 100
+            )
 
-        extVec = Vector(0,0,voluteHeight)
-        points = [a, geom.vec(ml.start, pos), geom.vec(ml.end, pos), d, a]
-        ext1 = Part.Face(Part.makePolygon(points)).extrude(extVec)
+            # Cut Bottom /\
+            ml = fbd.neckFrame.midLine.lerpLineTo(-inst.headStock.length)
+            pos = - voluteHeight - neckd.thicknessAt(0)
+            (a,b,c,d,_) = [Vector(p.x, p.y, pos+5) for p in ml.rectSym(inst.headStock.width)]
 
-        points = [b, geom.vec(ml.start, pos), geom.vec(ml.end, pos), c, b]
-        ext2 = Part.Face(Part.makePolygon(points)).extrude(extVec)
+            extVec = Vector(0,0,voluteHeight)
+            points = [a, geom.vec(ml.start, pos), geom.vec(ml.end, pos), d, a]
+            ext1 = Part.Face(Part.makePolygon(points)).extrude(extVec)
 
-        bottom = ext1.fuse(ext2)
+            points = [b, geom.vec(ml.start, pos), geom.vec(ml.end, pos), c, b]
+            ext2 = Part.Face(Part.makePolygon(points)).extrude(extVec)
 
-        # Find a Good Intersection Point Between headstock and bottom triangle
-        # !Note about Freecad Bug Here: Sometimes Vertexes of common(..) are not accurate.
-        # !TODO: Find a Solution for accurancy
-        nearPoint = None
-        nearPointDistance = 1000
-        farPoint = None
-        farPointDistance = 0
-        for e in headstock.common(bottom).removeSplitter().Vertexes:
-            if e.Z == baseCutZ.z:
-                v = Vector(e.X, e.Y, e.Z)
-                dist = v.sub(baseCutZ).Length
-                if dist < nearPointDistance and v.x < baseCutZ.x:
-                    nearPoint = v
-                    nearPointDistance = dist
-                if dist > farPointDistance and v.x < baseCutZ.x:
-                    farPoint = v
-                    farPointDistance = dist
+            bottom = ext1.fuse(ext2)
 
-        # Cut Triangle >
-        center = line.clone().flipDirection().lerpLineTo(voluteStart).end
-        if nearPoint is None or farPoint is None:
-            """No Intersections, fallback to hard triangle from nut""" 
-            yline = fbd.neckFrame.nut
-            crect = [yline.start, center, yline.end, yline.start]
-        else:
-            """Good intersections, triangle from curved edge"""
-            crect = [
-                vxy(nearPoint.x-inst.headStock.transitionLength, nearPoint.y), 
-                nearPoint, 
-                center, 
-                farPoint, 
-                vxy(farPoint.x-inst.headStock.transitionLength, farPoint.y), 
-            ]
-            crect.append(crect[0])
-        crect = geom.extrusion(crect, 5, (0,0,-100))
+            # Find a Good Intersection Point Between headstock and bottom triangle
+            # !Note about Freecad Bug Here: Sometimes Vertexes of common(..) are not accurate.
+            # !TODO: Find a Solution for accurancy
+            nearPoint = None
+            nearPointDistance = 1000
+            farPoint = None
+            farPointDistance = 0
+            for e in headstock.common(bottom).removeSplitter().Vertexes:
+                if e.Z == baseCutZ.z:
+                    v = Vector(e.X, e.Y, e.Z)
+                    dist = v.sub(baseCutZ).Length
+                    if dist < nearPointDistance and v.x < baseCutZ.x:
+                        nearPoint = v
+                        nearPointDistance = dist
+                    if dist > farPointDistance and v.x < baseCutZ.x:
+                        farPoint = v
+                        farPointDistance = dist
 
-        if transition:
-            volute = transition.common(crect).common(excessCut).common(bottom)
-        else:
-            volute = crect.common(excessCut).common(bottom)
-        ttrace()
-        return volute
+            # Cut Triangle >
+            center = line.clone().flipDirection().lerpLineTo(voluteStart).end
+            if nearPoint is None or farPoint is None:
+                """No Intersections, fallback to hard triangle from nut""" 
+                yline = fbd.neckFrame.nut
+                crect = [yline.start, center, yline.end, yline.start]
+            else:
+                """Good intersections, triangle from curved edge"""
+                crect = [
+                    vxy(nearPoint.x-inst.headStock.transitionLength, nearPoint.y), 
+                    nearPoint, 
+                    center, 
+                    farPoint, 
+                    vxy(farPoint.x-inst.headStock.transitionLength, farPoint.y), 
+                ]
+                crect.append(crect[0])
+            crect = geom.extrusion(crect, 5, (0,0,-100))
+
+            if transition:
+                volute = transition.common(crect).common(excessCut).common(bottom)
+            else:
+                volute = crect.common(excessCut).common(bottom)
+
+            return volute
 
 
 
