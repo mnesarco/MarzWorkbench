@@ -130,6 +130,6 @@ def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, so
     
     if limits:
         with traceTime("Apply transition limits"):
-            loft = loft.common(limits)
+            loft = limits.common(loft)
     
     return loft

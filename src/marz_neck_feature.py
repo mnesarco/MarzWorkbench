@@ -136,7 +136,7 @@ def headstockTransition(neckd, line,
 
         h = headStockDepth + headStockThickness   
         startd = 0
-        trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(2*transitionLength)
+        trline = line.lerpLineTo(transitionLength).flipDirection().lerpLineTo(transitionLength)
         length = trline.length
 
         transition = HeadstockTransition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)

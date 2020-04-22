@@ -71,7 +71,7 @@ class Task(QtCore.QRunnable):
         self.signals = TaskSignals()
 
     def run(self):
-        with traceTime(f"[Thread] {id(QtCore.QThread.currentThread())} {self.fn.__name__}"):
+        with traceTime(f"[Thread-{id(QtCore.QThread.currentThread())}] {self.fn.__name__}"):
             try:
                 self.result = self.fn(*self.args, **self.kwargs)
             except BaseException as ex:
@@ -94,7 +94,7 @@ class Task(QtCore.QRunnable):
     @staticmethod
     def execute(fn, *args, **kwargs):
         t = Task(fn, *args, **kwargs)
-        Task.defaultThreadPool.start(t)
+        Task.defaultThreadPool.start(t, QtCore.QThread.HighestPriority)
         return t
 
     @staticmethod

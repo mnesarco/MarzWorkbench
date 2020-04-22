@@ -68,12 +68,12 @@ properties = [
     fcp('bridge.height',                16.363, "Height of the bridge from body's top to strings"),
 
     # Headstock
-    fcp('headStock.width',              80, 'Max width'),
+    fcp('headStock.width',              100, 'Max width'),
     fcp('headStock.length',             220, 'Max length'),
     fcp('headStock.thickness',          15, 'Thickness'),
     fcp('headStock.depth',              5, 'Depth (Flat)'),
     fcp('headStock.transitionLength',   20, 'Transition length'),
-    fcp('headStock.transitionTension',  8, 'Transition curve control'),
+    fcp('headStock.transitionTension',  5, 'Transition curve control'),
     fcp('headStock.voluteStart',        0, 'Volute Start distance'),
     fcp('headStock.angle',              9, 'Break Angle', ui='App::PropertyAngle'),
 

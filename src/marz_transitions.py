@@ -84,15 +84,17 @@ class CatenaryQuadraticTransition:
 
 class HeadstockTransition:
 
-  def __init__(self, wBase, hBase, wParam, hParam, start, length, wMax = 500, hMax = 500):
+  def __init__(self, wBase, hBase, wParam, hParam, start, length, wMax = 500, hMax = 200):
 
     def fnw(x):
-        w = wBase(x + start) + 2 * length * math.cosh(x/wParam) - 2*length
-        return w
+        b = wBase(x + start)
+        w = (length * math.cosh(x/wParam) - length)/4
+        return b + w
 
     def fnh(x):
-       h = hBase(x + start) + (length * math.cosh(x/hParam) - length)/4
-       return h
+       b = hBase(x + start)
+       h = (length * math.cosh(x/hParam) - length)/4
+       return b + h
 
     self.width = fnw
     self.height = fnh

@@ -9,7 +9,7 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   sodipodi:docname="example_custom_headstock.svg"
+   sodipodi:docname="example_custom_headstock-2.svg"
    height="98.199593mm"
    width="205.94521mm"
    inkscape:version="0.92.5 (0.92.5+68)"
@@ -30,14 +30,29 @@
     </rdf:RDF>
   </metadata>
   <defs
-     id="defs5" />
+     id="defs5">
+    <marker
+       inkscape:stockid="Arrow1Lend"
+       orient="auto"
+       refY="0.0"
+       refX="0.0"
+       id="Arrow1Lend"
+       style="overflow:visible;"
+       inkscape:isstock="true">
+      <path
+         id="path838"
+         d="M 0.0,0.0 L 5.0,-5.0 L -12.5,0.0 L 5.0,5.0 L 0.0,0.0 z "
+         style="fill-rule:evenodd;stroke:#ff0000;stroke-width:1pt;stroke-opacity:1;fill:#ff0000;fill-opacity:1"
+         transform="scale(0.8) rotate(180) translate(12.5,0)" />
+    </marker>
+  </defs>
   <sodipodi:namedview
      inkscape:current-layer="svg2"
      inkscape:window-y="0"
      inkscape:window-x="0"
-     inkscape:cy="75.248474"
-     inkscape:cx="126.26249"
-     inkscape:zoom="1.0602032"
+     inkscape:cy="161.41319"
+     inkscape:cx="518.4149"
+     inkscape:zoom="0.95443927"
      id="base"
      pagecolor="#ffffff"
      bordercolor="#666666"
@@ -56,7 +71,7 @@
      inkscape:snap-global="false" />
   <path
      style="fill:none;stroke:#000000;stroke-width:0.70866138;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="M 2.6527933,169.41399 H 167.16225"
+     d="M 41.83736,169.41399 H 206.34682"
      id="midline"
      inkscape:connector-curvature="0"
      inkscape:label="ref" />
@@ -87,9 +102,10 @@
   <path
      inkscape:connector-curvature="0"
      style="fill:none;stroke:#231f20;stroke-width:0.65283138;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-     d="m 221.85816,298.02623 c 212.25688,-25.53565 470.10803,15.35556 470.10803,15.35556 0,0 -8.28861,-57.69525 14.11421,-82.95675 32.38083,-36.51393 7.4368,-58.79819 4.76437,-61.00977 2.65336,-2.19503 27.635,-24.48246 -4.76045,-61.01233 C 683.6815,83.1408 691.96998,25.44619 691.96998,25.44619 c 0,0 -258.18135,38.59865 -470.10804,15.35556 -8.55953,-0.93845 -53.78338,51.32121 -137.162175,49.75161 0,0 -0.0052,157.72126 -0.0052,157.72126 83.378795,-1.57088 128.614135,50.77931 137.163485,49.75161 z"
+     d="m 147.54055,307.75003 c 212.25688,-25.53565 544.42564,5.63176 544.42564,5.63176 0,0 -8.28861,-57.69525 14.11421,-82.95675 32.38083,-36.51393 7.4368,-58.79819 4.76437,-61.00977 2.65336,-2.19503 27.635,-24.48246 -4.76045,-61.01233 C 683.6815,83.1408 691.96998,25.44619 691.96998,25.44619 c 0,0 -332.15546,28.180293 -544.08215,4.937203 L 147.91,40.80175 v 49.75161 157.72126 49.75161 z"
      id="contour"
-     inkscape:label="#path1198" />
+     inkscape:label="#path1198"
+     sodipodi:nodetypes="cccccccccccc" />
   <path
      inkscape:label="#path842"
      inkscape:connector-curvature="0"
@@ -162,4 +178,21 @@
      id="h11_500_1000"
      inkscape:connector-curvature="0"
      inkscape:label="#path847" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-weight:normal;font-size:37.5px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:0.93749994"
+     x="231.81148"
+     y="-68.52359"
+     id="text831"><tspan
+       sodipodi:role="line"
+       id="tspan829"
+       x="231.81148"
+       y="-68.52359"
+       style="font-size:14.99999905px;fill:#ff0000;stroke-width:0.93749994">Leave some material here to be removed by the Transition Algorithm</tspan></text>
+  <path
+     style="fill:none;stroke:#ff0000;stroke-width:0.93749994px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;marker-end:url(#Arrow1Lend)"
+     d="m 234.75825,-56.736561 c 14.58073,58.2603185 -30.4775,19.83627 -36.34333,82.509175"
+     id="path833"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="cc" />
 </svg>
