@@ -98,12 +98,16 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     # Find contour and midline by id
     contour = None
     midline = None
+    transition = None
     pockets = []
+
     for obj in doc.Objects:
         if obj.Name == 'contour':
             contour = obj
         elif obj.Name == 'midline':
             midline = obj
+        elif obj.Name == 'transition':
+            transition = obj
         else:
             extractPocket(obj, pockets)
 
@@ -131,6 +135,14 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
 
     anchor = anchor or Vector(0,0,0) # If no reference anchor
 
+    # Find transition Segment
+    wtransition = None
+    if transition:
+        (d, vs, es) = transition.Shape.distToShape( contour.Shape )
+        if d < 1e-5 and len(vs) > 1:
+            wtransition = Part.Wire( Part.Shape( [Part.LineSegment(vs[0][0], vs[1][0])] ) )
+            wtransition.translate( -anchor )
+
     # Build pockets compound
     solids = []
     for pocket in pockets:
@@ -143,6 +155,8 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     # Restore Active Doc
     App.setActiveDocument(workingDoc.Name)
     App.closeDocument(doc.Name)
+
+    # ---------------------------------------------
 
     # Build pockets
     def merge(base, s):
@@ -172,6 +186,9 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     # Add contour to document
     if wcontour:
         geom.addOrUpdatePart(wcontour, baseName + '_Contour', 'Contour', visibility=False)
+
+    if wtransition:
+        geom.addOrUpdatePart(wtransition, baseName + '_Transition', 'Transition', visibility=False)
 
     # Recalculate
     App.ActiveDocument.getObject(MarzInstrument.NAME).touch()

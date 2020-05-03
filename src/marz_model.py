@@ -13,7 +13,7 @@ __maintainer__   = "https://github.com/mnesarco"
 import math
 import functools
 from enum import Enum
-from marz_transitions import TransitionFunction
+from marz_transitions import TransitionFunction, HeadstockTransitionFunction
 
 FRET_RATIO = 1.05946309436
 """Harmonic Constant for Fret calculations: 2^(1/12)"""
@@ -371,25 +371,36 @@ class HeadStock(Feature):
     HeadStock Fearure
     """
 
-    def __init__(self, instrument, width = 80.0, length = 220.0, thickness = 15.0, angle = deg(9),
-                 depth = 7, voluteStart = 30.0, transitionLength = 15, transitionTension = 10):
+    def __init__(self, 
+        instrument, width = 80.0, 
+        length = 220.0, 
+        thickness = 15.0, 
+        angle = deg(9),
+        depth = 7, 
+        voluteRadius = 50.0, 
+        transitionParamHorizontal = 0.5,
+        voluteOffset = 10,
+        topTransitionLength = 20):
         """
         Paramaters:
             width       : Max width
             length      : Max Length
             thickness   : Thickness
             angle       : Break angle
-            voluteStart : Distance from nut to volute end (headstock side)
+            voluteRadius: Radius of the volute, 0 means flat
+            transitionParamHorizontal: Percentage of transition curve control point on horizontal reference
+            transitionParamVertical: Added height of the transition
         """
         super().__init__(instrument)
         self.width = width
         self.length = length
         self.thickness = thickness
         self.depth = depth
-        self.transitionLength = transitionLength
-        self.transitionTension = transitionTension
         self.angle = angle
-        self.voluteStart = voluteStart
+        self.voluteRadius = voluteRadius
+        self.transitionParamHorizontal = transitionParamHorizontal
+        self.voluteOffset = voluteOffset
+        self.topTransitionLength = topTransitionLength
 
 class Bridge(Feature):
     """

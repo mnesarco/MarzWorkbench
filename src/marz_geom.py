@@ -15,9 +15,11 @@ import FreeCADGui as Gui
 import Show
 from FreeCAD import Placement, Rotation, Vector
 import Part
+import marz_geom as geom
 from marz_threading import RunInUIThread
 from marz_ui import featureToBody
 from marz_utils import traceTime
+import math
 
 def vec(v, z = 0):
     """Convert vxy to Vector"""
@@ -103,33 +105,66 @@ def addOrUpdatePart(shape, name, label=None, visibility=True):
     obj = App.ActiveDocument.getObject(name)
     if obj is None:
         obj = App.ActiveDocument.addObject("Part::Feature", name)
-        if label:
-            obj.Label = label
+        obj.Label = label or name
     obj.Shape = shape
     obj.ViewObject.Visibility = visibility
 
-def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True):
+def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True, useProfileTransition=False, angle=0, lastHeight=40):
 
     with traceTime("Prepare transition geometry"):
         curve = edge.Curve
         points = edge.discretize(Number=steps+1)
         direction = curve.Direction
-        step = edge.Length/steps
+        length = edge.Length
+        step = length/steps
         rot = Rotation(Vector(0,0,1), direction)
         def wire(i):
             l = i * step
-            w = fnWidth(l)
             h = fnHeight(l)
-            p = fnProfile(w,h)
-            p.Placement = Placement(points[i], rot)
+            point = Vector(points[i].x, points[i].y, points[i].z)
+            if angle != 0:
+                point.z = -l * math.tan(angle)
+            if useProfileTransition:
+                progress = l/length
+                w = fnWidth(i)
+                p = fnProfile.transition(w, h, i, l/length, length, lastHeight)
+                if p: p.Placement = Placement(point, rot)
+            else:
+                w = fnWidth(l)
+                p = fnProfile(w,h)
+                if p: p.Placement = Placement(point, rot)
             return p
+
         wires = [ wire(i) for i in range(steps+1) ]
+        wires = [ w for w in wires if w is not None]
 
     with traceTime("Make transition solid"):
-        loft = Part.makeLoft(wires, solid, ruled)
+        loft = Part.makeLoft(wires, solid, not useProfileTransition)
     
     if limits:
         with traceTime("Apply transition limits"):
             loft = limits.common(loft)
     
     return loft
+
+def bspSegment(curve, a, b):
+    curve = curve.copy()
+    curve.segment(a, b)
+    return curve
+
+def bsp3p(a, b, c):
+    curve = Part.BSplineCurve()
+    curve.interpolate([a,b,c])
+    return curve
+
+def bspDiscretize(curve, n):
+    params = [ curve.parameter(p) for p in curve.discretize(n+1) ]
+    return [ bspSegment(curve, a, b) for a, b in zip(params, params[1:]) ]
+
+def wireFromPrim(primitives):
+    return Part.Wire(Part.Shape(primitives).Edges)
+
+def sectionSegment(shape, line):
+    (d, vs, es) = line.distToShape( shape )
+    if d < 1e-5 and len(vs) > 1:
+        return Part.LineSegment(vs[0][0], vs[1][0])

@@ -10,9 +10,10 @@ __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
 from marz_neck_profile import NeckProfile
-from marz_model import FretboardCut, NeckJoint, NutPosition, NutSpacing, inches, TransitionFunction
+from marz_model import FretboardCut, NeckJoint, NutPosition, NutSpacing, inches
 from marz_properties import FreecadPropertiesHelper
 from marz_properties import FreecadPropertyHelper as fcp
+from marz_transitions import HeadstockTransitionFunction, TransitionFunction
 
 # All Instrument Properties
 properties = [
@@ -68,14 +69,15 @@ properties = [
     fcp('bridge.height',                16.363, "Height of the bridge from body's top to strings"),
 
     # Headstock
-    fcp('headStock.width',              100, 'Max width'),
-    fcp('headStock.length',             220, 'Max length'),
-    fcp('headStock.thickness',          15, 'Thickness'),
-    fcp('headStock.depth',              5, 'Depth (Flat)'),
-    fcp('headStock.transitionLength',   20, 'Transition length'),
-    fcp('headStock.transitionTension',  5, 'Transition curve control'),
-    fcp('headStock.voluteStart',        0, 'Volute Start distance'),
-    fcp('headStock.angle',              9, 'Break Angle', ui='App::PropertyAngle'),
+    fcp('headStock.width',                       100, 'Default Width if no custom contour is provided'),
+    fcp('headStock.length',                      220, 'Default Length if no custom contour is provided'),
+    fcp('headStock.thickness',                    15, 'Thickness'),
+    fcp('headStock.depth',                         5, 'Depth (only apply if Flat)'),
+    fcp('headStock.angle',                         9, 'Break Angle', ui='App::PropertyAngle'),
+    fcp('headStock.transitionParamHorizontal',   0.5, 'Transition stiffness', ui="App::PropertyFloat", name="HeadStock_TransitionStiffness"),
+    fcp('headStock.voluteRadius',                 50, 'Volute radius. If zero then no volute'),
+    fcp('headStock.voluteOffset',                 10, 'Volute offset into the neck'),
+    fcp('headStock.topTransitionLength',          20, 'Length of the transition between nut and top of the headstock in Flat headstocks. Ignored if angle is greater than zero'),
 
     # Truss Rod Channel
     fcp('trussRod.length',              430, 'Total Length of trussRod'),
