@@ -207,6 +207,7 @@ def voluteCutFlat(pos, thickness, depth, angle, voluteOffset):
         Vector(pos.x - voluteOffset, -width, pos.z)
     ])
     height = (thickness + (0 if angle > 0 else depth)) * math.cos(angle)
+    height = height - voluteOffset * math.sin(angle)
     pol.translate(Vector(0, 0, -height))
     wire = geom.wireFromPrim(pol)
     solid = Part.Face(wire).extrude(Vector(0, 0, -400))
