@@ -29,7 +29,9 @@ from marz_ui import (createPartBody, errorDialog, Log,
                      updatePartShape, deletePart)
 from marz_vxy import angleVxy, vxy
 from marz_neck_feature import NeckFeature
+from marz_utils import traced
 
+@traced('Make Body Part')
 def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
     """Create Body Top or Back   
     Arguments:
@@ -93,6 +95,7 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
 
     return comp
 
+@traced('Make Body')
 def blanks(inst, bodyd):
     
     angle = deg(bodyd.neckAngle)
@@ -107,7 +110,7 @@ def blanks(inst, bodyd):
     top = createBodyComp(bodyd, bodyd.topThickness, t, 0, top=True) 
 
     # Pocket
-    heel = NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine)
+    heel = NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine, forPocket=True)
     if top:
         top = top.cut(heel)
     back = back.cut(heel)

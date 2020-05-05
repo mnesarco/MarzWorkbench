@@ -110,7 +110,7 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
 @traced('Make Heel')
 def makeHeel(neckd, line, angle, joint, backThickness, topThickness, 
     topOffset, neckPocketDepth, neckPocketLength, jointFret, transitionLength,
-    transitionTension, bodyLength, tenonThickness, tenonLength, tenonOffset):
+    transitionTension, bodyLength, tenonThickness, tenonLength, tenonOffset, forPocket):
     """
     Create heel shape.
 
@@ -125,13 +125,17 @@ def makeHeel(neckd, line, angle, joint, backThickness, topThickness,
     else:
         h = neckPocketDepth + topOffset
 
-    # Curved Part
+    if forPocket:
+        jointFret = 0
+
     start_p = lineIntersection(fbd.frets[jointFret], line).point
     start_d = linexy(line.start, start_p).length
-    transitionJob = Task.execute(heelTransition, neckd, line, start_d, h, transitionLength, transitionTension)
 
-    x = start_d + transitionLength
-    xperp = line.lerpLineTo(x).perpendicularCounterClockwiseEnd()
+    # Curved Part
+    if not forPocket:
+        transitionJob = Task.execute(heelTransition, neckd, line, start_d, h, transitionLength, transitionTension)
+
+    xperp = line.lerpLineTo(start_d + transitionLength).perpendicularCounterClockwiseEnd()
     a = lineIntersection(xperp, fbd.neckFrame.treble).point
     b = lineIntersection(xperp, fbd.neckFrame.bass).point
     c = fbd.neckFrame.bridge.end
@@ -148,7 +152,14 @@ def makeHeel(neckd, line, angle, joint, backThickness, topThickness,
         part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
         return part
 
-    (transition, part) = Task.joinAll([transitionJob, Task.execute(heelBase)])
+    partJob = Task.execute(heelBase)
+
+    if not forPocket:
+        transition = transitionJob.get()
+    else:
+        transition = None
+
+    part = partJob.get()
 
     if transition:
         part = transition.fuse(part)
@@ -194,7 +205,7 @@ def makeHeel(neckd, line, angle, joint, backThickness, topThickness,
     part = part.cut(naSide)
 
     # Tenon
-    tenon = makeTenon(fbd, neckAngleRad, d, h, tenonThickness, tenonLength, tenonOffset, joint)
+    tenon = makeTenon(fbd, neckAngleRad, d, h, tenonThickness + 100 if forPocket else tenonThickness, tenonLength, tenonOffset, joint)
     if tenon:
         part = part.fuse(tenon)
 
@@ -298,12 +309,12 @@ class NeckFeature:
         return neck.removeSplitter()   
 
     #--------------------------------------------------------------------------
-    def heel(self, neckd, line):
+    def heel(self, neckd, line, forPocket=False):
         body = self.instrument.body
         neck = self.instrument.neck
         return makeHeel(neckd, line, neck.angle, neck.joint, body.backThickness, body.topThickness, neck.topOffset,
             body.neckPocketDepth, body.neckPocketLength, neck.jointFret, neck.transitionLength, neck.transitionTension, 
-            body.length, neck.tenonThickness, neck.tenonLength, neck.tenonOffset)
+            body.length, neck.tenonThickness, neck.tenonLength, neck.tenonOffset, forPocket)
 
     #--------------------------------------------------------------------------
     def createPart(self):
