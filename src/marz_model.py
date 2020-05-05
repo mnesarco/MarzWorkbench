@@ -13,7 +13,7 @@ __maintainer__   = "https://github.com/mnesarco"
 import math
 import functools
 from enum import Enum
-from marz_transitions import TransitionFunction, HeadstockTransitionFunction
+from marz_transitions import TransitionFunction
 
 FRET_RATIO = 1.05946309436
 """Harmonic Constant for Fret calculations: 2^(1/12)"""

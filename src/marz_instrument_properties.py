@@ -13,7 +13,7 @@ from marz_neck_profile import NeckProfile
 from marz_model import FretboardCut, NeckJoint, NutPosition, NutSpacing, inches
 from marz_properties import FreecadPropertiesHelper
 from marz_properties import FreecadPropertyHelper as fcp
-from marz_transitions import HeadstockTransitionFunction, TransitionFunction
+from marz_transitions import TransitionFunction
 
 # All Instrument Properties
 properties = [
