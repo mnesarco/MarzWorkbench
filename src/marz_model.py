@@ -92,6 +92,7 @@ class Instrument:
         self.body = Body(self)
         self.trussRod = TrussRod(self)
         self.internal = InternalProps(self)
+        self.autoUpdate = AutoUpdate(self)
 
     def getSerializable(self):
         s = {}
@@ -489,6 +490,13 @@ class InternalProps(Feature):
         self.bodyImport = 0
         self.headstockImport = 0
         self.inlayImport = 0
+
+class AutoUpdate(Feature):
+    def __init__(self, instrument):
+        super().__init__(instrument)
+        self.fretboard = True
+        self.neck = True
+        self.body = True
 
 class ModelException(Exception):
     """

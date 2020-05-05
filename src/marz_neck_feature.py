@@ -330,7 +330,8 @@ class NeckFeature:
         """
         Update part shape
         """
-        part = App.ActiveDocument.getObject(NeckFeature.NAME)
-        if part is not None:
-            updatePartShape(part, self.createShape())
+        if self.instrument.autoUpdate.neck:
+            part = App.ActiveDocument.getObject(NeckFeature.NAME)
+            if part is not None:
+                updatePartShape(part, self.createShape())
 

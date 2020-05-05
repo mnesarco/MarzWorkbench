@@ -115,6 +115,11 @@ properties = [
     fcp('internal.headstockImport',     0, ui='App::PropertyInteger', mode=4),
     fcp('internal.inlayImport',         0, ui='App::PropertyInteger', mode=4),
 
+    # AutoUpdate
+    fcp('autoUpdate.fretboard',         True, ui='App::PropertyBool'),
+    fcp('autoUpdate.neck',              True, ui='App::PropertyBool'),
+    fcp('autoUpdate.body',              True, ui='App::PropertyBool'),
+
 ]
 
 InstrumentProps = FreecadPropertiesHelper(properties)

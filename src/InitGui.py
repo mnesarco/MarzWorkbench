@@ -41,9 +41,6 @@ class Marz(Workbench):
             "MarzCmdImportFretInlays",
         ]
 
-        if isVersion19():
-            cmds.append("MarzCmdToggleAutocompute")
-
         self.appendToolbar("Marz Guitar Design", cmds)
         self.appendMenu("&Guitar", cmds + ['MarzCmdShowAboutWindow'])
 

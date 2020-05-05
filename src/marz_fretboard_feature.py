@@ -292,9 +292,10 @@ class FretboardFeature:
             createPartBody(self.createFretboardShape(), FretboardFeature.NAME, "Fretboard", True)
 
     def updateFretboardShape(self):
-        part = App.ActiveDocument.getObject(FretboardFeature.NAME)
-        if part is not None:
-            updatePartShape(part, self.createFretboardShape())
+        if self.instrument.autoUpdate.fretboard:
+            part = App.ActiveDocument.getObject(FretboardFeature.NAME)
+            if part is not None:
+                updatePartShape(part, self.createFretboardShape())
 
     def createConstructionShapes(self):
         shapes = [] # [ (label, shape, color) ]

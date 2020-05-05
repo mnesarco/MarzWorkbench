@@ -31,8 +31,8 @@ from marz_vxy import angleVxy, vxy
 from marz_neck_feature import NeckFeature
 from marz_utils import traced
 
-@traced('Make Body Part')
-def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
+@PureFunctionCache
+def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False, externalDependencies={}):
     """Create Body Top or Back   
     Arguments:
         bodyd {BodyData} -- Body's data
@@ -95,8 +95,8 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
 
     return comp
 
-@traced('Make Body')
-def blanks(inst, bodyd):
+traced("Make Body")
+def makeBody(inst, bodyd, externalDependencies={}):
     
     angle = deg(bodyd.neckAngle)
     y = -bodyd.width/2
@@ -104,15 +104,21 @@ def blanks(inst, bodyd):
     b = Vector(x,y,0)
 
     b = b.add(Vector(bodyd.totalThicknessWithOffset()*math.sin(angle), 0, -bodyd.totalThicknessWithOffset()*math.cos(angle)))
-    back = createBodyComp(bodyd, bodyd.backThickness, b, bodyd.topThickness, back=True)
+    backJob = Task.execute(createBodyComp, bodyd, bodyd.backThickness, b, bodyd.topThickness, back=True, externalDependencies=externalDependencies)
 
     t = Vector(b.x - bodyd.backThickness*math.sin(angle), y, b.z + bodyd.backThickness*math.cos(angle))
-    top = createBodyComp(bodyd, bodyd.topThickness, t, 0, top=True) 
+    topJob = Task.execute(createBodyComp, bodyd, bodyd.topThickness, t, 0, top=True, externalDependencies=externalDependencies)
 
-    # Pocket
-    heel = NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine, forPocket=True)
+    def makePocket():
+        return NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine, forPocket=True)
+
+    heelJob = Task.execute(makePocket)
+
+    back, top, heel = Task.joinAll([backJob, topJob, heelJob])
+
     if top:
         top = top.cut(heel)
+
     back = back.cut(heel)
         
     return (top, back)
@@ -131,7 +137,7 @@ class BodyFeature:
     def createShapes(self):
         inst = self.instrument
         bodyd = BodyData(inst, NeckData(inst, builder.buildFretboardData(inst)))
-        return blanks(inst, bodyd)
+        return makeBody(inst, bodyd, externalDependencies={'custom':inst.internal.bodyImport})
 
     #--------------------------------------------------------------------------
     def createPart(self):
@@ -148,23 +154,24 @@ class BodyFeature:
                 createPartBody(back, BodyFeature.NAME + "_Back", "BodyBack", True)
 
     #--------------------------------------------------------------------------
-    def updatePart(self):
+    def updatePart(self):       
         """
         Update part shape
         """
-        topPart = App.ActiveDocument.getObject(BodyFeature.NAME + "_Top")
-        backPart = App.ActiveDocument.getObject(BodyFeature.NAME + "_Back")
-        if topPart is not None or backPart is not None:
-            (top, back) = self.createShapes()
-            if topPart is not None:
-                if top is None:
-                    deletePart(topPart)
+        if self.instrument.autoUpdate.body:
+            topPart = App.ActiveDocument.getObject(BodyFeature.NAME + "_Top")
+            backPart = App.ActiveDocument.getObject(BodyFeature.NAME + "_Back")
+            if topPart is not None or backPart is not None:
+                (top, back) = self.createShapes()
+                if topPart is not None:
+                    if top is None:
+                        deletePart(topPart)
+                    else:
+                        updatePartShape(topPart, top)
                 else:
-                    updatePartShape(topPart, top)
-            else:
-                if top is not None:
-                    createPartBody(top, BodyFeature.NAME + "_Top", "BodyTop", True)
-            if backPart is not None:
-                updatePartShape(backPart, back)
+                    if top is not None:
+                        createPartBody(top, BodyFeature.NAME + "_Top", "BodyTop", True)
+                if backPart is not None:
+                    updatePartShape(backPart, back)
 
 
