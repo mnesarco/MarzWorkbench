@@ -11,9 +11,7 @@ __maintainer__   = "https://github.com/mnesarco"
 
 import FreeCAD as App
 from PySide import QtCore
-import math
-from marz_utils import traceTime
-from functools import reduce
+import traceback
 
 #! -----------------------------------------------------------------------------
 #! Note:
@@ -71,14 +69,17 @@ class Task(QtCore.QRunnable):
         self.signals = TaskSignals()
 
     def run(self):
-        with traceTime(f"[Thread-{id(QtCore.QThread.currentThread())}] {self.fn.__name__}"):
-            try:
-                self.result = self.fn(*self.args, **self.kwargs)
-            except BaseException as ex:
-                self.error = ex
-            finally:
-                self._isTerminated = True
-                self.signals.onComplete.emit((self.result, self.error, self))
+        try:
+            self.result = self.fn(*self.args, **self.kwargs)
+        except BaseException as ex:
+            self.error = ex
+        except Exception as ex:
+            self.error = ex
+        except:
+            self.error = BaseException(traceback.format_exc())
+        finally:
+            self._isTerminated = True
+            self.signals.onComplete.emit((self.result, self.error, self))
 
     def get(self):
         """
@@ -98,7 +99,7 @@ class Task(QtCore.QRunnable):
         return t
 
     @staticmethod
-    def joinAll(jobs, pool = None):
+    def joinAll(jobs):
         """
         Wait for all jobs to complete. 
         Throws: First exception encountered after all jobs are completed.

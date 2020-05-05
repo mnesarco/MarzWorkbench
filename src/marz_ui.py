@@ -26,6 +26,11 @@ MARZ_RESOURCES_PATH = os.path.join(MARZ_DIR, 'Resources')
 MARZ_ICONS_PATH = os.path.join(MARZ_RESOURCES_PATH, 'icons')
 MARZ_GRAPHICS_PATH = os.path.join(MARZ_RESOURCES_PATH, 'graphics')
 
+UIGroup_Parts = ('Marz_Group_Parts', 'Instrument Parts')
+UIGroup_Imports = ('Marz_Group_Imports', 'Instrument Imports')
+UIGroup_Tmp = ('Marz_Group_Tmp', 'tmp')
+UIGroup_XLines = ('Marz_Group_Construction', 'Instrument Reference Constructions')
+
 @RunInUIThread
 def Msg(text):
     App.Console.PrintMessage(f"[MARZ] {text}\n")
@@ -80,21 +85,6 @@ def getBodyByFeatureName(name):
     return None
 
 @RunInUIThread
-def featureToBody(feature, name = None):
-    body = App.activeDocument().addObject('PartDesign::Body', name or getBodyName(feature.Label))
-
-    Gui.activateView('Gui::View3DInventor', True)
-    Gui.activeView().setActiveObject('pdbody', body)
-    Gui.Selection.clearSelection()
-    Gui.Selection.addSelection(body)
-
-    if fc.isVersion19():
-        feature.adjustRelativeLinks(body)
-        body.ViewObject.dropObject(feature,None,'',[])
-    elif fc.isVersion18():
-        body.BaseFeature = feature
-        
-@RunInUIThread
 def runDeferred(block, delay=0):
     QtCore.QTimer.singleShot(delay, block)
 
@@ -109,22 +99,39 @@ def setCheckableActionState(name, state):
             action.blockSignals(False)       
     runDeferred(fn)
 
+def getUIGroup(gid = UIGroup_Parts):
+    group = App.ActiveDocument.getObject(gid[0])
+    if group is None:
+        group = App.ActiveDocument.addObject("App::DocumentObjectGroup", gid[0])
+        group.Label = gid[1]
+    return group
+
 @RunInUIThread
 def createPartBody(shape, name, label, fitView = False):
     part = App.ActiveDocument.addObject("Part::Feature", name)
     part.Label = label
     part.Shape = shape
-    featureToBody(part)
+    getUIGroup(UIGroup_Parts).addObject(part)
     if fitView: viewIsometricFit()
+
+
+@RunInUIThread
+def deletePart(part):
+    App.ActiveDocument.removeObject(part.Name)
+
+@RunInUIThread
+def addOrUpdatePart(shape, name, label=None, visibility=True, group=UIGroup_Parts):
+    obj = App.ActiveDocument.getObject(name)
+    if obj is None:
+        obj = App.ActiveDocument.addObject("Part::Feature", name)
+        obj.Label = label or name
+        obj.ViewObject.Visibility = visibility
+        getUIGroup(group).addObject(obj)
+    obj.Shape = shape
 
 @RunInUIThread
 def updatePartShape(part, shape):
     part.Shape = shape
-
-@RunInUIThread
-def recomputeActiveDocument(fitView = False):
-    App.ActiveDocument.recompute()
-    if fitView: viewIsometricFit()
 
 @RunInUIThread
 def updateDraftPoints(draft, points):

@@ -14,6 +14,7 @@ import Part
 from FreeCAD import Placement, Rotation, Vector
 import marz_geom as geom
 import math
+from marz_cache import PureFunctionCache
 
 class BoundProfile:
     """Profile builder bound to neck and profile"""
@@ -32,6 +33,9 @@ class BoundProfile:
         vs.rotate(Vector(0,0,0), Vector(0,1,0), -90)
         vs.translate(pos)
         return vs
+    #!Important: Cache
+    def __hash__(self):
+        return hash(self.profile.name) #! dependency on widthAt, thicknessAt can be a problem
 
 def getDefaultTop(pos, width, length, profile, angle, transitionLength):
     """Generate default contour and transitionEnd if no custom reference is provided"""
@@ -192,8 +196,9 @@ def voluteCutCylinder(radius, end, thickness, angle):
         pnt + Vector(-radius, 0, 0)
     ])
     rec = Part.Face(rec)
-    rec = rec.extrude(Vector(0,0,-300))
-    return cyl.fuse(rec)
+    rec = rec.extrude(Vector(0,0,-max(radius, 200)))
+    solid = cyl.fuse(rec)
+    return solid
 
 def voluteCutFlat(pos, thickness, depth, angle, voluteOffset):
     """Generate solid to cut from the bottom of the construction"""
@@ -322,8 +327,9 @@ def interpretTransitionParamHorizontal(p):
     if p <= 1.0: return p
     return p / (10**math.ceil(math.log10(p)))
 
+@PureFunctionCache
 def build(pos, angle, profile, thickness, transitionParamHorizontal, voluteRadius, voluteOffset, depth, topTransitionLength, 
-    defaultWidth = 120, defaultLength = 200, defaultTransitionLength = 30):
+    defaultWidth = 120, defaultLength = 200, defaultTransitionLength = 30, indirectDependencies={}):
 
     """
     Build a headstock solid.

@@ -15,20 +15,19 @@ import math
 import FreeCAD as App
 import marz_fretboard_builder as builder
 import marz_geom as geom
-import marz_math as xmath
-from FreeCAD import Placement, Rotation, Vector
 import Part
+from FreeCAD import Placement, Rotation, Vector
 from marz_cache import PureFunctionCache, getCachedObject
 from marz_linexy import lineIntersection, linexy
 from marz_model import NeckJoint, deg, fret
 from marz_neck_data import NeckData
-from marz_threading import Task
-from marz_ui import (createPartBody, recomputeActiveDocument,
-                     updatePartShape)
-from marz_utils import traceTime
-from marz_vxy import angleVxy, vxy
 from marz_neck_profile import getNeckProfile
-from marz_transitions import transitionDatabase, HeadstockTransitionFunction, CustomHeadstockTransition
+from marz_threading import Task
+from marz_transitions import transitionDatabase
+from marz_ui import createPartBody, updatePartShape
+from marz_utils import traceTime, traced
+from marz_vxy import angleVxy, vxy
+import marz_headstock as hs
 
 #--------------------------------------------------------------------------
 @PureFunctionCache
@@ -40,7 +39,7 @@ def barrell(neckd, fret):
         necks   : NeckData
         fret    : end fret
     """
-    with traceTime("Make Beck Barrell"):
+    with traceTime("Make Neck Barrell"):
         profile = getNeckProfile(neckd.profileName)
         line = neckd.lineToFret(fret)
         wire = Part.Wire( Part.LineSegment(geom.vec(line.start), geom.vec(line.end)).toShape() )
@@ -98,12 +97,132 @@ def heelTransition(neckd, line, startd, h, transitionLength, transitionTension):
         transition = Transition(neckd.widthAt, neckd.thicknessAt, transitionTension, transitionTension, startd, length)
         profile = getNeckProfile(neckd.profileName)
         wire = Part.Wire( Part.LineSegment(geom.vec(trline.start), geom.vec(trline.end)).toShape() )
-        steps = int(trline.length/2)+1
+        steps = int(trline.length/4)+1
 
         limit = geom.extrusion(neckd.fbd.neckFrame.polygon, 0, Vector(0,0,-h))
-        tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=True)
+        tr = geom.makeTransition(wire.Edges[0], profile, transition.width, transition.height, steps=steps, limits=limit, ruled=False)
 
         return tr
+
+
+#------------------------------------------------------------------------------
+@PureFunctionCache
+@traced('Make Heel')
+def makeHeel(neckd, line, angle, joint, backThickness, topThickness, 
+    topOffset, neckPocketDepth, neckPocketLength, jointFret, transitionLength,
+    transitionTension, bodyLength, tenonThickness, tenonLength, tenonOffset):
+    """
+    Create heel shape.
+
+    Args:
+        fbd   : FredboardData
+        line  : linexy, reference line
+    """
+    fbd = neckd.fbd
+    neckAngleRad = deg(angle)
+    if joint is NeckJoint.THROUHG:
+        h = backThickness + topThickness + topOffset
+    else:
+        h = neckPocketDepth + topOffset
+
+    # Curved Part
+    start_p = lineIntersection(fbd.frets[jointFret], line).point
+    start_d = linexy(line.start, start_p).length
+    transitionJob = Task.execute(heelTransition, neckd, line, start_d, h, transitionLength, transitionTension)
+
+    x = start_d + transitionLength
+    xperp = line.lerpLineTo(x).perpendicularCounterClockwiseEnd()
+    a = lineIntersection(xperp, fbd.neckFrame.treble).point
+    b = lineIntersection(xperp, fbd.neckFrame.bass).point
+    c = fbd.neckFrame.bridge.end
+    d = fbd.neckFrame.bridge.start
+
+    # Rect Part
+    def heelBase():
+        segments = [
+            Part.LineSegment(geom.vec(b), geom.vec(c)),
+            Part.LineSegment(geom.vec(c), geom.vec(d)),
+            Part.LineSegment(geom.vec(d), geom.vec(a)),
+            Part.LineSegment(geom.vec(a), geom.vec(b)),
+        ] 
+        part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
+        return part
+
+    (transition, part) = Task.joinAll([transitionJob, Task.execute(heelBase)])
+
+    if transition:
+        part = transition.fuse(part)
+
+    # Neck Angle Cut (Bottom)
+    extrusionDepth = 100
+    lengthDelta = max(neckPocketLength, (fbd.neckFrame.midLine.length - start_d) ) #- inst.neck.transitionLength/2
+    naLineDir = linexy(vxy(0,0), angleVxy(neckAngleRad, lengthDelta))
+    naLineDir = naLineDir.flipDirection().lerpLineTo(naLineDir.length+30).flipDirection()
+    naAp = geom.vecxz(naLineDir.start)
+    naBp = geom.vecxz(naLineDir.end)
+    refp = geom.vec(fbd.frame.bridge.end, -h).add(Vector(0, -fbd.neckFrame.bridge.length/2, 0))
+
+    if joint is NeckJoint.THROUHG:
+        refp = refp.add(Vector(-bodyLength*math.cos(neckAngleRad), 0, -bodyLength*math.sin(neckAngleRad)))
+
+    naSidePs = [
+        naAp, 
+        Vector(naAp.x, naAp.y, naAp.z-extrusionDepth),
+        Vector(naBp.x, naBp.y, naBp.z-extrusionDepth),
+        naBp,
+        naAp
+    ]
+    naSidePs = [v.add(refp) for v in naSidePs]
+    naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length*2, 0))
+    
+    # Cut bottom       
+    part = part.cut(naSide)
+
+    # Then move and cut top (Remove Top thickness)
+    cutThickness = extrusionDepth * math.cos(neckAngleRad)
+    naSide.translate(Vector(
+        (backThickness+cutThickness)*math.sin(neckAngleRad),
+        0,
+        (backThickness+cutThickness)*math.cos(neckAngleRad)
+    ))
+    naSide.translate(Vector(
+        (bodyLength-lengthDelta)*math.cos(neckAngleRad),
+        0,
+        (bodyLength-lengthDelta)*math.sin(neckAngleRad)
+    ))
+
+    part = part.cut(naSide)
+
+    # Tenon
+    tenon = makeTenon(fbd, neckAngleRad, d, h, tenonThickness, tenonLength, tenonOffset, joint)
+    if tenon:
+        part = part.fuse(tenon)
+
+    return part.removeSplitter()
+
+
+#------------------------------------------------------------------------------
+@PureFunctionCache
+@traced('Make Tenon')
+def makeTenon(fbd, neckAngleRad, posXY, h, tenonThickness, tenonLength, tenonOffset, joint):
+    if tenonThickness > 0 \
+        and tenonLength > 0 \
+            and joint is NeckJoint.SETIN:
+        
+        naLineDir = linexy(vxy(0,0), angleVxy(math.pi+neckAngleRad, tenonLength))
+        naAp = geom.vecxz(naLineDir.start)
+        naBp = geom.vecxz(naLineDir.end)
+        refp = geom.vec(posXY, tenonOffset -h + tenonThickness)
+        naSidePs = [
+            naAp, 
+            Vector(naAp.x, naAp.y, naAp.z - tenonThickness),
+            Vector(naBp.x, naBp.y, naBp.z - tenonThickness),
+            naBp,
+            naAp
+        ]
+        naSidePs = [v.add(refp) for v in naSidePs]
+        naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length, 0))
+        return naSide
 
 class NeckFeature:
     """
@@ -117,9 +236,8 @@ class NeckFeature:
         self.instrument = instrument
 
     #--------------------------------------------------------------------------
+    @traced('Make Headstock')
     def headstock(self, neckd, line):
-
-        import marz_headstock as hs
         params = self.instrument.headStock
         profile = getNeckProfile(neckd.profileName)
         boundProfile = hs.BoundProfile(profile, neckd.fbd.widthAt, neckd.thicknessAt)
@@ -135,7 +253,8 @@ class NeckFeature:
             params.depth,
             params.topTransitionLength,
             params.width,
-            params.length)
+            params.length,
+            indirectDependencies={'svg':self.instrument.internal.headstockImport})
 
     #--------------------------------------------------------------------------
     def createShape(self):
@@ -165,129 +284,26 @@ class NeckFeature:
                 trc.depth, trc.headLength, trc.headWidth, trc.headDepth, \
                     trc.tailLength, trc.tailWidth, trc.tailDepth)
 
-        (barrellSolid, headstock, heel, truss) = Task.joinAll([barrellJob, headstockJob, heelJob, trussRodJob])
+        with traceTime("Wait for Barrel + Heel + Headstock"):
+            (barrellSolid, headstock, heel, truss) = Task.joinAll([barrellJob, headstockJob, heelJob, trussRodJob])
 
-        neck = barrellSolid.fuse([headstock, heel])
-        if truss:
-            neck = neck.cut(truss)
+        with traceTime("Fuse Barrel + Heel + Headstock"):
+            neck = barrellSolid.fuse([headstock, heel])
 
-        return neck
-        
+        with traceTime("Carve truss rod channel"):
+            if truss:
+                neck = neck.cut(truss)
+
+        neck.fix(0.1, 0, 1)
+        return neck.removeSplitter()   
 
     #--------------------------------------------------------------------------
     def heel(self, neckd, line):
-        """
-        Create heel shape.
-
-        Args:
-            fbd   : FredboardData
-            line  : linexy, reference line
-        """
-        inst = self.instrument
-        fbd = neckd.fbd
-        neckAngleRad = deg(inst.neck.angle)
-        if inst.neck.joint is NeckJoint.THROUHG:
-            h = inst.body.backThickness + inst.body.topThickness + inst.neck.topOffset
-        else :
-            h = inst.body.neckPocketDepth + inst.neck.topOffset
-
-        # Curved Part
-        start_p = lineIntersection(fbd.frets[inst.neck.jointFret], line).point
-        start_d = linexy(line.start, start_p).length
-        transitionJob = Task.execute(heelTransition, neckd, line, start_d, h, inst.neck.transitionLength, inst.neck.transitionTension)
-
-        x = start_d + inst.neck.transitionLength
-        xperp = line.lerpLineTo(x).perpendicularCounterClockwiseEnd()
-        a = lineIntersection(xperp, fbd.neckFrame.treble).point
-        b = lineIntersection(xperp, fbd.neckFrame.bass).point
-        c = fbd.neckFrame.bridge.end
-        d = fbd.neckFrame.bridge.start
-
-        # Rect Part
-        def heelBase():
-            segments = [
-                Part.LineSegment(geom.vec(b), geom.vec(c)),
-                Part.LineSegment(geom.vec(c), geom.vec(d)),
-                Part.LineSegment(geom.vec(d), geom.vec(a)),
-                Part.LineSegment(geom.vec(a), geom.vec(b)),
-            ] 
-            part = Part.Face(Part.Wire(Part.Shape(segments).Edges)).extrude(Vector(0, 0, -100))
-            return part
-
-        (transition, part) = Task.joinAll([transitionJob, Task.execute(heelBase)])
-
-        if transition:
-            part = transition.fuse(part)
-
-        # Neck Angle Cut (Bottom)
-        extrusionDepth = 100
-        lengthDelta = max(inst.body.neckPocketLength, (fbd.neckFrame.midLine.length - start_d) ) #- inst.neck.transitionLength/2
-        naLineDir = linexy(vxy(0,0), angleVxy(neckAngleRad, lengthDelta))
-        naLineDir = naLineDir.flipDirection().lerpLineTo(naLineDir.length+30).flipDirection()
-        naAp = geom.vecxz(naLineDir.start)
-        naBp = geom.vecxz(naLineDir.end)
-        refp = geom.vec(fbd.frame.bridge.end, -h).add(Vector(0, -fbd.neckFrame.bridge.length/2, 0))
-
-        if inst.neck.joint is NeckJoint.THROUHG:
-            refp = refp.add(Vector(-inst.body.length*math.cos(neckAngleRad), 0, -inst.body.length*math.sin(neckAngleRad)))
-
-        naSidePs = [
-            naAp, 
-            Vector(naAp.x, naAp.y, naAp.z-extrusionDepth),
-            Vector(naBp.x, naBp.y, naBp.z-extrusionDepth),
-            naBp,
-            naAp
-        ]
-        naSidePs = [v.add(refp) for v in naSidePs]
-        naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length*2, 0))
-        
-        # Cut bottom       
-        part = part.cut(naSide)
-
-        # Then move and cut top (Remove Top thickness)
-        cutThickness = extrusionDepth * math.cos(neckAngleRad)
-        naSide.translate(Vector(
-            (inst.body.backThickness+cutThickness)*math.sin(neckAngleRad),
-            0,
-            (inst.body.backThickness+cutThickness)*math.cos(neckAngleRad)
-        ))
-        naSide.translate(Vector(
-            (inst.body.length-lengthDelta)*math.cos(neckAngleRad),
-            0,
-            (inst.body.length-lengthDelta)*math.sin(neckAngleRad)
-        ))
-
-        part = part.cut(naSide)
-
-        # Tenon
-        tenon = self.tenon(inst, fbd, neckAngleRad, d, h)
-        if tenon:
-            part = part.fuse(tenon)
-
-        return part.removeSplitter()
-
-    def tenon(self, inst, fbd, neckAngleRad, posXY, h):
-        with traceTime("Tenon"):
-            if inst.neck.tenonThickness > 0 \
-                and inst.neck.tenonLength > 0 \
-                    and inst.neck.joint is NeckJoint.SETIN:
-                
-                naLineDir = linexy(vxy(0,0), angleVxy(math.pi+neckAngleRad, inst.neck.tenonLength))
-                naAp = geom.vecxz(naLineDir.start)
-                naBp = geom.vecxz(naLineDir.end)
-                refp = geom.vec(posXY, inst.neck.tenonOffset -h + inst.neck.tenonThickness)
-                naSidePs = [
-                    naAp, 
-                    Vector(naAp.x, naAp.y, naAp.z - inst.neck.tenonThickness),
-                    Vector(naBp.x, naBp.y, naBp.z - inst.neck.tenonThickness),
-                    naBp,
-                    naAp
-                ]
-                naSidePs = [v.add(refp) for v in naSidePs]
-                naSide = Part.Face(Part.makePolygon(naSidePs)).extrude(Vector(0, fbd.neckFrame.bridge.length, 0))
-                return naSide
-            else:
-                return None
+        body = self.instrument.body
+        neck = self.instrument.neck
+        return makeHeel(neckd, line, neck.angle, neck.joint, body.backThickness, body.topThickness, neck.topOffset,
+            body.neckPocketDepth, body.neckPocketLength, neck.jointFret, neck.transitionLength, neck.transitionTension, 
+            body.length, neck.tenonThickness, neck.tenonLength, neck.tenonOffset)
 
     #--------------------------------------------------------------------------
     def createPart(self):
@@ -297,7 +313,6 @@ class NeckFeature:
         part = App.ActiveDocument.getObject(NeckFeature.NAME)
         if part is None:
             createPartBody(self.createShape(), NeckFeature.NAME, "Neck", True)
-            recomputeActiveDocument(True)
 
     #--------------------------------------------------------------------------
     def updatePart(self):
@@ -308,31 +323,3 @@ class NeckFeature:
         if part is not None:
             updatePartShape(part, self.createShape())
 
-    #--------------------------------------------------------------------------
-    def createDatumPlanes(self):
-        midLine = App.ActiveDocument.getObject('Marz_C_MidLine')
-        if midLine is not None:
-            # Calculate model
-            fbd = builder.buildFretboardData(self.instrument)
-            # Midline Plane
-            geom.createDatumPlaneFromLine(midLine, 'MidPlane',  
-                App.Placement(
-                    App.Vector(0, 0, 0),  
-                    App.Rotation(0, 90, 0)
-                )
-            )
-            # Neck plane
-            geom.createDatumPlaneFromLine(midLine, 'NeckPlane',
-                App.Placement(
-                    App.Vector(0, 0, 0),  
-                    App.Rotation(90, 90, 0)
-                )
-            )
-
-    @classmethod
-    def findAllParts(cls):
-        parts = []
-        fb = App.ActiveDocument.getObject(NeckFeature.NAME)
-        if fb:
-            parts.append(fb)
-        return parts

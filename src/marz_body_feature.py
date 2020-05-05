@@ -26,9 +26,8 @@ from marz_body_data import BodyData
 from marz_neck_data import NeckData
 from marz_fretboard_data import FretboardData
 from marz_threading import Task
-from marz_ui import (createPartBody, errorDialog, recomputeActiveDocument, Log,
-                     updatePartShape)
-from marz_utils import startTimeTrace
+from marz_ui import (createPartBody, errorDialog, Log,
+                     updatePartShape, deletePart)
 from marz_vxy import angleVxy, vxy
 from marz_neck_feature import NeckFeature
 
@@ -41,6 +40,9 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False):
     Returns:
         {Shape} -- blank
     """
+
+    if height <= 0:
+        return None
 
     comp = None
     angle = deg(bodyd.neckAngle)
@@ -107,7 +109,8 @@ def blanks(inst, bodyd):
 
     # Pocket
     heel = NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine)
-    top = top.cut(heel)
+    if top:
+        top = top.cut(heel)
     back = back.cut(heel)
         
     return (top, back)
@@ -137,11 +140,10 @@ class BodyFeature:
         backPart = App.ActiveDocument.getObject(BodyFeature.NAME + "_Back")
         if topPart is None or backPart is None:
             (top, back) = self.createShapes()
-            if topPart is None:
+            if topPart is None and top is not None:
                 createPartBody(top, BodyFeature.NAME + "_Top", "BodyTop", True)
             if backPart is None:
                 createPartBody(back, BodyFeature.NAME + "_Back", "BodyBack", True)
-            recomputeActiveDocument(True)
 
     #--------------------------------------------------------------------------
     def updatePart(self):
@@ -153,21 +155,14 @@ class BodyFeature:
         if topPart is not None or backPart is not None:
             (top, back) = self.createShapes()
             if topPart is not None:
-                updatePartShape(topPart, top)
+                if top is None:
+                    deletePart(topPart)
+                else:
+                    updatePartShape(topPart, top)
+            else:
+                if top is not None:
+                    createPartBody(top, BodyFeature.NAME + "_Top", "BodyTop", True)
             if backPart is not None:
                 updatePartShape(backPart, back)
 
-    @classmethod
-    def findAllParts(cls):
-        parts = []
-        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Top")
-        if fb:
-            parts.append(fb)
-        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Back")
-        if fb:
-            parts.append(fb)
-        fb = App.ActiveDocument.getObject(BodyFeature.NAME + "_Contour")
-        if fb:
-            parts.append(fb)
-        return parts
 

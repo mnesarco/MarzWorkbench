@@ -39,7 +39,7 @@ class FreecadPropertyHelper:
         self.options = options
         self.section = section or self.name.partition('_')[0]
         self.description = description or self.name.rpartition('_')[2]
-        self.mode = 0
+        self.mode = mode
 
     def init(self, obj):
         f = obj.addProperty(self.ui, self.name, self.section, self.description, self.mode)

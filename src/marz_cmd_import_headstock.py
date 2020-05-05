@@ -16,11 +16,8 @@ import os
 
 import FreeCAD as App
 import FreeCADGui as Gui
-from FreeCAD import Vector
 import marz_ui
 from marz_instrument_feature import MarzInstrument
-import marz_utils
-from marz_import_svg import extractCustomShape
 
 class CmdImportHeadstockShape:
     "Import body shape from svg Command"
@@ -43,7 +40,7 @@ class CmdImportHeadstockShape:
         try:
             name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(),'Select .svg file','*.svg')[0]
             if name:
-                extractCustomShape(name, 'Marz_Headstock')
+                App.ActiveDocument.getObject(MarzInstrument.NAME).Proxy.importHeadstockShape(name)
         except:
             marz_ui.Msg(traceback.format_exc())
 

@@ -22,8 +22,7 @@ from marz_linexy import lineIntersection, linexy
 from marz_model import ModelException, fret, todeg
 from marz_threading import Task, UIThread
 from marz_ui import color as hexColor
-from marz_ui import (createPartBody, findDraftByLabel, recomputeActiveDocument,
-                     updateDraftPoints, updatePartShape)
+from marz_ui import (createPartBody, findDraftByLabel, updateDraftPoints, updatePartShape, UIGroup_XLines, getUIGroup)
 from marz_utils import traceTime
 
 def fretPos(f, line, h):
@@ -169,26 +168,8 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
     jobs = []
     bladeHeight = thickness*4
 
-    # Generate Fret extrusions
-    def generateFrets():
-        with traceTime('Generate all Fret slots'):
-            frets = []
-            for index, fret_i in enumerate(fbd.frets):
-                # Zero fret visibility
-                if not isZeroFret and index == 0:
-                    continue
-                # Adjust Fret Size
-                fret = fret_i.extendSym(-nipping if nipping > 0 else 5)
-                # Extrude Fret
-                frets.append(geom.extrusion(fret.rectSym(tangWidth), 0, [0,0,bladeHeight]))
-            return Part.makeCompound(frets)
-
-    # Generate Frets in parallel
-    fretsJob = Task.execute(generateFrets)
-
-    # Generate Cone in parallel
-    trimJob = Task.execute(
-        fretboardCone, 
+    # Generate Cone
+    trim = fretboardCone(
         startRadius, 
         endRadius, 
         thickness, 
@@ -196,13 +177,21 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
         thickness - tangDepth
     )
 
-    # Join 
-    (fretSlots, trim) = Task.joinAll([fretsJob, trimJob])
+    # Generate Fret extrusions
+    with traceTime('Generate all Fret slots'):
+        frets = []
+        for index, fret_i in enumerate(fbd.frets):
+            # Zero fret visibility
+            if not isZeroFret and index == 0:
+                continue
+            # Adjust Fret Size
+            fret = fret_i.extendSym(-nipping if nipping > 0 else 5)
+            # Extrude Fret
+            blade = geom.extrusion(fret.rectSym(tangWidth), 0, [0,0,bladeHeight])
+            blade = blade.cut(trim)
+            frets.append(blade)
+        return frets
 
-    with traceTime('Trim Fret Slots'):
-        result = fretSlots.cut(trim)
-
-    return result
 
 #------------------------------------------------------------------------------
 def base(inst, fbd): 
@@ -278,18 +267,20 @@ class FretboardFeature:
         if not fretboard:
 
             # Generate primitives in parallel. (They are independent)
-            tasks = [base, nutSlot, fretsCut]
-            (board, nut, fretSlots) = Task.joinAll([Task.execute(t, self.instrument, fbd) for t in tasks])
+            (board, nut, fretSlots) = Task.joinAll([
+                Task.execute(t, self.instrument, fbd) 
+                for t in [base, nutSlot, fretsCut]
+            ])
 
             # Cut Slots
             with traceTime('Cut slots from fretboard'):
                 if board and nut and fretSlots:
-                    fretboard = board.cut(fretSlots).removeSplitter().cut(nut)
+                    fretboard = board.cut(tuple([*fretSlots, nut]))
 
             cache(fretboard)
 
-        inlays = inlaysTask.get()
         with traceTime("Cut fretboard inlays"):
+            inlays = inlaysTask.get()
             if inlays:
                 fretboard = fretboard.cut(inlays)
 
@@ -299,7 +290,6 @@ class FretboardFeature:
         part = App.ActiveDocument.getObject(FretboardFeature.NAME)
         if part is None:
             createPartBody(self.createFretboardShape(), FretboardFeature.NAME, "Fretboard", True)
-            recomputeActiveDocument(True)
 
     def updateFretboardShape(self):
         part = App.ActiveDocument.getObject(FretboardFeature.NAME)
@@ -346,24 +336,17 @@ class FretboardFeature:
         placement.Rotation.Q = (0,0,0,1)
         placement.Base = Vector(0,0,0)
         def createInUI():
+            group = getUIGroup(UIGroup_XLines)
             for suffix, points, color in self.createConstructionShapes():
                 part = findDraftByLabel(suffix)
                 if part is None:
                     wire = Draft.makeWire(points, placement=placement, face=False)
                     wire.Label = suffix
                     Draft.autogroup(wire)
-                    findDraftByLabel(wire.Label).ViewObject.LineColor = color
-        UIThread.run(createInUI)
-        recomputeActiveDocument()
+                    obj = findDraftByLabel(wire.Label)
+                    obj.ViewObject.LineColor = color
+                    group.addObject(obj)
 
-    @classmethod
-    def findAllParts(cls):
-        parts = []
-        fb = App.ActiveDocument.getObject(FretboardFeature.NAME)
-        if fb:
-            parts.append(fb)
-        for name in FretboardFeature.CONSTRUCTION_NAMES:
-            part = findDraftByLabel(name)
-            if part is not None:
-                parts.append(part)
-        return parts
+        UIThread.run(createInUI)
+
+

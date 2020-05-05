@@ -17,7 +17,6 @@ from FreeCAD import Placement, Rotation, Vector
 import Part
 import marz_geom as geom
 from marz_threading import RunInUIThread
-from marz_ui import featureToBody
 from marz_utils import traceTime
 import math
 
@@ -58,56 +57,11 @@ def showPoint(v):
 
 def showPoints(vs):
     for v in vs: showPoint(v)
-
-@RunInUIThread
-def createDatumPlaneFromLine(feature, name, placement):
-    plane = App.ActiveDocument.getObject(name)
-    if plane is None:
-        # Create Body
-        body = featureToBody(feature, name)
-        # Create Plane
-        plane = body.newObject('PartDesign::Plane', 'Plane')
-        plane.Support = [(body.Tip, '')]
-        plane.MapMode = 'ObjectXY'
-        plane.recompute()
-        # --> Start strange Magic
-        Gui.ActiveDocument.setEdit(body, 0, f'{body.Tip.Name}.')
-        tv = Show.TempoVis(App.ActiveDocument, tag = 'PartGui::TaskAttacher')
-        tvObj = plane
-        dep_features = tv.get_all_dependent(body, f'{body.Tip.Name}.')
-        if tvObj.isDerivedFrom('PartDesign::CoordinateSystem'):
-            visible_features = [feat for feat in tvObj.InList if feat.isDerivedFrom('PartDesign::FeaturePrimitive')]
-            dep_features = [feat for feat in dep_features if feat not in visible_features]
-            del(visible_features)
-        tv.hide(dep_features)
-        del(dep_features)
-        if not tvObj.isDerivedFrom('PartDesign::CoordinateSystem'):
-            if len(tvObj.Support) > 0:
-                tv.show([lnk[0] for lnk in tvObj.Support])
-        del(tvObj)
-        # <-- End Strange Magic
-        # Position the plane
-        plane.AttachmentOffset = placement
-        plane.MapReversed = False
-        plane.Support = [(body.Tip, '')]
-        plane.MapMode = 'ObjectXY'
-        plane.recompute()
-        Gui.ActiveDocument.resetEdit()
-        
         
 def intersect3d(line1, line2):
     s1 = Part.Line(line1[0], line1[1])
     s2 = Part.Line(line2[0], line2[1])
     return s1.intersect(s2)
-
-@RunInUIThread
-def addOrUpdatePart(shape, name, label=None, visibility=True):
-    obj = App.ActiveDocument.getObject(name)
-    if obj is None:
-        obj = App.ActiveDocument.addObject("Part::Feature", name)
-        obj.Label = label or name
-    obj.Shape = shape
-    obj.ViewObject.Visibility = visibility
 
 def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True, useProfileTransition=False, angle=0, lastHeight=40):
 

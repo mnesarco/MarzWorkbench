@@ -31,3 +31,13 @@ class traceTime:
     
     def __exit__(self, type, value, traceback):
         App.Console.PrintLog(f"[MARZ] {self.label}: {int((time.time() - self.t)*1000)} ms\n")
+
+def traced(label):
+    def deco(f):
+        def wrapper(*args, **kwargs):
+            s = time.time()
+            r = f(*args, **kwargs)
+            App.Console.PrintLog(f"[MARZ] {label}: {int((time.time() - s)*1000)} ms\n")
+            return r
+        return wrapper
+    return deco

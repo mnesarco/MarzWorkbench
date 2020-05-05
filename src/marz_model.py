@@ -91,6 +91,7 @@ class Instrument:
         self.bridge = Bridge(self)
         self.body = Body(self)
         self.trussRod = TrussRod(self)
+        self.internal = InternalProps(self)
 
     def getSerializable(self):
         s = {}
@@ -118,6 +119,8 @@ class Instrument:
                 self.bridge.__dict__.update(value)
             elif name == 'body':
                 self.body.__dict__.update(value)
+            elif name == 'trussRod':
+                self.trussRod.__dict__.update(value)
             else:
                 pass
         return self
@@ -478,7 +481,15 @@ class TrussRod(Feature):
     @property
     def end(self):
         return self.start + self.length
-    
+
+
+class InternalProps(Feature):
+    def __init__(self, instrument):
+        super().__init__(instrument)
+        self.bodyImport = 0
+        self.headstockImport = 0
+        self.inlayImport = 0
+
 class ModelException(Exception):
     """
     Some Radius configurations are physically impossible.

@@ -25,7 +25,7 @@ properties = [
     # Nut
     fcp('nut.thickness',                5),
     fcp('nut.spacing',                  NutSpacing.EQ_GAP, 'String spacing', enum=NutSpacing),
-    fcp('nut.position',                 NutPosition.PARALLEL, enum=NutPosition),
+    fcp('nut.position',                 NutPosition.PERPENDICULAR, enum=NutPosition),
     fcp('nut.offset',                   0),
     fcp('nut.depth',                    5, 'Depth into the fretboard'),
     fcp('nut.stringDistanceProj',       34.5, 'Distance from first to last String at average nut position'),
@@ -109,6 +109,11 @@ properties = [
     fcp('body.width',                   350, 'Max Width of Body Blank'),
     fcp('body.neckPocketDepth',         20, 'Depth of Neck Pocket'),
     fcp('body.neckPocketLength',        55, 'Length of Neck Pocket'),
+
+    # Internal
+    fcp('internal.bodyImport',          0, ui='App::PropertyInteger', mode=4),
+    fcp('internal.headstockImport',     0, ui='App::PropertyInteger', mode=4),
+    fcp('internal.inlayImport',         0, ui='App::PropertyInteger', mode=4),
 
 ]
 

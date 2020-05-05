@@ -13,14 +13,16 @@ import traceback
 import importlib
 
 import FreeCAD as App
+import FreeCADGui as Gui
 from marz_model import Instrument, ModelException
 from marz_fretboard_feature import FretboardFeature
 from marz_instrument_properties import InstrumentProps
 from marz_neck_feature import NeckFeature
 from marz_body_feature import BodyFeature
-from marz_threading import Task
-from marz_ui import Msg, StartProgress, errorDialog, iconPath, runDeferred
-from marz_utils import startTimeTrace
+from marz_threading import Task, RunInUIThread
+from marz_ui import Msg, StartProgress, errorDialog, iconPath, runDeferred, Log
+from marz_utils import traceTime
+import marz_import_svg as isvg
 
 class Fretboard:
     def create(self, model): FretboardFeature(model).createFretboardPart()
@@ -51,61 +53,50 @@ class MarzInstrument:
         self.model = Instrument()
         self.obj = obj
         self.partsToUpdate = {}
-        self.partsToCreate = {}
         self.changed = True
         obj.Proxy = self
-        
+        MarzInstrumentVP(obj.ViewObject)
+
         # Properties
         InstrumentProps.createProperties(obj)
-        #setDefaults(obj)
 
-    def execute(self, obj):
-        bar = StartProgress("Regenerating Features...")
-        disabledAutoRecompute = App.ActiveDocument.RecomputesFrozen
-        App.ActiveDocument.RecomputesFrozen = True
+    def doInTransaction(self, block, name):
+        bar = StartProgress(f"Processing {name}...")
+        rollback = False
+
         try:
-
-            jobs = []
-            ttrace = startTimeTrace('Total Execution Time')
-
-            # Update already created parts
-            if self.changed:
-                changed = False
-                for part in self.partsToUpdate.values():
-                    jobs.append(Task.execute(part.update, self.model))
-
-            # Create new parts in queue
-            for newPart in self.partsToCreate.values(): 
-                if newPart.__class__.__name__ not in self.partsToUpdate:
-                    jobs.append(Task.execute(newPart.create, self.model))                    
-
-            Task.joinAll(jobs)
-            ttrace()
-
-            # Clean queue
-            self.partsToUpdate.update(self.partsToCreate)
-            self.partsToCreate = {}
+            App.ActiveDocument.openTransaction(name)           
+            with traceTime(name): block()
 
         except ModelException as e:
             errorDialog(e.message, deferred=True)
+            rollback = True
 
         except:
-            Msg(traceback.format_exc())
+            Log(traceback.format_exc())
             errorDialog("Some data is inconsistent or impossible in Instrument parameters", deferred=True)
+            rollback = True
 
         finally:
-            App.ActiveDocument.RecomputesFrozen = disabledAutoRecompute
-            if not disabledAutoRecompute:
-                runDeferred(lambda: App.ActiveDocument.recompute(), 500)
+            if rollback:
+                App.ActiveDocument.abortTransaction()
+            else:
+                App.ActiveDocument.commitTransaction()
             bar.stop()
+
+    def updateOnChange(self):
+        changed = False
+        Task.joinAll([ Task.execute(part.update, self.model) for part in self.partsToUpdate.values() ])
+
+    def execute(self, obj):
+        if self.changed:
+            self.doInTransaction(self.updateOnChange, "Marz Update Models")
 
     def onChanged(self, fp, prop):
         self.changed = InstrumentProps.propertiesToModel(self.model, self.obj)
 
     def __getstate__(self):
-        # Properties
         state = InstrumentProps.getStateFromProperties(self.obj)
-        # Active Builders
         builders = []
         for p in self.partsToUpdate.values():
             builders.append((p.__class__.__module__, p.__class__.__name__))
@@ -151,13 +142,35 @@ class MarzInstrument:
     def createBody(self): 
         self.add(Body())
 
+    def importHeadstockShape(self, file):
+        isvg.ImportHeadstock(file).create(self.model)
+        self.recompute()
+
+    def importBodyShape(self, file):
+        isvg.ImportBody(file).create(self.model)
+        self.recompute()
+
+    def importInlays(self, file):
+        isvg.ImportInlays(file).create(self.model)
+        self.recompute()
+
     def add(self, feature):
         name = feature.__class__.__name__
         if name not in self.partsToUpdate:
-            self.partsToCreate[name] = feature
-            App.ActiveDocument.getObject(MarzInstrument.NAME).touch()
-            App.ActiveDocument.recompute()
+            def transaction():
+                self.partsToUpdate[name] = feature
+                feature.create(self.model)
+                App.ActiveDocument.Marz_Instrument.purgeTouched()
+                self.recompute()
+            self.doInTransaction(transaction, f"Marz Add {name}")
 
+    @RunInUIThread    
+    def recompute(self):
+        def call():
+            if not App.ActiveDocument.Recomputing:
+                Log("Recomputing")
+                App.ActiveDocument.recompute()
+        runDeferred(call, 100)
 
 class MarzInstrumentVP:
 
@@ -179,13 +192,6 @@ class MarzInstrumentVP:
 
     def getDefaultDisplayMode(self):
         return "Standard"
-
-    def claimChildren(self):
-        children = []
-        children.extend(FretboardFeature.findAllParts())
-        children.extend(NeckFeature.findAllParts())
-        children.extend(BodyFeature.findAllParts())
-        return children
 
     def __getstate__(self):
         return None

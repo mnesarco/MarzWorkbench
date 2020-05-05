@@ -45,8 +45,14 @@ class FretInlay:
         self.shape.translate(-c)
     
     def createPart(self, baseName):
-        import marz_geom as geom
-        geom.addOrUpdatePart(self.shape, f'{baseName}_Fret{self.fret}', f'FretInlay{self.fret}', visibility=False)
+        import marz_ui
+        marz_ui.addOrUpdatePart(
+            self.shape, 
+            f'{baseName}_Fret{self.fret}', 
+            f'FretInlay{self.fret}', 
+            visibility=False, 
+            group=marz_ui.UIGroup_Imports
+        )
 
 class FretInlayPart:
     def __init__(self, obj, fret):
@@ -83,6 +89,7 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     from marz_instrument_feature import MarzInstrument
     import marz_utils
     import marz_ui
+    import time
 
     # Contour implies midline
     requireMidline = requireMidline or requireContour
@@ -92,8 +99,8 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
 
     # Import SVG File
     name = marz_utils.randomString(16)
+    doc = App.newDocument(name, 'Importing', True)
     importSVG.insert(filename, name)
-    doc = App.getDocument(name)
 
     # Find contour and midline by id
     contour = None
@@ -177,22 +184,24 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
                 comp = merge(comp, s)
 
         if comp:
-            geom.addOrUpdatePart(comp, baseName + '_Pockets', 'Pockets', visibility=False)
+            marz_ui.addOrUpdatePart(comp, baseName + '_Pockets', 'Pockets', visibility=False, group=marz_ui.UIGroup_Imports)
         if compT:
-            geom.addOrUpdatePart(compT, baseName + '_Pockets_Top', 'Pockets', visibility=False)
+            marz_ui.addOrUpdatePart(compT, baseName + '_Pockets_Top', 'Pockets', visibility=False, group=marz_ui.UIGroup_Imports)
         if compB:
-            geom.addOrUpdatePart(compB, baseName + '_Pockets_Back', 'Pockets', visibility=False)
+            marz_ui.addOrUpdatePart(compB, baseName + '_Pockets_Back', 'Pockets', visibility=False, group=marz_ui.UIGroup_Imports)
 
     # Add contour to document
     if wcontour:
-        geom.addOrUpdatePart(wcontour, baseName + '_Contour', 'Contour', visibility=False)
+        marz_ui.addOrUpdatePart(wcontour, baseName + '_Contour', 'Contour', visibility=False, group=marz_ui.UIGroup_Imports)
 
     if wtransition:
-        geom.addOrUpdatePart(wtransition, baseName + '_Transition', 'Transition', visibility=False)
+        marz_ui.addOrUpdatePart(wtransition, baseName + '_Transition', 'Transition', visibility=False, group=marz_ui.UIGroup_Imports)
 
     # Recalculate
-    App.ActiveDocument.getObject(MarzInstrument.NAME).touch()
-    App.ActiveDocument.recompute()
+    if baseName == 'Marz_Headstock':
+        App.ActiveDocument.getObject(MarzInstrument.NAME).Internal_HeadstockImport = int(time.time())
+    elif baseName == 'Marz_Body':
+        App.ActiveDocument.getObject(MarzInstrument.NAME).Internal_BodyImport = int(time.time())
 
 def extractInlays(filename, baseName):
 
@@ -204,14 +213,15 @@ def extractInlays(filename, baseName):
     from marz_instrument_feature import MarzInstrument
     import marz_utils
     import marz_ui
+    import time
 
     # Save Working doc
     workingDoc = App.ActiveDocument
 
     # Import SVG File
     name = marz_utils.randomString(16)
+    doc = App.newDocument(name, 'Importing', True)
     importSVG.insert(filename, name)
-    doc = App.getDocument(name)
 
     # Extract
     inlays = {}
@@ -232,5 +242,29 @@ def extractInlays(filename, baseName):
     for fret, inlay in inlays.items(): inlay.createPart(baseName)
 
     # Recalculate
-    App.ActiveDocument.getObject(MarzInstrument.NAME).touch()
-    App.ActiveDocument.recompute()
+    App.ActiveDocument.getObject(MarzInstrument.NAME).Internal_InlayImport = int(time.time())
+
+
+class ImportHeadstock:
+    def __init__(self, file):
+        self.name = file
+    def create(self, model):
+        extractCustomShape(self.name, 'Marz_Headstock')
+    def update(self, model):
+        pass
+
+class ImportBody:
+    def __init__(self, file):
+        self.name = file
+    def create(self, model):
+        extractCustomShape(self.name, 'Marz_Body')
+    def update(self, model):
+        pass
+
+class ImportInlays:
+    def __init__(self, file):
+        self.name = file
+    def create(self, model):
+        extractInlays(self.name, 'Marz_FInlay')
+    def update(self, model):
+        pass

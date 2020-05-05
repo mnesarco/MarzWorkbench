@@ -18,8 +18,6 @@ import FreeCAD as App
 import FreeCADGui as Gui
 import marz_ui
 from marz_instrument_feature import MarzInstrument
-import marz_utils
-from marz_import_svg import extractCustomShape
 
 class CmdImportBodyShape:
     "Import body shape from svg Command"
@@ -42,8 +40,7 @@ class CmdImportBodyShape:
         try:
             name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
             if name:
-                #importBodyShape(name)
-                extractCustomShape(name, 'Marz_Body')
+                App.ActiveDocument.getObject(MarzInstrument.NAME).Proxy.importBodyShape(name)
         except:
             marz_ui.Msg(traceback.format_exc())
 

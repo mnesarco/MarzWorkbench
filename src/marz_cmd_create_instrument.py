@@ -37,9 +37,8 @@ class CmdCreateInstrument:
             obj = App.ActiveDocument.getObject(MarzInstrument.NAME)
             if obj is None:
                 obj = App.ActiveDocument.addObject('App::FeaturePython', MarzInstrument.NAME)
-                obj.Label = "Instrument"
+                obj.Label = "Instrument Parameters"
                 MarzInstrument(obj)
-                MarzInstrumentVP(obj.ViewObject)
             else:
                 Gui.Selection.clearSelection()
                 Gui.Selection.addSelection(App.ActiveDocument.Name, MarzInstrument.NAME)            
