@@ -25,8 +25,8 @@ properties = [
     # Nut
     fcp('nut.thickness',                5),
     fcp('nut.spacing',                  NutSpacing.EQ_GAP, 'String spacing', enum=NutSpacing),
-    fcp('nut.position',                 NutPosition.PERPENDICULAR, enum=NutPosition),
-    fcp('nut.offset',                   0),
+    fcp('nut.position',                 NutPosition.PERPENDICULAR, 'Nut align', enum=NutPosition),
+    fcp('nut.offset',                   0, 'Distance from fret 0 and Nut'),
     fcp('nut.depth',                    5, 'Depth into the fretboard'),
     fcp('nut.stringDistanceProj',       34.5, 'Distance from first to last String at average nut position'),
 
@@ -116,9 +116,9 @@ properties = [
     fcp('internal.inlayImport',         0, ui='App::PropertyInteger', mode=4),
 
     # AutoUpdate
-    fcp('autoUpdate.fretboard',         True, ui='App::PropertyBool'),
-    fcp('autoUpdate.neck',              True, ui='App::PropertyBool'),
-    fcp('autoUpdate.body',              True, ui='App::PropertyBool'),
+    fcp('autoUpdate.fretboard',         True, 'Toggle Fretboard autoupdate', ui='App::PropertyBool'),
+    fcp('autoUpdate.neck',              True, 'Toggle Neck autoupdate', ui='App::PropertyBool'),
+    fcp('autoUpdate.body',              True, 'Toggle Body autoupdate', ui='App::PropertyBool'),
 
 ]
 

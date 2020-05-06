@@ -21,6 +21,7 @@ This is a work in progress project, this is the list of the currently implemente
   * Thicikness
   * String distance
   * Customizable Fret Wire (for accurate slots)
+  * Custom Inalys
 
 * Neck
   * Neck Profiles
@@ -32,37 +33,35 @@ This is a work in progress project, this is the list of the currently implemente
   * Top offset
   * Truss-Rod Chanel
 
-* Headstock blank
+* Headstock
   * Dimensions
   * Transition
   * Volute
   * Flat/Angled
+  * Custom shape
+  * Pockets/Holes
 
 * Bridge
   * String distance
   * Compensation
 
 * Nut
-  * Dimesions
+  * Dimensions
   * Position
 
-* Body blank
+* Body
   * Top/Back Dimensions
-  * Neck pocket (Tenon not supported yet)
+  * Neck pocket
+  * Custom Shape
+  * Pockets/Holes
 
 
 ![Params](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/parameters.png)
 
 ### Planned Features
 
-* Fretboard
-  * Inlay Marks
-
 * Nut
   * 3d Object
-
-* Body
-  * Support neck pocket with tennon space
 
 * Other
   * Provide better options for transition curves
