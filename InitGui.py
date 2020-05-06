@@ -9,14 +9,13 @@ __copyright__    = "Copyright 2020, Frank D. Martinez. M."
 __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
 
+import FreeCADGui as Gui
 
-import FreeCAD
-import FreeCADGui
-
-class Marz(Workbench):
+# Workbench
+class MarzWorkbench(Workbench):
 
     def __init__(self):
-        import marz_ui, marz_threading
+        import marz_ui
         self.__class__.Icon = marz_ui.iconPath('workbench.svg')
         self.__class__.MenuText = "Marz Guitar Design"
         self.__class__.ToolTip = "Guitar Design Workbench"
@@ -27,7 +26,6 @@ class Marz(Workbench):
 
     def Initialize(self):
         import marz_reloader
-        from marz_freecad import isVersion19
         marz_reloader.reloadAll(lambda name: name.startswith('marz_cmd_'))
         
         cmds = [
@@ -53,4 +51,4 @@ class Marz(Workbench):
     def Deactivated(self):
         pass
 
-FreeCADGui.addWorkbench(Marz)
+Gui.addWorkbench(MarzWorkbench)

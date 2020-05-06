@@ -8,4 +8,6 @@ __author__       = "Frank D. Martinez. M."
 __copyright__    = "Copyright 2020, Frank D. Martinez. M."
 __license__      = "GPLv3"
 __maintainer__   = "https://github.com/mnesarco"
-     
+
+import setup
+
