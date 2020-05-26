@@ -5,7 +5,10 @@
 This is a custom FreeCAD Workbench for Electric Guitar/Bass Parametric Design. It allows you to create Fretboards, 
 Necks, Nuts, ... based on a common set of parameters.
 
-![Workbench](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/anim.gif)
+|![Body](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/wiki/custom-svg-body-doc.svg)|![Headstock](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/wiki/custom-svg-headstock-doc.svg)|
+|---|---|
+
+![Workbench](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/images/anim.gif)
 
 ## Features
 
@@ -56,7 +59,7 @@ This is a work in progress project, this is the list of the currently implemente
   * Pockets/Holes
 
 
-![Params](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/parameters.png)
+![Params](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/images/parameters.png)
 
 ### Planned Features
 
@@ -72,7 +75,7 @@ This is a work in progress project, this is the list of the currently implemente
 Just add objects (Instrument, Fretboard, Neck, Body, etc...) from the toolbar and change parameters. All the parameters are on the Root Instrument Object. 
 
 
-![ui](https://github.com/mnesarco/MarzWorkbench/blob/master/docs/images/ui-elements.png)
+![ui](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/images/ui-elements.png)
 
 The Wiki contains some useful documents: [Wiki](https://github.com/mnesarco/MarzWorkbench/wiki)
 
