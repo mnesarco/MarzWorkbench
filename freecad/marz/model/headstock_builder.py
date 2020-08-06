@@ -196,11 +196,11 @@ def extrudeBlank(top, thickness, angle, end, pos):
     b = end.Edges[0].Vertexes[1].Point
     if a.y < b.y: a, b = b, a
     points = [
-        Vector(pos.x, -100, 5),
-        Vector(pos.x, 100, 5),
+        Vector(pos.x-1, -100, 5),
+        Vector(pos.x-1, 100, 5),
         Vector(a.x, a.y, 5),
         Vector(b.x, b.y, 5),
-        Vector(pos.x, -100, 5)
+        Vector(pos.x-1, -100, 5)
     ]
     wire = Part.Wire(Part.makePolygon(points))
     wire.fixWire()
