@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Foobar is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,                |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,7 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-__version__ = "0.0.23-alpha"
+__version__ = "0.0.24-alpha"
 __author__ = "Frank David Martinez M <mnesarco at gmail.com>"
 __copyright__ = "Copyright 2020, Frank D. Martinez. M."
 __license__ = "GPLv3"
