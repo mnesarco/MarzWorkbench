@@ -29,7 +29,7 @@ class ShowAboutWindow:
         return {
             "MenuText": "About Marz Designer Workbench",
             "ToolTip": "About Marz Designer Workbench",
-            "Pixmap": ui.iconPath('MarzWorkbench.svg')
+            "Pixmap": ui.iconPath('Marz.svg')
         }
 
     def IsActive(self):

@@ -24,7 +24,7 @@ from freecad.marz.extension import Gui, ui
 class MarzWorkbench(Gui.Workbench):
     """"Marz Workbench"""
 
-    Icon = ui.iconPath('MarzWorkbench.svg')
+    Icon = ui.iconPath('Marz.svg')
     MenuText = "Marz Guitar Designer"
     ToolTip = "Guitar Design Workbench"
     Categories = ['Musical Instruments']
