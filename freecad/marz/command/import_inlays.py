@@ -45,7 +45,7 @@ class CmdImportFretInlays:
             name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
             if name:
                 App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(name)
-                fs.start_monitoring(name, 'headstock', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(path))
+                fs.start_monitoring(name, 'inlays', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(path))
 
         except:
             ui.Msg(traceback.format_exc())
