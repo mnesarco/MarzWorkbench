@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,35 +18,40 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+from freecad.marz.extension import App, Gui, QtCore, ui
 
-from freecad.marz.extension import ui, App, QtGui
-from freecad.marz.feature import MarzInstrument_Name
-from freecad.marz.utils import filesystem as fs
+def start_monitoring(path, component, handler):
+    old_file = None
+    if component in _components:
+        old_file, _ = _components[component]
+        del _components[component]
 
-class CmdImportFretInlays:
-    """Import custom Fret Inlays from SVG Command"""
+    _components[component] = (path, handler)
+    
+    if old_file:
+        subscribers = _paths.get(old_file, set())
+        if component in subscribers:
+            subscribers.remove(component)
+        if len(subscribers) == 0:
+            WATCHER.removePath(old_file)
 
-    def GetResources(self):
-        return {
-            "MenuText": "Import fret inlays svg",
-            "ToolTip": "Import fret inlays svg",
-            "Pixmap": ui.iconPath('import_fret_inlays.svg')
-        }
+    subscribers = _paths.get(path, set())
+    subscribers.add(component)
+    _paths[path] = subscribers
+    if len(subscribers) == 1:
+        WATCHER.addPath(path)
 
-    def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-        )
-
-    def Activated(self):
+def on_file_changed(path):
+    components = _paths.get(path, set())
+    for comp in components:
         try:
-            name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
-            if name:
-                App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(name)
-                fs.start_monitoring(name, 'headstock', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(path))
-
+            _components[comp][1](path)
         except:
-            ui.Msg(traceback.format_exc())
+            ui.Log("Error importing file {}".format(path))
+
+_paths = dict()
+_components = dict()
+
+WATCHER = QtCore.QFileSystemWatcher(Gui.getMainWindow())
+WATCHER.fileChanged.connect(on_file_changed)
 

@@ -22,7 +22,7 @@ import traceback
 
 from freecad.marz.extension import ui, App, QtGui
 from freecad.marz.feature import MarzInstrument_Name
-
+from freecad.marz.utils import filesystem as fs
 
 class CmdImportHeadstockShape:
     """Import body shape from svg Command"""
@@ -45,6 +45,8 @@ class CmdImportHeadstockShape:
             name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
             if name:
                 App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importHeadstockShape(name)
+                fs.start_monitoring(name, 'headstock', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importHeadstockShape(path))
+
         except:
             ui.Msg(traceback.format_exc())
 
