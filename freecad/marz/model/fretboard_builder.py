@@ -65,21 +65,25 @@ def buildFretboardData(inst):
     bassSideMargin = inst.fretboard.sideMargin + inst.stringSet.last / 2.0
     trebSideMargin = inst.fretboard.sideMargin + inst.stringSet.first / 2.0
 
+    vtreb = scaleFrame.treble.cloneInverted()
+    bassPerp = scaleFrame.bass.clone().rotate(math.radians(-90)).vector.setLength(bassSideMargin)
+    trebPerp = vtreb.clone().rotate(math.radians(90)).vector.setLength(trebSideMargin)
+
+    bassMarginLine = scaleFrame.bass.clone().translate(bassPerp).extendSym(100)
+    trebMarginLine = vtreb.clone().translate(trebPerp).extendSym(100)
+
     # Frets
     def calc_frets():
         frets = []
-        vtreb = scaleFrame.treble.cloneInverted()
         for i in range(inst.fretboard.frets + 1):
             s = fret(i, inst.scale.bass)
             e = fret(i, inst.scale.treble)
             ps = scaleFrame.bass.lerpPointAt(s)
             pe = vtreb.lerpPointAt(e)
-            bfret = lineTo(ps, pe)
-            bassMargin = bassSideMargin / math.sin(-bfret.vector.angle())
-            trebleMargin = trebSideMargin / math.sin(-bfret.vector.angle())
-            ps = bfret.lerpPointAt(-bassMargin)
-            pe = bfret.lerpPointAt(bfret.vector.length + bassMargin + trebleMargin)
-            frets.append(lineTo(ps, pe))
+            bfret = lineTo(ps, pe).extendSym(100)
+            i1 = lineIntersection(bassMarginLine, bfret)
+            i2 = lineIntersection(trebMarginLine, bfret)
+            frets.append(lineTo(i1.point, i2.point))
         return frets
 
     frets = calc_frets()
