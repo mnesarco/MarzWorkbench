@@ -274,7 +274,7 @@ class FretboardFeature:
         (fretboard, cache) = getCachedObject('FretboardFeature', 
             fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth, 
             inst.nut.depth, inst.fretboard.thickness, inst.fretboard.startRadius,
-            inst.fretboard.endRadius)
+            inst.fretboard.endRadius, inst.fretboard.fretNipping)
             
         if not fretboard:
 
