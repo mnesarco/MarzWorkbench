@@ -83,16 +83,19 @@ The Wiki contains some useful documents: [Wiki](https://github.com/mnesarco/Marz
 
 FreeCAD 0.19+
 https://github.com/FreeCAD/FreeCAD/releases/
+## Install
 
-FreeCAD 0.18.x 
+### Automatic Install
 This project was designed for 0.19.x, so 0.18.x support is very experimental but it works most of the time.
 https://www.freecadweb.org/downloads.php
 
 *In Windows, it does not work with 0.19.x by now.*
 
 The user experience in 0.19.x is significantly better.
+### Manual Install
 
-## Install
+<details>
+<summary>Expand for manual install instructions</summary>
 
 Download latest version from releases: https://github.com/mnesarco/MarzWorkbench/releases
 
@@ -112,9 +115,7 @@ As any FreeCAD extension, download the code and copy into FreeCAD's Mod director
 
 I do all the development and testing in Linux, I have no Windows or Mac Hardware. It should work in those environments but I have not tested it.
 
-### FreeCAD Addon Manager
-
-I suppose when this project is mature enough, it can be installed by the Addon Manager.
+</details>
 
 ## Bugs
 
