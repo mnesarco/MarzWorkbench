@@ -43,7 +43,7 @@ properties = [
     fcp('neck.startThickness',          15, 'Thickness at nut position'),
     fcp('neck.endThickness',            15, 'Thickness at heel transition start position'),
     fcp('neck.jointFret',               16, 'Number of fret where heel transition starts', ui='App::PropertyInteger'),
-    fcp('neck.topOffset',               2, 'Offset beteen body top and fretboard bottom'),
+    fcp('neck.topOffset',               2, 'Offset between body top and fretboard bottom'),
     fcp('neck.angle',                   0, 'Break angle', ui='App::PropertyAngle'),
     fcp('neck.tenonThickness',          0, 'Tenon Thickness if Set In Neck'),
     fcp('neck.tenonLength',             0, 'Tenon Length if Set In Neck'),

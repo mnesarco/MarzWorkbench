@@ -117,7 +117,7 @@ def fretboardSection(c, r, w, t, v):
 @PureFunctionCache
 def fretboardCone(startRadius, endRadius, thickness, fbd, top):
     """
-    Create a Compund radius solid, result is oriented along `fbd.neckFrame.midLine` with top edge horizontal at z=`top`
+    Create a Compound radius solid, result is oriented along `fbd.neckFrame.midLine` with top edge horizontal at z=`top`
     Args:
         inst : Instrument Data
         fbd  : FraneboardData
@@ -175,7 +175,7 @@ def fretsCut(inst, fbd):
 @PureFunctionCache
 def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nipping, isZeroFret, fbd):
     """
-    Create a Solid with all frets to be cutted from board
+    Create a Solid with all frets to be cut from board
     """
     jobs = []
     bladeHeight = thickness*4
@@ -240,7 +240,7 @@ def nutSlot(inst, fbd):
 @PureFunctionCache
 def nutSlotPure(thickness, depth, fbd): 
     """
-    Create a Nut Solid to be cutted from board
+    Create a Nut Solid to be cut from board
     """
     # Extend the nut frame to bleeding cut
     with traceTime("Nut slot solid"):

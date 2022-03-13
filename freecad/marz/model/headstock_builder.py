@@ -170,7 +170,7 @@ def getTransitionWires(tips, contour, pos, angle, profile, voluteOffset, transHb
 
 
 def isTransitionWireValid(ref, wire):
-    """Chech if {wire} is not inside ref or shrinks the loft"""
+    """Check if {wire} is not inside ref or shrinks the loft"""
     cp = wire.copy()
     cp.translate(Vector(ref.CenterOfMass.x - wire.CenterOfMass.x, 0, 0))
     dist, vectors, edges = ref.distToShape(cp)
@@ -373,7 +373,7 @@ def build(pos, angle, profile, thickness, transitionParamHorizontal, voluteRadiu
 
     Arguments:
         pos {Vector} -- Nut position
-        angle {radians} -- Breack angle
+        angle {radians} -- Break angle
         profile {BoundProfile} -- Neck profile builder
         thickness {float} -- Thickness of the headstock plate
         transitionParamHorizontal {float} -- transition stiffness

@@ -142,7 +142,7 @@ def buildFretboardData(inst):
 
     nutFrame = calc_nut_frame()
 
-    # Adjust ScaleFrame ans virtStrFrame (Center in Fretboard)
+    # Adjust ScaleFrame and virtStrFrame (Center in Fretboard)
     def adjust_scale_frame():
         diff = frets[0].mid().sub(scaleFrame.nut.mid())
         return (scaleFrame.translate(diff), virtStrFrame.translate(diff))

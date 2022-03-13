@@ -247,7 +247,7 @@ class Neck(Feature):
             tenonThickness   : Thickness of the tenon
             tenonLength      : Length of the tenon
             tenonOffset      : Offset of the tenon
-            transitionLength : Lenght of the transition between neck and heel
+            transitionLength : Length of the transition between neck and heel
             transitionTension: Tension of the transition between neck and heel
         """
         super().__init__(instrument)
@@ -380,7 +380,7 @@ class FretWire(Feature):
     def __init__(self, instrument, name=None, tangDepth=None, tangWidth=None, crownHeight=None, crownWidth=None):
         super().__init__(instrument)
         """
-        Paramaters:
+        Parameters:
             name        : Name of FretWire (reference)
             tangDepth   : Tang Depth
             tangWidth   : Tang Width
@@ -410,7 +410,7 @@ class HeadStock(Feature):
                  voluteOffset=10,
                  topTransitionLength=20):
         """
-        Paramaters:
+        Parameters:
             width       : Max width
             length      : Max Length
             thickness   : Thickness
@@ -438,7 +438,7 @@ class Bridge(Feature):
 
     def __init__(self, instrument, stringDistanceProj=63, height=16.363, bassCompensation=0, trebleCompensation=0):
         """
-        Paramaters:
+        Parameters:
             stringDistanceProj  : String distance pojected to perpendicular bridge
             height              : Min Height of the Bridge
             bassCompensation    : Compensation at bass scale
@@ -459,7 +459,7 @@ class Body(Feature):
     def __init__(self, instrument, topThickness=5, backThickness=40, length=500, width=350, neckPocketDepth=15.875,
                  neckPocketLength=50):
         """
-        Paramaters:
+        Parameters:
             topThickness    : Top thickness
             backThickness   : Back thickness
             length          : Length
