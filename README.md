@@ -81,17 +81,21 @@ The Wiki contains some useful documents: [Wiki](https://github.com/mnesarco/Marz
 
 ## Requirements
 
-FreeCAD 0.19+
-https://github.com/FreeCAD/FreeCAD/releases/
+* FreeCAD v0.19+ ([link](https://github.com/FreeCAD/FreeCAD/releases/))
+
+**Notes**
+
+* This project was designed for 0.19.x, so 0.18.x support is very experimental but it works most of the time.
+* The user experience in 0.19.x is significantly better.
+* Windows users may experience some issues in v0.19.x
+
 ## Install
 
 ### Automatic Install
-This project was designed for 0.19.x, so 0.18.x support is very experimental but it works most of the time.
-https://www.freecadweb.org/downloads.php
 
-*In Windows, it does not work with 0.19.x by now.*
+The recommended way to install this workbench is through the FreeCAD [Addon Manager](https://wiki.freecad.org/Std_AddonMgr).
 
-The user experience in 0.19.x is significantly better.
+
 ### Manual Install
 
 <details>
