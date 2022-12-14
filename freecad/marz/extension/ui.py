@@ -37,6 +37,16 @@ UIGroup_Imports = ('Marz_Group_Imports', 'Instrument Imports')
 UIGroup_Tmp = ('Marz_Group_Tmp', 'tmp')
 UIGroup_XLines = ('Marz_Group_Construction', 'Instrument Reference Constructions')
 
+# Ugly workaround to FreeCAD bug on MacOS:
+# forum: https://forum.freecadweb.org/viewtopic.php?f=10&t=53713
+# issue: https://github.com/FreeCAD/FreeCAD_Conda/issues/26
+class MacOSProgressIndicatorWorkaround:
+    def __init__(*args, **kwargs):
+        pass
+    def start(*args, **kwargs):
+        pass
+    def stop(*args, **kwargs):
+        pass
 
 @RunInUIThread
 def Msg(text):
@@ -49,7 +59,10 @@ def Log(text):
 
 
 def StartProgress(msg, n = 0):
-    bar = App.Base.ProgressIndicator()
+    try:
+        bar = App.Base.ProgressIndicator()
+    except:
+        bar = MacOSProgressIndicatorWorkaround()
     bar.start(msg,n)
     return bar
 
