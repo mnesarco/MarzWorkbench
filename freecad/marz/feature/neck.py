@@ -52,6 +52,19 @@ def barrel(neckd, fret):
         return geom.makeTransition(wire.Edges[0], profile, neckd.widthAt, neckd.thicknessAt, steps=8, ruled=False)
 
 
+def trussRodCavity(startPoint, endPoint, width, offset, depth):
+    def cyl(pnt, radius, depth):
+        return Part.makeCylinder(radius, depth+offset, Vector(pnt.x, pnt.y, offset), Vector(0,0,-1))
+    headRadius = width/2.0
+    base = linexy(startPoint, endPoint).rectSym(width)
+    base = geom.extrusion(base, offset, (0,0,-depth-offset))
+    tip = cyl(startPoint, headRadius, depth)
+    base = base.fuse(tip)
+    tip = cyl(endPoint, headRadius, depth)
+    base = base.fuse(tip)
+    return base
+
+
 @PureFunctionCache
 def trussRodChannel(line, start, length, width, depth,
     headLength, headWidth, headDepth, tailLength, tailWidth, tailDepth):
@@ -63,19 +76,29 @@ def trussRodChannel(line, start, length, width, depth,
         cutOffsetZ = 5
 
         # Base Channel
-        base = linexy(line.lerpPointAt(start), line.lerpPointAt(start+length)).rectSym(width)
-        base = geom.extrusion(base, cutOffsetZ, (0,0,-depth-cutOffsetZ))
+        headRadius = width/2.0
+        startPoint = line.lerpPointAt(start+headRadius)
+        endPoint = line.lerpPointAt(start+length-headRadius)
+        base = trussRodCavity(startPoint, endPoint, width, cutOffsetZ, depth)
 
         # Head
         if headLength > 0 and headWidth > 0 and headDepth > 0:
-            head = linexy(line.lerpPointAt(start), line.lerpPointAt(headLength+start)).rectSym(headWidth)
-            head = geom.extrusion(head, cutOffsetZ, (0,0,-headDepth-cutOffsetZ))
+            if headLength <= 2*headWidth + 2:
+                headLength = 2*headWidth + 2
+            headRadius = headWidth/2.0
+            startPoint = line.lerpPointAt(start+headRadius)
+            endPoint = line.lerpPointAt(start+headLength-headRadius)
+            head = trussRodCavity(startPoint, endPoint, headWidth, cutOffsetZ, headDepth)
             base = base.fuse(head)
 
         # Tail
         if tailLength > 0 and tailWidth > 0 and tailDepth > 0:
-            tail = linexy(line.lerpPointAt(start + length - tailLength), line.lerpPointAt(start + length)).rectSym(tailWidth)
-            tail = geom.extrusion(tail, cutOffsetZ, (0,0,-tailDepth-cutOffsetZ))
+            if tailLength <= 2*tailWidth + 2:
+                tailLength = 2*tailWidth + 2
+            tailRadius = tailWidth/2.0
+            startPoint = line.lerpPointAt(start + length - tailLength + tailRadius)
+            endPoint = line.lerpPointAt(start+length-tailRadius)
+            tail = trussRodCavity(startPoint, endPoint, tailWidth, cutOffsetZ, tailDepth)
             base = base.fuse(tail)
 
         return base
@@ -301,11 +324,11 @@ class NeckFeature:
             (barrellSolid, headstock, heel, truss) = Task.joinAll([barrellJob, headstockJob, heelJob, trussRodJob])
 
         with traceTime("Fuse Barrel + Heel + Headstock"):
-            neck = barrellSolid.fuse([headstock, heel])
+            neck = barrellSolid.fuse(heel, 1e-3).fuse(headstock, 1e-3)
 
         with traceTime("Carve truss rod channel"):
             if truss:
-                neck = neck.cut(truss)
+                neck = neck.cut(truss, 1e-3)
 
         neck.fix(0.1, 0, 1)
         return neck.removeSplitter()   
