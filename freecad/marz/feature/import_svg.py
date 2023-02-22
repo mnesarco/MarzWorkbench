@@ -116,6 +116,7 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     contour = None
     midline = None
     transition = None
+    bridge = None
     pockets = []
 
     for obj in doc.Objects:
@@ -125,6 +126,8 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
             midline = obj
         elif obj.Name == 'transition':
             transition = obj
+        elif obj.Name == 'bridge':
+            bridge = obj
         else:
             extractPocket(obj, pockets)
 
@@ -151,6 +154,12 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
         wcontour.translate( -anchor )
 
     anchor = anchor or Vector(0,0,0) # If no reference anchor
+
+    # Load Brifge reference
+    wbridge = None
+    if bridge:
+        wbridge = Part.Wire( bridge.Shape.copy().Edges )
+        wbridge.translate( -anchor )
 
     # Find transition Segment
     wtransition = None
@@ -206,6 +215,9 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
 
     if wtransition:
         ui.addOrUpdatePart(wtransition, baseName + '_Transition', 'Transition', visibility=False, group=ui.UIGroup_Imports)
+
+    if wbridge:
+        ui.addOrUpdatePart(wbridge, baseName + '_Bridge', 'Bridge Reference', visibility=False, group=ui.UIGroup_Imports)
 
     # Recalculate
     if baseName == 'Marz_Headstock':
