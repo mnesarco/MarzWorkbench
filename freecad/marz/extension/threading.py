@@ -110,7 +110,7 @@ class Task(QtCore.QRunnable):
         Throws: First exception encountered after all jobs are completed.
         """
         # Return all results
-        return [j.get() if type(j) is type(Task) else j for j in jobs]
+        return [j.get() if isinstance(j,Task) else j for j in jobs]
 
 
 MAIN_UI_THREAD = UIThread()
