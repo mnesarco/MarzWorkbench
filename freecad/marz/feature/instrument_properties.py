@@ -23,47 +23,78 @@ from freecad.marz.model.instrument import NeckJoint, NutPosition, NutSpacing, in
 from freecad.marz.extension.properties import FreecadPropertiesHelper, FreecadPropertyHelper as fcp
 from freecad.marz.model.transitions import TransitionFunction
 
+# Support loading old files with different property names
+COMPAT_PRE_028 = dict()
+COMPAT_PRE_028['Headstock_Width'] = 'HeadStock_Width'
+COMPAT_PRE_028['Headstock_Length'] = 'HeadStock_Length'
+COMPAT_PRE_028['Headstock_Thickness'] = 'HeadStock_Thickness'
+COMPAT_PRE_028['Headstock_Depth'] = 'HeadStock_Depth'
+COMPAT_PRE_028['Headstock_Angle'] = 'HeadStock_Angle'
+COMPAT_PRE_028['Headstock_VoluteRadius'] = 'HeadStock_VoluteRadius'
+COMPAT_PRE_028['Headstock_VoluteOffset'] = 'HeadStock_VoluteOffset'
+COMPAT_PRE_028['Headstock_TopTransitionLength'] = 'HeadStock_TopTransitionLength'
+COMPAT_PRE_028['Headstock_TransitionStiffness'] = 'HeadStock_TransitionStiffness'
+COMPAT_PRE_028['Trussrod_Length'] = 'TrussRod_Length'
+COMPAT_PRE_028['Trussrod_Width'] = 'TrussRod_Width'
+COMPAT_PRE_028['Trussrod_Depth'] = 'TrussRod_Depth'
+COMPAT_PRE_028['Trussrod_HeadLength'] = 'TrussRod_HeadLength'
+COMPAT_PRE_028['Trussrod_HeadWidth'] = 'TrussRod_HeadWidth'
+COMPAT_PRE_028['Trussrod_HeadDepth'] = 'TrussRod_HeadDepth'
+COMPAT_PRE_028['Trussrod_TailLength'] = 'TrussRod_TailLength'
+COMPAT_PRE_028['Trussrod_TailWidth'] = 'TrussRod_TailWidth'
+COMPAT_PRE_028['Trussrod_TailDepth'] = 'TrussRod_TailDepth'
+COMPAT_PRE_028['Trussrod_End'] = 'TrussRod_End'
+COMPAT_PRE_028['Stringset_Gauges'] = 'StringSet_Gauges'
+COMPAT_PRE_028['Fretwire_TangDepth'] = 'FretWire_TangDepth'
+COMPAT_PRE_028['Fretwire_TangWidth'] = 'FretWire_TangWidth'
+COMPAT_PRE_028['Fretwire_CrownHeight'] = 'FretWire_CrownHeight'
+COMPAT_PRE_028['Fretwire_CrownWidth'] = 'FretWire_CrownWidth'
+COMPAT_PRE_028['Autoupdate_Fretboard'] = 'AutoUpdate_Fretboard'
+COMPAT_PRE_028['Autoupdate_Neck'] = 'AutoUpdate_Neck'
+COMPAT_PRE_028['Autoupdate_Body'] = 'AutoUpdate_Body'
+
+
 # All Instrument Properties
 properties = [
 
     # Scale
-    fcp('scale.bass',                   inches(25.5), "Bass Scale"),
-    fcp('scale.treble',                 inches(25.5), "Treble Scale"),
+    fcp('scale.bass',                   inches(25.5), "Bass Scale", compat=COMPAT_PRE_028),
+    fcp('scale.treble',                 inches(25.5), "Treble Scale", compat=COMPAT_PRE_028),
 
     # Nut
-    fcp('nut.thickness',                5),
-    fcp('nut.spacing',                  NutSpacing.EQ_GAP, 'String spacing', enum=NutSpacing),
-    fcp('nut.position',                 NutPosition.PERPENDICULAR, 'Nut align', enum=NutPosition),
-    fcp('nut.offset',                   0, 'Distance from fret 0 and Nut'),
-    fcp('nut.depth',                    5, 'Depth into the fretboard'),
-    fcp('nut.stringDistanceProj',       34.5, 'Distance from first to last String at average nut position'),
+    fcp('nut.thickness',                5, compat=COMPAT_PRE_028),
+    fcp('nut.spacing',                  NutSpacing.EQ_GAP, 'String spacing', enum=NutSpacing, compat=COMPAT_PRE_028),
+    fcp('nut.position',                 NutPosition.PERPENDICULAR, 'Nut align', enum=NutPosition, compat=COMPAT_PRE_028),
+    fcp('nut.offset',                   0, 'Distance from fret 0 and Nut', compat=COMPAT_PRE_028),
+    fcp('nut.depth',                    5, 'Depth into the fretboard', compat=COMPAT_PRE_028),
+    fcp('nut.stringDistanceProj',       34.5, 'Distance from first to last String at average nut position', compat=COMPAT_PRE_028),
 
     # Neck
-    fcp('neck.joint',                   NeckJoint.SETIN, 'Joint Type', enum=NeckJoint),
-    fcp('neck.startThickness',          15, 'Thickness at nut position'),
-    fcp('neck.endThickness',            15, 'Thickness at heel transition start position'),
-    fcp('neck.jointFret',               16, 'Number of fret where heel transition starts', ui='App::PropertyInteger'),
-    fcp('neck.topOffset',               2, 'Offset between body top and fretboard bottom'),
-    fcp('neck.angle',                   0, 'Break angle', ui='App::PropertyAngle'),
-    fcp('neck.tenonThickness',          0, 'Tenon Thickness if Set In Neck'),
-    fcp('neck.tenonLength',             0, 'Tenon Length if Set In Neck'),
-    fcp('neck.tenonOffset',             0, 'Tenon Offset if Set In Neck'),
-    fcp('neck.profile',                 "C Classic", 'Neck profile', options=lambda: [p.name for p in NeckProfile.LIST.values()]),
-    fcp('neck.transitionLength',        50, 'Length of the heel transition'),
-    fcp('neck.transitionTension',       35, 'Tension of the heel transition'),
-    fcp('neck.transitionFunction',      TransitionFunction.CATENARY, 'Math function of the heel transition', enum=TransitionFunction),
+    fcp('neck.joint',                   NeckJoint.SETIN, 'Joint Type', enum=NeckJoint, compat=COMPAT_PRE_028),
+    fcp('neck.startThickness',          15, 'Thickness at nut position', compat=COMPAT_PRE_028),
+    fcp('neck.endThickness',            15, 'Thickness at heel transition start position', compat=COMPAT_PRE_028),
+    fcp('neck.jointFret',               16, 'Number of fret where heel transition starts', ui='App::PropertyInteger', compat=COMPAT_PRE_028),
+    fcp('neck.topOffset',               2, 'Offset between body top and fretboard bottom', compat=COMPAT_PRE_028),
+    fcp('neck.angle',                   0, 'Break angle', ui='App::PropertyAngle', compat=COMPAT_PRE_028),
+    fcp('neck.tenonThickness',          0, 'Tenon Thickness if Set In Neck', compat=COMPAT_PRE_028),
+    fcp('neck.tenonLength',             0, 'Tenon Length if Set In Neck', compat=COMPAT_PRE_028),
+    fcp('neck.tenonOffset',             0, 'Tenon Offset if Set In Neck', compat=COMPAT_PRE_028),
+    fcp('neck.profile',                 "C Classic", 'Neck profile', options=lambda: [p.name for p in NeckProfile.LIST.values()], compat=COMPAT_PRE_028),
+    fcp('neck.transitionLength',        50, 'Length of the heel transition', compat=COMPAT_PRE_028),
+    fcp('neck.transitionTension',       35, 'Tension of the heel transition', compat=COMPAT_PRE_028),
+    fcp('neck.transitionFunction',      TransitionFunction.CATENARY, 'Math function of the heel transition', enum=TransitionFunction, compat=COMPAT_PRE_028),
 
     # Fretboard
-    fcp('fretboard.thickness',          7, 'Board thickness'),
-    fcp('fretboard.startRadius',        inches(10), 'Radius at nut'),
-    fcp('fretboard.endRadius',          inches(14), 'Radius at end'),
-    fcp('fretboard.startMargin',        5, 'Margin before nut'),
-    fcp('fretboard.endMargin',          5, 'Margion after last fret'),
-    fcp('fretboard.sideMargin',         3, 'Side margin'),
-    fcp('fretboard.fretNipping',        2, 'Nipping distance'),
-    fcp('fretboard.perpendicularFret',  7, 'Number of perpendicular fret', ui='App::PropertyInteger'),
-    fcp('fretboard.frets',              24, 'Number of frets', ui='App::PropertyInteger'),
-    fcp('fretboard.inlayDepth',         1, 'Depth of inlay carvings'),
+    fcp('fretboard.thickness',          7, 'Board thickness', compat=COMPAT_PRE_028),
+    fcp('fretboard.startRadius',        inches(10), 'Radius at nut', compat=COMPAT_PRE_028),
+    fcp('fretboard.endRadius',          inches(14), 'Radius at end', compat=COMPAT_PRE_028),
+    fcp('fretboard.startMargin',        5, 'Margin before nut', compat=COMPAT_PRE_028),
+    fcp('fretboard.endMargin',          5, 'Margion after last fret', compat=COMPAT_PRE_028),
+    fcp('fretboard.sideMargin',         3, 'Side margin', compat=COMPAT_PRE_028),
+    fcp('fretboard.fretNipping',        2, 'Nipping distance', compat=COMPAT_PRE_028),
+    fcp('fretboard.perpendicularFret',  7, 'Number of perpendicular fret', ui='App::PropertyInteger', compat=COMPAT_PRE_028),
+    fcp('fretboard.frets',              24, 'Number of frets', ui='App::PropertyInteger', compat=COMPAT_PRE_028),
+    fcp('fretboard.inlayDepth',         1, 'Depth of inlay carvings', compat=COMPAT_PRE_028),
 
     #! TODO: Needs some refinements
     #! fcp('fretboard.cut',                FretboardCut.PARALLEL, 'End cut type', enum=FretboardCut),
@@ -71,62 +102,64 @@ properties = [
     #! fcp('fretboard.cutTrebleDistance',  400, 'Distance to cut at treble'),
 
     # Bridge
-    fcp('bridge.bassCompensation',      0, 'Compensation on bass scale'),
-    fcp('bridge.trebleCompensation',    0, 'Compensation on treble scale'),
-    fcp('bridge.stringDistanceProj',    63, 'String Distance at Bridge (Projected to vertical)'),
-    fcp('bridge.height',                16.363, "Height of the bridge from body's top to strings"),
+    fcp('bridge.bassCompensation',      0, 'Compensation on bass scale', compat=COMPAT_PRE_028),
+    fcp('bridge.trebleCompensation',    0, 'Compensation on treble scale', compat=COMPAT_PRE_028),
+    fcp('bridge.stringDistanceProj',    63, 'String Distance at Bridge (Projected to vertical)', compat=COMPAT_PRE_028),
+    fcp('bridge.height',                16.363, "Height of the bridge from body's top to strings", compat=COMPAT_PRE_028),
 
     # Headstock
-    fcp('headStock.width',                       100, 'Default Width if no custom contour is provided'),
-    fcp('headStock.length',                      220, 'Default Length if no custom contour is provided'),
-    fcp('headStock.thickness',                    15, 'Thickness'),
-    fcp('headStock.depth',                         5, 'Depth (only apply if Flat)'),
-    fcp('headStock.angle',                         9, 'Break Angle', ui='App::PropertyAngle'),
-    fcp('headStock.transitionParamHorizontal',   0.5, 'Transition stiffness', ui="App::PropertyFloat", name="HeadStock_TransitionStiffness"),
-    fcp('headStock.voluteRadius',                 50, 'Volute radius. If zero then no volute'),
-    fcp('headStock.voluteOffset',                 10, 'Volute offset into the neck'),
-    fcp('headStock.topTransitionLength',          20, 'Length of the transition between nut and top of the headstock in Flat headstocks. Ignored if angle is greater than zero'),
+    fcp('headStock.width',                       100, 'Default Width if no custom contour is provided', compat=COMPAT_PRE_028),
+    fcp('headStock.length',                      220, 'Default Length if no custom contour is provided', compat=COMPAT_PRE_028),
+    fcp('headStock.thickness',                    15, 'Thickness', compat=COMPAT_PRE_028),
+    fcp('headStock.depth',                         5, 'Depth (only apply if Flat)', compat=COMPAT_PRE_028),
+    fcp('headStock.angle',                         9, 'Break Angle', ui='App::PropertyAngle', compat=COMPAT_PRE_028),
+    fcp('headStock.transitionParamHorizontal',   0.5, 'Transition stiffness', ui="App::PropertyFloat", name="Headstock_TransitionStiffness", compat=COMPAT_PRE_028),
+    fcp('headStock.voluteRadius',                 50, 'Volute radius. If zero then no volute', compat=COMPAT_PRE_028),
+    fcp('headStock.voluteOffset',                 10, 'Volute offset into the neck', compat=COMPAT_PRE_028),
+    fcp('headStock.topTransitionLength',          20, 'Length of the transition between nut and top of the headstock in Flat headstocks. Ignored if angle is greater than zero', compat=COMPAT_PRE_028),
 
     # Truss Rod Channel
-    fcp('trussRod.length',              430, 'Total Length of trussRod'),
-    fcp('trussRod.width',               6, 'Channel width'),
-    fcp('trussRod.depth',               9, 'Channel depth'),
-    fcp('trussRod.headLength',          20, 'Head length'),
-    fcp('trussRod.headWidth',           8, 'Head width'),
-    fcp('trussRod.headDepth',           11, 'Head depth'),
-    fcp('trussRod.tailLength',          0, 'Tail length'),
-    fcp('trussRod.tailWidth',           0, 'Tail width'),
-    fcp('trussRod.tailDepth',           0, 'Tail depth'),
+    fcp('trussRod.length',              430, 'Total Length of trussRod', compat=COMPAT_PRE_028),
+    fcp('trussRod.width',               6, 'Channel width', compat=COMPAT_PRE_028),
+    fcp('trussRod.depth',               9, 'Channel depth', compat=COMPAT_PRE_028),
+    fcp('trussRod.headLength',          20, 'Head length', compat=COMPAT_PRE_028),
+    fcp('trussRod.headWidth',           8, 'Head width', compat=COMPAT_PRE_028),
+    fcp('trussRod.headDepth',           11, 'Head depth', compat=COMPAT_PRE_028),
+    fcp('trussRod.tailLength',          0, 'Tail length', compat=COMPAT_PRE_028),
+    fcp('trussRod.tailWidth',           0, 'Tail width', compat=COMPAT_PRE_028),
+    fcp('trussRod.tailDepth',           0, 'Tail depth', compat=COMPAT_PRE_028),
     fcp('trussRod.start',               0, 'Distance from neck start (nut)', ui='App::PropertyDistance',
-                                        name='TrussRod_End'), #Renamed for clarity
+                                        name='Trussrod_End', compat=COMPAT_PRE_028), #Renamed for clarity
 
     # String Set (Use StringList instead of FloatList because FloatList precision is too limited)
     fcp('stringSet.gauges',             ['0.010','0.013','0.017','0.026','0.036','0.046'], 
-                                        'Gauges of the strings in INCHES', ui="App::PropertyStringList"),
+                                        'Gauges of the strings in INCHES', ui="App::PropertyStringList",
+                                        compat=COMPAT_PRE_028),
 
     # Fret Wire
-    fcp('fretWire.tangDepth',           inches(0.055), 'Fret slot depth'),
-    fcp('fretWire.tangWidth',           inches(0.020), 'Fret slot width'),
-    fcp('fretWire.crownHeight',         inches(0.039), 'Crown Height'),
-    fcp('fretWire.crownWidth',          inches(0.084), 'Crown Width'),
+    fcp('fretWire.tangDepth',           inches(0.055), 'Fret slot depth', compat=COMPAT_PRE_028),
+    fcp('fretWire.tangWidth',           inches(0.020), 'Fret slot width', compat=COMPAT_PRE_028),
+    fcp('fretWire.crownHeight',         inches(0.039), 'Crown Height', compat=COMPAT_PRE_028),
+    fcp('fretWire.crownWidth',          inches(0.084), 'Crown Width', compat=COMPAT_PRE_028),
 
     # Body
-    fcp('body.topThickness',            5, 'Thickness of Top'),
-    fcp('body.backThickness',           40, 'Thickness of Back'),
-    fcp('body.length',                  550, 'Max Length of Body Blank'),
-    fcp('body.width',                   350, 'Max Width of Body Blank'),
-    fcp('body.neckPocketDepth',         20, 'Depth of Neck Pocket'),
-    fcp('body.neckPocketLength',        55, 'Length of Neck Pocket'),
+    fcp('body.topThickness',            5,    'Thickness of Top', compat=COMPAT_PRE_028),
+    fcp('body.backThickness',           40,   'Thickness of Back', compat=COMPAT_PRE_028),
+    fcp('body.length',                  550,  'Max Length of Body Blank', compat=COMPAT_PRE_028),
+    fcp('body.width',                   350,  'Max Width of Body Blank', compat=COMPAT_PRE_028),
+    fcp('body.neckPocketCarve',         True, 'Carve Neck pocket from body', ui='App::PropertyBool', compat=COMPAT_PRE_028),
+    fcp('body.neckPocketDepth',         20,   'Depth of Neck Pocket', compat=COMPAT_PRE_028),
+    fcp('body.neckPocketLength',        55,   'Length of Neck Pocket', compat=COMPAT_PRE_028),
 
     # Internal
-    fcp('internal.bodyImport',          0, ui='App::PropertyInteger', mode=4),
-    fcp('internal.headstockImport',     0, ui='App::PropertyInteger', mode=4),
-    fcp('internal.inlayImport',         0, ui='App::PropertyInteger', mode=4),
+    fcp('internal.bodyImport',          0, ui='App::PropertyInteger', mode=4, compat=COMPAT_PRE_028),
+    fcp('internal.headstockImport',     0, ui='App::PropertyInteger', mode=4, compat=COMPAT_PRE_028),
+    fcp('internal.inlayImport',         0, ui='App::PropertyInteger', mode=4, compat=COMPAT_PRE_028),
 
     # AutoUpdate
-    fcp('autoUpdate.fretboard',         True, 'Toggle Fretboard autoupdate', ui='App::PropertyBool'),
-    fcp('autoUpdate.neck',              True, 'Toggle Neck autoupdate', ui='App::PropertyBool'),
-    fcp('autoUpdate.body',              True, 'Toggle Body autoupdate', ui='App::PropertyBool'),
+    fcp('autoUpdate.fretboard',         True, 'Toggle Fretboard autoupdate', ui='App::PropertyBool', compat=COMPAT_PRE_028),
+    fcp('autoUpdate.neck',              True, 'Toggle Neck autoupdate', ui='App::PropertyBool', compat=COMPAT_PRE_028),
+    fcp('autoUpdate.body',              True, 'Toggle Body autoupdate', ui='App::PropertyBool', compat=COMPAT_PRE_028),
 
 ]
 

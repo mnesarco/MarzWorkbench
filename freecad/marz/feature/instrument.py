@@ -118,7 +118,7 @@ class MarzInstrument:
             bar.stop()
 
     def updateOnChange(self):
-        changed = False
+        self.changed = False
         Task.joinAll([Task.execute(part.update, self.model) for part in self.partsToUpdate.values()])
 
     def execute(self, obj):
@@ -189,14 +189,14 @@ class MarzInstrument:
 
     def add(self, feature):
         name = feature.__class__.__name__
-        if name not in self.partsToUpdate:
-            def transaction():
+        def transaction():
+            if name not in self.partsToUpdate:
                 self.partsToUpdate[name] = feature
-                feature.create(self.model)
-                App.ActiveDocument.Marz_Instrument.purgeTouched()
-                self.recompute()
+            feature.create(self.model)
+            App.ActiveDocument.Marz_Instrument.purgeTouched()
+            self.recompute()
 
-            self.doInTransaction(transaction, f"Marz Add {name}")
+        self.doInTransaction(transaction, f"Marz Add {name}")
 
     @RunInUIThread
     def recompute(self):

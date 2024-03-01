@@ -457,13 +457,15 @@ class Body(Feature):
     """
 
     def __init__(self, instrument, topThickness=5, backThickness=40, length=500, width=350, neckPocketDepth=15.875,
-                 neckPocketLength=50):
+                 neckPocketLength=50, neckPocketCarve=True):
         """
         Parameters:
             topThickness    : Top thickness
             backThickness   : Back thickness
             length          : Length
             neckPocketDepth : Depth of the neck pocket
+            neckPocketLength: Length of the neck pocket
+            neckPocketCarve : Carve the neck pocket from the body
         """
         super().__init__(instrument)
         self.topThickness = topThickness
@@ -472,6 +474,7 @@ class Body(Feature):
         self.width = width
         self.neckPocketDepth = neckPocketDepth
         self.neckPocketLength = neckPocketLength
+        self.neckPocketCarve = neckPocketCarve
 
 
 class TrussRod(Feature):

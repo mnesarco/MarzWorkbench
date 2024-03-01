@@ -23,32 +23,57 @@ from functools import reduce
 
 from freecad.marz.extension.attributes import rgetattr, rsetattr
 
+def capitalize_first(word):
+    return word[0].upper() + word[1:]
 
 class FreecadPropertyHelper:
 
-    DEFAULT_NAME_PATTERN = re.compile(r'(^[a-z])|\.(\w)')
+    COMPAT_DEFAULT_NAME_PATTERN = re.compile(r'(^[a-z])|\.(\w)')
 
     @staticmethod
-    def getDefaultName(path):
+    def getDefaultNameAndSection(path):
+        """Converts path to Name: obj.attrX.attrY => Obj_AttrXAttrY and section Obj"""
+        parts = path.replace('_', '.').split('.')
+        section = parts[0].capitalize()
+        name = section + "_" + "".join([capitalize_first(p) for p in parts[1:]])
+        description = " ".join(parts[1:]) if len(parts) > 1 else ""
+        return section, name, description
+    
+    # compat: Compatibility with old versions (before 0.28)
+    @staticmethod
+    def getCompatDefaultName(path):
         """Converts path to Name: obj.attrX.attrY => Obj_AttrX_AttrY"""
         def replacer(match):
             (first, g) = match.groups()
             if first: return first.upper()
             else: return f'_{g.upper()}'
-        return FreecadPropertyHelper.DEFAULT_NAME_PATTERN.sub(replacer, path)
+        return FreecadPropertyHelper.COMPAT_DEFAULT_NAME_PATTERN.sub(replacer, path)
+    # /compat
 
-    def __init__(self, path, default=None, description=None, name=None, section=None, ui="App::PropertyLength", enum=None, options=None, mode=0):
+    def __init__(self, path, default=None, description=None, 
+                 name=None, section=None, ui="App::PropertyLength", 
+                 enum=None, options=None, mode=0, compat=None):
         self.path = path
         self.default = default
-        self.name = name or FreecadPropertyHelper.getDefaultName(path)
+        default_section, default_name, default_description = FreecadPropertyHelper.getDefaultNameAndSection(self.path)
+        self.name = name or default_name
+
+        if compat:
+            self._compat_name = compat.get(self.name, self.name)
+        else:
+            self._compat_name = self.name
+        
+        # if (self.name != self._compat_name):
+        #     print(f"COMPAT_PRE_028['{self.name}'] = '{self._compat_name}'")
+        
         if enum or options:
             self.ui = 'App::PropertyEnumeration'
         else:
             self.ui = ui
         self.enum = enum
         self.options = options
-        self.section = section or self.name.partition('_')[0]
-        self.description = description or self.name.rpartition('_')[2]
+        self.section = section or default_section
+        self.description = description or default_description
         self.mode = mode
 
     def init(self, obj):
@@ -90,11 +115,24 @@ class FreecadPropertyHelper:
         else:
             state[self.name] = self.getval(obj)
 
-    def deserialize(self, obj, state):
+    def deserialize_compat(self, obj, state):
+        deserialized_value = state.get(self._compat_name, self.default)
+        obj.removeProperty(self.name)
+        self.init(obj)
         if self.enum:
-            self.setval(obj, self.enum(state[self.name]))    
+            self.setval(obj, self.enum(deserialized_value))    
         else:
-            self.setval(obj, state[self.name])
+            self.setval(obj, deserialized_value)
+
+    def deserialize(self, obj, state):
+        deserialized_value = state.get(self.name, None)
+        if deserialized_value is None:
+            self.deserialize_compat(obj, state)
+        else:
+            if self.enum:
+                self.setval(obj, self.enum(deserialized_value))    
+            else:
+                self.setval(obj, deserialized_value)
 
     def copyToModel(self, obj, modelObj):
         changed = False

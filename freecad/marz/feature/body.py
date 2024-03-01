@@ -98,7 +98,7 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False, ex
 
     return comp
 
-traced("Make Body")
+@traced("Make Body")
 def makeBody(inst, bodyd, externalDependencies={}):
     
     angle = deg(bodyd.neckAngle)
@@ -112,17 +112,19 @@ def makeBody(inst, bodyd, externalDependencies={}):
     t = Vector(b.x - bodyd.backThickness*math.sin(angle), y, b.z + bodyd.backThickness*math.cos(angle))
     topJob = Task.execute(createBodyComp, bodyd, bodyd.topThickness, t, 0, top=True, externalDependencies=externalDependencies)
 
-    def makePocket():
-        return NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine, forPocket=True)
+    jobs = [backJob, topJob]
+    if bodyd.neckPocketCarve:
+        def makePocket():
+            return NeckFeature(inst).heel(bodyd.neckd, bodyd.neckd.fbd.neckFrame.midLine, forPocket=True)
+        jobs.append(Task.execute(makePocket))
 
-    heelJob = Task.execute(makePocket)
+    back, top, *heel = Task.joinAll(jobs)
 
-    back, top, heel = Task.joinAll([backJob, topJob, heelJob])
+    if top and len(heel) > 0:
+        top = top.cut(heel[0])
 
-    if top:
-        top = top.cut(heel)
-
-    back = back.cut(heel)
+    if back and len(heel) > 0:
+        back = back.cut(heel[0])
         
     return (top, back)
 
