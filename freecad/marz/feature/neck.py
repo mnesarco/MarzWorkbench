@@ -32,8 +32,9 @@ from freecad.marz.model.neck_data import NeckData
 from freecad.marz.model.neck_profile import getNeckProfile
 from freecad.marz.extension.threading import Task
 from freecad.marz.model.transitions import transitionDatabase
-from freecad.marz.extension.ui import createPartBody, updatePartShape
+from freecad.marz.extension.ui import createPartBody, updatePartShape, Log
 from freecad.marz.model.vxy import angleVxy, vxy
+from freecad.marz.utils.geom import is_edge_at, are_parallel, showShape
 
 
 @PureFunctionCache
@@ -240,6 +241,30 @@ def makeHeel(neckd, line, angle, joint, backThickness, topThickness,
     return part.removeSplitter()
 
 
+def heel_fillet(heel, p1, p2, radius):
+    if radius <= 1e-3:
+        return heel
+    
+    v1 = geom.vec(p1)
+    v2 = geom.vec(p2)
+    Z = Vector(0,0,1)
+    selected = []
+    
+    def fillable(edge):
+        return ((is_edge_at(edge, v1) or is_edge_at(edge, v2)) 
+                and are_parallel(edge.tangentAt(edge.FirstParameter), Z))
+
+    selected = [e for e in heel.Edges if fillable(e)]
+    # for edge in heel.Edges:
+    #     if (is_edge_at(edge, v1) or is_edge_at(edge, v2)) and are_parallel(edge.tangentAt(edge.FirstParameter), Z):
+    #         selected.append(edge)
+    
+    if len(selected) > 0:
+        heel = heel.makeFillet(radius, selected) 
+
+    return heel
+
+
 @PureFunctionCache
 @traced('Make Tenon')
 def makeTenon(fbd, neckAngleRad, posXY, h, tenonThickness, tenonLength, tenonOffset, joint):
@@ -336,9 +361,19 @@ class NeckFeature:
     def heel(self, neckd, line, forPocket=False):
         body = self.instrument.body
         neck = self.instrument.neck
-        return makeHeel(neckd, line, neck.angle, neck.joint, body.backThickness, body.topThickness, neck.topOffset,
+        part = makeHeel(neckd, line, neck.angle, neck.joint, body.backThickness, body.topThickness, neck.topOffset,
             body.neckPocketDepth, body.neckPocketLength, neck.jointFret, neck.transitionLength, neck.transitionTension, 
             body.length, neck.tenonThickness, neck.tenonLength, neck.tenonOffset, forPocket)
+        
+        try:
+            return heel_fillet(
+                part, 
+                neckd.fbd.neckFrame.bridge.end, 
+                neckd.fbd.neckFrame.bridge.start, 
+                self.instrument.neck.heelFillet)
+        except:
+            Log("Error filleting the heel with radius: ", self.instrument.neck.heelFillet)
+            return part
 
     def createPart(self):
         """

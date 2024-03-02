@@ -71,6 +71,9 @@ def vecyz(v, x=0):
 def showPoint(v):
     Part.show(Part.Shape([Part.Point(v)]))
 
+@RunInUIThread
+def showShape(v):
+    Part.show(v)
 
 def showPoints(vs):
     for v in vs: showPoint(v)
@@ -147,3 +150,16 @@ def sectionSegment(shape, line):
     (d, vs, es) = line.distToShape(shape)
     if d < 1e-5 and len(vs) > 1:
         return Part.LineSegment(vs[0][0], vs[1][0])
+
+
+def is_edge_at(edge, point, tol=1e-5):
+    start = edge.valueAt(edge.FirstParameter)
+    end = edge.valueAt(edge.LastParameter) 
+    return point.isEqual(end, tol) or point.isEqual(start, tol)
+
+def are_parallel(vec_a, vec_b, tol=1e-6):
+    vec_c = vec_a.cross(vec_b)
+    return vec_c.Length <= tol
+
+def are_perpendicular(vec_a, vec_b, tol=1e-6):
+    return vec_a.dot(vec_b) <= tol
