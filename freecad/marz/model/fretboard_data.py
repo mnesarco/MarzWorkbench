@@ -96,9 +96,10 @@ class FretboardData(object):
     # ! this object will be cached as a hash calculated on creation,
     # ! so two instances created with same data will hit the same
     # ! cache entry.
-    __slots__ = ['frame', 'virtStrFrame', 'scaleFrame', 'nutFrame', 'frets', 'bridgePos', 'neckFrame', '_ihash']
+    __slots__ = ['frame', 'virtStrFrame', 'scaleFrame', 'nutFrame', 'frets', 'bridgePos', 
+                 'neckFrame', '_ihash', 'filletRadius']
 
-    def __init__(self, frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame):
+    def __init__(self, frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame, filletRadius):
         # Set immutable values
         super().__setattr__('frame', frame)
         super().__setattr__('virtStrFrame', virtStrFrame)
@@ -107,9 +108,10 @@ class FretboardData(object):
         super().__setattr__('neckFrame', neckFrame)
         super().__setattr__('frets', frets)
         super().__setattr__('bridgePos', bridgePos)
+        super().__setattr__('filletRadius', filletRadius)
 
         # Calculate immutable hash
-        ihash = hash((frame, virtStrFrame, scaleFrame, nutFrame, neckFrame, (*frets,), bridgePos))
+        ihash = hash((frame, virtStrFrame, scaleFrame, nutFrame, neckFrame, (*frets,), bridgePos, filletRadius))
         super().__setattr__('_ihash', ihash)
 
     def __setattr__(self, name, value):
@@ -127,6 +129,7 @@ class FretboardData(object):
                 and self.neckFrame == other.neckFrame
                 and self.frets == other.frets
                 and self.bridgePos == other.bridgePos
+                and self.filletRadius == other.filletRadius
         )
 
     def translate(self, v):
@@ -135,7 +138,7 @@ class FretboardData(object):
             [f.translate(v) for f in \
              (self.frame, self.virtStrFrame, self.scaleFrame, self.nutFrame, self.bridgePos, self.neckFrame)]
         frets = [f.translate(v) for f in self.frets]
-        return FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame)
+        return FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame, self.filletRadius)
 
     def widthAt(self, dist):
         """Returns neck width at `dist`"""

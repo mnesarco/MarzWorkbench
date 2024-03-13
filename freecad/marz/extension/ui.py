@@ -57,6 +57,9 @@ def Msg(text):
 def Log(text):
     App.Console.PrintLog(f"[MARZ] {text}\n")
 
+@RunInUIThread
+def LogErr(text):
+    App.Console.PrintError(f"[MARZ] {text}\n")
 
 def StartProgress(msg, n = 0):
     try:

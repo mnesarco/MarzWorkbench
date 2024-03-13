@@ -22,6 +22,8 @@ import re
 from functools import reduce
 
 from freecad.marz.extension.attributes import rgetattr, rsetattr
+from freecad.marz.extension.ui import Log
+from freecad.marz.extension.threading import RunInUIThread
 
 def capitalize_first(word):
     return word[0].upper() + word[1:]
@@ -63,8 +65,8 @@ class FreecadPropertyHelper:
         else:
             self._compat_name = self.name
         
-        # if (self.name != self._compat_name):
-        #     print(f"COMPAT_PRE_028['{self.name}'] = '{self._compat_name}'")
+        if (self.name != self._compat_name):
+            Log(f"Renamed property '{self._compat_name}' to '{self.name}'")
         
         if enum or options:
             self.ui = 'App::PropertyEnumeration'
@@ -77,6 +79,10 @@ class FreecadPropertyHelper:
         self.mode = mode
 
     def init(self, obj):
+        try:
+            obj.removeProperty(self.name)
+        except:
+            pass
         f = obj.addProperty(self.ui, self.name, self.section, self.description, self.mode)
         if self.ui == 'App::PropertyEnumeration':
             if self.options:
@@ -116,15 +122,28 @@ class FreecadPropertyHelper:
             state[self.name] = self.getval(obj)
 
     def deserialize_compat(self, obj, state):
-        deserialized_value = state.get(self._compat_name, self.default)
-        obj.removeProperty(self.name)
         self.init(obj)
+        deserialized_value = state.get(self._compat_name, self.default)
+        if deserialized_value is None: 
+            Log(f"Loading new property '{self.name}' with default value: {self.default}")
+            deserialized_value = self.default
+        else:
+            Log(f"Reading legacy property '{self._compat_name}' value {deserialized_value} into '{self.name}'")        
+
         if self.enum:
             self.setval(obj, self.enum(deserialized_value))    
         else:
             self.setval(obj, deserialized_value)
 
+    def clean_compat_prop(self, obj):
+        if self._compat_name != self.name:
+            removed = obj.removeProperty(self._compat_name)
+            if removed:
+                Log(f"Removing legacy property '{self._compat_name}'. Replaced by '{self.name}'")
+            
+
     def deserialize(self, obj, state):
+        Log(f"Reading property: {self.name}")
         deserialized_value = state.get(self.name, None)
         if deserialized_value is None:
             self.deserialize_compat(obj, state)
@@ -170,6 +189,7 @@ class FreecadPropertiesHelper:
         return state
 
     def setPropertiesFromState(self, obj, state):
+        # Load current props
         for prop in self.properties:
             prop.deserialize(obj, state)
 
@@ -204,3 +224,8 @@ class FreecadPropertiesHelper:
                 elif p.options:
                     options = ", ".join(p.options() + ['More by configuration...'])
                 print(f"{p.name.rpartition('_')[2]}|{p.description}|{val} {unit}|{options}")
+
+    @RunInUIThread
+    def remove_legacy_properties_workaround(self, obj):
+        for prop in self.properties:
+            prop.clean_compat_prop(obj) 

@@ -372,7 +372,7 @@ class NeckFeature:
                 neckd.fbd.neckFrame.bridge.start, 
                 self.instrument.neck.heelFillet)
         except:
-            Log("Error filleting the heel with radius: ", self.instrument.neck.heelFillet)
+            Log("Error filleting the heel with radius: {}".format(self.instrument.neck.heelFillet))
             return part
 
     def createPart(self):

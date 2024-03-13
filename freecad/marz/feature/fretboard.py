@@ -30,7 +30,7 @@ from freecad.marz.utils.cache import PureFunctionCache, getCachedObject
 from freecad.marz.model.linexy import lineIntersection, linexy
 from freecad.marz.model.instrument import ModelException, fret, todeg
 from freecad.marz.extension.threading import Task, UIThread
-from freecad.marz.extension.ui import color as hexColor
+from freecad.marz.extension.ui import Log, color as hexColor
 from freecad.marz.extension.ui import (createPartBody, findDraftByLabel, updateDraftPoints,
                                        updatePartShape, UIGroup_XLines, getUIGroup)
 
@@ -113,6 +113,31 @@ def fretboardSection(c, r, w, t, v):
         Part.LineSegment(x,d), 
         Part.LineSegment(d,b)]).Edges)
 
+
+def fretboard_fillet(fb, radius):
+    Z = Vector(0,0,1)
+    Y = Vector(0,1,0)
+    NINF = Vector(-10000, 0, 0)
+    selected = []
+
+    face = geom.query_one(fb.Faces, 
+                      where=lambda f: geom.is_planar(f, coplanar=Y), 
+                      order_by=lambda f: f.CenterOfGravity.distanceToPoint(NINF))
+
+    if face is None:
+        Log("[Info] fretboard fillet was not possible due to missing face")
+        return fb
+
+    def is_vert(edge):
+        return geom.are_parallel(edge.tangentAt(edge.FirstParameter), Z)
+
+    selected = geom.query(face.Edges, where=is_vert, limit=2)
+    if len(selected) == 2:
+        fb = fb.makeFillet(radius, selected) 
+    else:
+        Log("[Info] fretboard fillet was not possible due to missing edges")
+
+    return fb
 
 @PureFunctionCache
 def fretboardCone(startRadius, endRadius, thickness, fbd, top):
@@ -209,7 +234,11 @@ def base(inst, fbd):
     """
     Create Fretboard base board
     """
-    (board, cache) = getCachedObject('fretboard_base', fbd, inst.fretboard.startRadius, inst.fretboard.endRadius, inst.fretboard.thickness)
+    (board, cache) = getCachedObject('fretboard_base', 
+                                     fbd, 
+                                     inst.fretboard.startRadius, 
+                                     inst.fretboard.endRadius, 
+                                     inst.fretboard.thickness)
     if not board:
         with traceTime("Build fretboard base"):
             cone = fretboardCone(
@@ -229,6 +258,16 @@ def base(inst, fbd):
             ]
             cut = geom.extrusion(ps, 0, (0,0,inst.fretboard.thickness+1))
             board = cone.common(cut)
+
+            with traceTime("Fretboard fillet"):
+                fillet_radius = inst.fretboard.filletRadius or 0.0
+                try:
+                    fillet = fretboard_fillet(board, fillet_radius)
+                    if fillet and fillet.isValid():
+                        board = fillet
+                except:
+                    Log("Error filleting the fretboard with radius: {}".format(fillet_radius))
+
         cache(board)
     return board
 
@@ -274,7 +313,7 @@ class FretboardFeature:
         (fretboard, cache) = getCachedObject('FretboardFeature', 
             fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth, 
             inst.nut.depth, inst.fretboard.thickness, inst.fretboard.startRadius,
-            inst.fretboard.endRadius, inst.fretboard.fretNipping)
+            inst.fretboard.endRadius, inst.fretboard.fretNipping, inst.fretboard.filletRadius)
             
         if not fretboard:
 
@@ -288,6 +327,8 @@ class FretboardFeature:
             with traceTime('Cut slots from fretboard'):
                 if board and nut and fretSlots:
                     fretboard = board.cut(tuple([*fretSlots, nut]))
+                    if fretboard.Solids:
+                        fretboard = fretboard.Solids[0].removeSplitter()
 
             cache(fretboard)
 
@@ -295,7 +336,7 @@ class FretboardFeature:
             inlays = inlaysTask.get()
             if inlays:
                 fretboard = fretboard.cut(inlays)
-
+        
         return fretboard
 
     def createFretboardPart(self):

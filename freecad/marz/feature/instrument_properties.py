@@ -83,7 +83,7 @@ properties = [
     fcp('neck.transitionLength',        50, 'Length of the heel transition', compat=COMPAT_PRE_028),
     fcp('neck.transitionTension',       35, 'Tension of the heel transition', compat=COMPAT_PRE_028),
     fcp('neck.transitionFunction',      TransitionFunction.CATENARY, 'Math function of the heel transition', enum=TransitionFunction, compat=COMPAT_PRE_028),
-    fcp('neck.heelFillet',              6.35, 'Heel corners fillet (radius)', compat=COMPAT_PRE_028),
+    fcp('neck.heelFillet',              1.0, 'Heel corners fillet (radius)', compat=COMPAT_PRE_028),
 
     # Fretboard
     fcp('fretboard.thickness',          7, 'Board thickness', compat=COMPAT_PRE_028),
@@ -96,6 +96,7 @@ properties = [
     fcp('fretboard.perpendicularFret',  7, 'Number of perpendicular fret', ui='App::PropertyInteger', compat=COMPAT_PRE_028),
     fcp('fretboard.frets',              24, 'Number of frets', ui='App::PropertyInteger', compat=COMPAT_PRE_028),
     fcp('fretboard.inlayDepth',         1, 'Depth of inlay carvings', compat=COMPAT_PRE_028),
+    fcp('fretboard.filletRadius',       1.0, 'Fillet radius for the corners of the fretboard', compat=COMPAT_PRE_028),
 
     #! TODO: Needs some refinements
     #! fcp('fretboard.cut',                FretboardCut.PARALLEL, 'End cut type', enum=FretboardCut),

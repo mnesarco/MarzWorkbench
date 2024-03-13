@@ -207,6 +207,8 @@ class MarzInstrument:
 
         runDeferred(call, 100)
 
+    def onDocumentRestored(self, obj):
+        InstrumentProps.remove_legacy_properties_workaround(obj)
 
 class MarzInstrumentVP:
 

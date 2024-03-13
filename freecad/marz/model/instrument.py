@@ -236,7 +236,7 @@ class Neck(Feature):
                  endThickness=17, jointFret=16, topOffset=0, angle=3, tenonThickness=10,
                  tenonLength=10, tenonOffset=2, profile="C Classic",
                  transitionLength=50, transitionTension=10, transitionFunction=TransitionFunction.CATENARY,
-                 heelFillet=6.35):
+                 heelFillet=1.0):
         """
         Args:
             joint            : Type of Neck-Body Joint (NeckJoint)
@@ -275,7 +275,7 @@ class Fretboard(Feature):
     def __init__(self, instrument, thickness=7.0, startRadius=inches(10), endRadius=inches(14),
                  startMargin=5.0, endMargin=5.0, sideMargin=3.0, cut=FretboardCut.PARALLEL,
                  frets=24, fretNipping=2, cutBassDistance=400, cutTrebleDistance=400,
-                 perpendicularFret=7, inlayDepth=1):
+                 perpendicularFret=7, inlayDepth=1, filletRadius=1.0):
         """
         Parameters:
             thickness   : Thickness of the fretboard
@@ -291,6 +291,7 @@ class Fretboard(Feature):
             cutTrebleDistance : Distance to cut at Trebele scale
             perpendicularFret : Number of fret which is perpendicular to midline
             profile : Neck profile name (from Resources/neck_profiles.json)
+            filletRadius: end fillet
         """
         super().__init__(instrument)
         self.thickness = thickness
@@ -306,6 +307,7 @@ class Fretboard(Feature):
         self.cutTrebleDistance = cutTrebleDistance
         self.perpendicularFret = perpendicularFret
         self.inlayDepth = inlayDepth
+        self.filletRadius = filletRadius
 
     @property
     def perpendicularFret(self):

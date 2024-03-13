@@ -180,7 +180,7 @@ def buildFretboardData(inst):
 
     neckFrame = calc_neck_frame()
 
-    fbd = FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame)
+    fbd = FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame, inst.fretboard.filletRadius)
     fbd = fbd.translate(vxy(0, 0).sub(neckFrame.nut.mid()))
 
     return fbd

@@ -163,3 +163,26 @@ def are_parallel(vec_a, vec_b, tol=1e-6):
 
 def are_perpendicular(vec_a, vec_b, tol=1e-6):
     return vec_a.dot(vec_b) <= tol
+
+def is_planar(shape, normal=None, coplanar=None):
+    plane = shape.findPlane()
+    if isinstance(normal, Vector):
+        return bool(plane) and are_parallel(normal, plane.normal(0,0))
+    if isinstance(coplanar, Vector):
+        return bool(plane) and are_perpendicular(coplanar, plane.normal(0,0))
+    return bool(plane)
+
+def query(shapes, where=None, order_by=None, limit=None):
+    if where is None:
+        where = lambda s : True
+    select = [s for s in shapes if where(s)]
+    if order_by is not None:
+        select = sorted(select, key=order_by)
+    if limit is not None and limit < len(select):
+        select = select[0:limit]
+    return select
+
+def query_one(shapes, where, order_by=None):
+    select = query(shapes, where=where, order_by=order_by, limit=1)
+    if len(select) == 1:
+        return select[0]
