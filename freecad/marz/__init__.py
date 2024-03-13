@@ -18,7 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-__version__ = "0.0.29-alpha"
+__version__ = "0.0.30-alpha"
 __author__ = "Frank David Martinez M <mnesarco at gmail.com>"
 __copyright__ = "Copyright 2020, Frank D. Martinez. M."
 __license__ = "GPLv3"
