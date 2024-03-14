@@ -19,7 +19,8 @@
 # +---------------------------------------------------------------------------+
 
 from freecad.marz.model.vxy import vxy
-
+from freecad.marz.extension import Vector
+import Part
 
 class linexy:
 
@@ -138,6 +139,9 @@ class linexy:
             start.y = y
             end.y = y
         return linexy(start, end)
+    
+    def edge(self):
+        return Part.Edge(Part.Vertex(self.start.x, self.start.y, 0), Part.Vertex(self.end.x, self.end.y, 0))
 
 
 def lineTo(start, end):

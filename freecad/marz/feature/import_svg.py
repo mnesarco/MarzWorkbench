@@ -155,7 +155,7 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
 
     anchor = anchor or Vector(0,0,0) # If no reference anchor
 
-    # Load Brifge reference
+    # Load Bridge reference
     wbridge = None
     if bridge:
         wbridge = Part.Wire( bridge.Shape.copy().Edges )

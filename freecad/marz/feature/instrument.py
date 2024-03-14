@@ -20,6 +20,7 @@
 
 import importlib
 import traceback
+import time
 
 from freecad.marz.extension import App
 from freecad.marz.extension.threading import Task, RunInUIThread
@@ -31,7 +32,7 @@ from freecad.marz.feature.instrument_properties import InstrumentProps
 from freecad.marz.feature.neck import NeckFeature
 from freecad.marz.model.instrument import Instrument, ModelException
 from freecad.marz.utils import traceTime
-
+from freecad.marz.extension.events import MARZ_EVENTS
 
 class Fretboard:
 
@@ -91,6 +92,7 @@ class MarzInstrument:
 
         # Properties
         InstrumentProps.createProperties(obj)
+        MarzEvt_BridgeRef.subscribe(self.onBridgeRefChangedEvent)
 
     def doInTransaction(self, block, name):
         bar = StartProgress(f"Processing {name}...")
@@ -209,6 +211,15 @@ class MarzInstrument:
 
     def onDocumentRestored(self, obj):
         InstrumentProps.remove_legacy_properties_workaround(obj)
+        MarzEvt_BridgeRef.subscribe(self.onBridgeRefChangedEvent)
+
+    def onBridgeRefChangedEvent(self, doc, obj):
+        if obj:
+            bridge_ref = doc.getObject('Marz_Body_Bridge')
+            obj.setEditorMode('Body_NeckPocketLength', 2 if bool(bridge_ref) else 0)
+            if not bool(bridge_ref):
+                obj.Internal_BodyImport = int(time.time())
+
 
 class MarzInstrumentVP:
 
@@ -236,3 +247,24 @@ class MarzInstrumentVP:
 
     def __setstate__(self, state):
         return None
+
+# ┌──────────────────────────────────────────────────────────────────┐ 
+# │ Marz Events definitions                                          │ 
+# └──────────────────────────────────────────────────────────────────┘ 
+
+# Marz Event: Bridge reference changed
+def create_bridge_changed_event_trigger():
+    check_bridge_ref_state = None
+    def trigger(doc, instrument):
+        nonlocal check_bridge_ref_state        
+        if instrument:
+            ref_is_present = bool(doc.getObject('Marz_Body_Bridge'))
+            if check_bridge_ref_state != ref_is_present:
+                check_bridge_ref_state = ref_is_present
+                return True
+        return False
+    return MARZ_EVENTS.create(trigger)
+
+MarzEvt_BridgeRef = create_bridge_changed_event_trigger()
+
+

@@ -12,7 +12,7 @@ Necks, Nuts, ... based on a common set of parameters.
 
 ## Features
 
-This is a work in progress project, this is the list of the currently implemented features. Theay are working but need more testing.
+This is a work in progress project, this is the list of the currently implemented features. They are working but need more testing.
 
 * Fretboard
   * Compound Radius
@@ -21,10 +21,11 @@ This is a work in progress project, this is the list of the currently implemente
   * Perpendicular Fret setting
   * Fret nipping
   * Margins
-  * Thicikness
+  * Thickness
   * String distance
   * Customizable Fret Wire (for accurate slots)
-  * Custom Inalys
+  * Custom Inlays
+  * Corner fillet
 
 * Neck
   * Neck Profiles
@@ -35,6 +36,8 @@ This is a work in progress project, this is the list of the currently implemente
   * Neck break angle
   * Top offset
   * Truss-Rod Channel
+  * Heel fillet
+  * Automatic positioning based on imported bridge reference
 
 * Headstock
   * Dimensions

@@ -51,7 +51,6 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False, ex
     comp = None
     angle = deg(bodyd.neckAngle)
     contour = App.ActiveDocument.getObject('Marz_Body_Contour')
-    pos = Vector(pos.x, 0, pos.z)
     if contour:
         shape = contour.Shape
         face = Part.Face(shape.copy())
@@ -94,9 +93,18 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False, ex
             except:
                 Log(f'Ignoring some pockets: {pockets.Name}')
 
+    pos = Vector(pos.x, 0, pos.z)
     comp.Placement = Placement(pos, Rotation(Vector(0,1,0), -bodyd.neckAngle))
 
     return comp
+
+
+def find_x_on_midline(shape):
+    mid = Part.Edge(Part.Vertex(10000,0,0), Part.Vertex(-10000, 0, 0))
+    dist, vs, *_ = mid.distToShape(shape)
+    if dist < 1e-7:
+        return vs[0][0].x
+
 
 @traced("Make Body")
 def makeBody(inst, bodyd, externalDependencies={}):
@@ -105,6 +113,16 @@ def makeBody(inst, bodyd, externalDependencies={}):
     y = -bodyd.width/2
     x = bodyd.neckd.fbd.neckFrame.bridge.mid().x + bodyd.neckPocketLength
     b = Vector(x,y,0)
+
+    # Correct position based on imported bridge ref
+    bridge_ref = App.ActiveDocument.getObject('Marz_Body_Bridge')
+    if bridge_ref:
+        ref_x = find_x_on_midline(bridge_ref.Shape) + x
+        if ref_x is not None:
+            mod_x = find_x_on_midline(bodyd.neckd.fbd.bridgePos.edge())
+            if mod_x is not None:
+                adjust = mod_x - ref_x
+                b = Vector(x + adjust, y, 0)
 
     b = b.add(Vector(bodyd.totalThicknessWithOffset()*math.sin(angle), 0, -bodyd.totalThicknessWithOffset()*math.cos(angle)))
     backJob = Task.execute(createBodyComp, bodyd, bodyd.backThickness, b, bodyd.topThickness, back=True, externalDependencies=externalDependencies)

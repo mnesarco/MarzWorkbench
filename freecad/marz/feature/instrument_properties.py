@@ -84,6 +84,7 @@ properties = [
     fcp('neck.transitionTension',       35, 'Tension of the heel transition', compat=COMPAT_PRE_028),
     fcp('neck.transitionFunction',      TransitionFunction.CATENARY, 'Math function of the heel transition', enum=TransitionFunction, compat=COMPAT_PRE_028),
     fcp('neck.heelFillet',              1.0, 'Heel corners fillet (radius)', compat=COMPAT_PRE_028),
+    fcp('neck.heelOffset',              0.0, 'Heel offset under the fretboard', compat=COMPAT_PRE_028),
 
     # Fretboard
     fcp('fretboard.thickness',          7, 'Board thickness', compat=COMPAT_PRE_028),

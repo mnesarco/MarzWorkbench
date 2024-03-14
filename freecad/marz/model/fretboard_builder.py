@@ -159,20 +159,25 @@ def buildFretboardData(inst):
 
     # Neck Frame
     def calc_neck_frame():
-        x = max(frame.bass.start.x, frame.treble.end.x)
-        perp = linexy(vxy(x, 0), vxy(x, 1))
-        p = lineIntersection(frame.bass, perp)
-        q = lineIntersection(frame.treble, perp)
-        nut = linexy(p.point, q.point)
+        x = max(frame.bass.start.x, frame.treble.end.x)     # Right hand limit x
+        perp = linexy(vxy(x, 0), vxy(x, 1))                 # Vertical line to intersect sides at x
+        p = lineIntersection(frame.bass, perp)              # bass side point
+        q = lineIntersection(frame.treble, perp)            # treble side point
+        nut = linexy(p.point, q.point)                      # nut line
 
+        # Left hand side limit x
         if inst.neck.joint is NeckJoint.THROUHG:
             x = min(frame.bass.end.x, frame.treble.start.x) - inst.body.length
         else:
             x = min(frame.bass.end.x, frame.treble.start.x)
-        perp = linexy(vxy(x, 0), vxy(x, 1))
-        p = lineIntersection(frame.bass, perp)
-        q = lineIntersection(frame.treble, perp)
-        bridge = linexy(q.point, p.point)
+
+        # Heel offset
+        x += inst.neck.heelOffset
+
+        perp = linexy(vxy(x, 0), vxy(x, 1))                 # Vertical line to intersect sides at x
+        p = lineIntersection(frame.bass, perp)              # bass side point
+        q = lineIntersection(frame.treble, perp)            # treble side point
+        bridge = linexy(q.point, p.point)                   # bridge line
 
         bass = linexy(bridge.end.clone(), nut.start.clone())
         treble = linexy(nut.end.clone(), bridge.start.clone())
@@ -180,7 +185,9 @@ def buildFretboardData(inst):
 
     neckFrame = calc_neck_frame()
 
-    fbd = FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, frets, bridgePos, neckFrame, inst.fretboard.filletRadius)
+    fbd = FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, 
+                        frets, bridgePos, neckFrame, 
+                        inst.fretboard.filletRadius, inst.neck.heelOffset)
     fbd = fbd.translate(vxy(0, 0).sub(neckFrame.nut.mid()))
 
     return fbd

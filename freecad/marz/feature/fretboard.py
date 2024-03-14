@@ -150,7 +150,7 @@ def fretboardCone(startRadius, endRadius, thickness, fbd, top):
     """
 
     # Cone direction
-    line = fbd.neckFrame.midLine
+    line = fbd.frame.midLineExtendedWith(10,10)
     
     # Slope calculated with radiuses at fret0 and fret12
     radiusSlope = (endRadius - startRadius) / (fbd.scaleFrame.midLine.length/2)
