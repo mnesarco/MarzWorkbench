@@ -25,7 +25,7 @@ import Part
 from freecad.marz.extension import App, Placement, Rotation, Vector
 from freecad.marz.model import fretboard_builder as builder
 from freecad.marz.utils.cache import PureFunctionCache
-from freecad.marz.model.instrument import deg
+from freecad.marz.model.instrument import deg_to_rad
 from freecad.marz.model.body_data import BodyData
 from freecad.marz.model.neck_data import NeckData
 from freecad.marz.extension.threading import Task
@@ -49,7 +49,6 @@ def createBodyComp(bodyd, height, pos, topThickness=0, top=False, back=False, ex
         return None
 
     comp = None
-    angle = deg(bodyd.neckAngle)
     contour = App.ActiveDocument.getObject('Marz_Body_Contour')
     if contour:
         shape = contour.Shape
@@ -109,7 +108,7 @@ def find_x_on_midline(shape):
 @traced("Make Body")
 def makeBody(inst, bodyd, externalDependencies={}):
     
-    angle = deg(bodyd.neckAngle)
+    angle = deg_to_rad(bodyd.neckAngle)
     y = -bodyd.width/2
     x = bodyd.neckd.fbd.neckFrame.bridge.mid().x + bodyd.neckPocketLength
     b = Vector(x,y,0)

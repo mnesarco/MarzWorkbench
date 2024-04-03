@@ -124,10 +124,17 @@ class MarzInstrument:
         Task.joinAll([Task.execute(part.update, self.model) for part in self.partsToUpdate.values()])
 
     def execute(self, obj):
+        if not hasattr(self, 'obj') or self.obj is None:
+            self.obj = obj
+        if not hasattr(self, 'changed'):
+            self.changed = True
         if self.changed:
             self.doInTransaction(self.updateOnChange, "Marz Update Models")
 
     def onChanged(self, fp, prop):
+        if not hasattr(self, 'obj') or self.obj is None:
+            self.obj = fp
+            self.changed = True
         self.changed = InstrumentProps.propertiesToModel(self.model, self.obj)
 
     def __getstate__(self):
@@ -139,16 +146,21 @@ class MarzInstrument:
         return state
 
     def __setstate__(self, state):
-
         self.model = Instrument()
-        self.obj = App.ActiveDocument.getObject(state['_fc_name'])
-        self.obj.Proxy = self
+        if not isinstance(state, dict):
+            raise RuntimeError('Document is corrupted')
+        
+        _fc_name = state.get('_fc_name', None)
+        self.obj = None
+        if _fc_name:
+            self.obj = App.ActiveDocument.getObject(state['_fc_name'])
+        
         self.partsToUpdate = {}
         self.partsToCreate = {}
         self.changed = False
 
         # Restore active builders
-        builders = state.get('_builders_')
+        builders = state.get('_builders_', None)
         if builders:
             for modName, clsName in builders:
                 print(f"[MARZ] Loading {modName}.{clsName}")
@@ -160,7 +172,8 @@ class MarzInstrument:
                     print(f"[MARZ] Error loading builder {clsName}")
 
         # Load properties
-        InstrumentProps.setPropertiesFromState(self.obj, state)
+        if self.obj:
+            InstrumentProps.setPropertiesFromState(self.obj, state)
 
     def createFretboard(self):
         self.add(Fretboard())
@@ -255,6 +268,8 @@ class MarzInstrumentVP:
 # Marz Event: Bridge reference changed
 def create_bridge_changed_event_trigger():
     check_bridge_ref_state = None
+    
+    @RunInUIThread
     def trigger(doc, instrument):
         nonlocal check_bridge_ref_state        
         if instrument:

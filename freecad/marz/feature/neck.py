@@ -27,7 +27,7 @@ from freecad.marz.model import fretboard_builder as builder, headstock_builder a
 from freecad.marz.utils import geom, traceTime, traced
 from freecad.marz.utils.cache import PureFunctionCache
 from freecad.marz.model.linexy import lineIntersection, linexy
-from freecad.marz.model.instrument import NeckJoint, deg
+from freecad.marz.model.instrument import NeckJoint, deg_to_rad
 from freecad.marz.model.neck_data import NeckData
 from freecad.marz.model.neck_profile import getNeckProfile
 from freecad.marz.extension.threading import Task
@@ -148,7 +148,7 @@ def makeHeel(neckd, line, angle, joint, backThickness, topThickness,
         line  : linexy, reference line
     """
     fbd = neckd.fbd
-    neckAngleRad = deg(angle)
+    neckAngleRad = deg_to_rad(angle)
     if joint is NeckJoint.THROUHG:
         h = backThickness + topThickness + topOffset
     else:
@@ -306,7 +306,7 @@ class NeckFeature:
         pos = Vector(line.start.x, line.start.y, 0)
         return hs.build(
             pos, 
-            deg(params.angle), 
+            deg_to_rad(params.angle), 
             boundProfile, 
             params.thickness, 
             params.transitionParamHorizontal,

@@ -61,7 +61,7 @@ def toinches(millimeters):
     return millimeters / 25.4
 
 
-def deg(degrees):
+def deg_to_rad(degrees):
     """Return radians from `degrees`"""
     return math.pi * degrees / 180.0
 
@@ -410,7 +410,7 @@ class HeadStock(Feature):
                  instrument, width=80.0,
                  length=220.0,
                  thickness=15.0,
-                 angle=deg(9),
+                 angle=deg_to_rad(9),
                  depth=7,
                  voluteRadius=50.0,
                  transitionParamHorizontal=0.5,
