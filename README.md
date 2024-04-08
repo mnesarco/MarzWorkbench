@@ -8,7 +8,7 @@ Necks, Nuts, ... based on a common set of parameters.
 |![Body](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/wiki/custom-svg-body-doc.svg)|![Headstock](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/wiki/custom-svg-headstock-doc.svg)|
 |---|---|
 
-![Workbench](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/images/anim.gif)
+![Workbench](https://github.com/mnesarco/MarzWorkbench/raw/master/docs/images/screenshot.png)
 
 ## Features
 
