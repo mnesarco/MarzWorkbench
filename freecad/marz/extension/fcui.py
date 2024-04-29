@@ -1,0 +1,1912 @@
+# -*- coding: utf-8 -*-
+# +---------------------------------------------------------------------------+
+# |  Copyright (c) 2020 Frank Martinez <mnesarco at gmail.com>                |
+# |                                                                           |
+# |  This file is part of Marz Workbench.                                     |
+# |                                                                           |
+# |  Marz Workbench is free software: you can redistribute it and/or modify   |
+# |  it under the terms of the GNU General Public License as published by     |
+# |  the Free Software Foundation, either version 3 of the License, or        |
+# |  (at your option) any later version.                                      |
+# |                                                                           |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
+# |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
+# |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
+# |  GNU General Public License for more details.                             |
+# |                                                                           |
+# |  You should have received a copy of the GNU General Public License        |
+# |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
+# +---------------------------------------------------------------------------+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] Common Builtin Imports
+#  ────────────────────────────────────────────────────────────────────────────
+
+from contextlib import contextmanager
+from functools import wraps
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from pathlib import Path
+import sys, re
+import threading
+import json
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] Qt Imports
+#  ────────────────────────────────────────────────────────────────────────────
+
+try:
+    import PySide  # type: ignore
+except ImportError:
+    try:
+        import PySide6  # type: ignore
+        sys.modules['PySide'] = PySide6
+    except ImportError:
+        import PySide2
+        sys.modules['PySide'] = PySide2
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] FreeCAD Imports
+#  ────────────────────────────────────────────────────────────────────────────
+
+import FreeCAD as App       # type: ignore
+import FreeCADGui as Gui    # type: ignore
+from FreeCAD import Base    # type: ignore
+
+from PySide.QtSvg import QSvgRenderer   # type: ignore
+
+from PySide.QtCore import ( # type: ignore
+    Qt,
+    QRect, 
+    QObject,
+    QMargins,
+    QPoint,
+    Signal,
+    Slot,
+    QTimer,
+)
+
+from PySide.QtGui import (  # type: ignore
+    QIcon, 
+    QPixmap,
+    QColor,
+    QPainter,
+    QPaintEvent,
+    QBrush,
+    QPen,
+    QFontDatabase,
+    QCloseEvent,
+    QGuiApplication
+)
+
+from PySide.QtWidgets import (  # type: ignore
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QFrame,
+    QDialog,
+    QScrollArea,
+    QLabel,
+    QMessageBox,
+    QGroupBox,
+    QTabWidget,
+    QDoubleSpinBox,
+    QSpinBox,
+    QLineEdit,
+    QCheckBox,
+    QComboBox,
+    QTreeWidgetItem,
+    QTreeWidget,
+    QToolButton,
+    QPushButton,
+    QTableWidgetItem,
+    QTableWidget,
+    QAbstractItemView,
+    QFileDialog,
+    QApplication,
+    QPlainTextEdit,
+    QSplitter,
+    QLayout,
+    QMainWindow,
+)
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Globals
+#  ────────────────────────────────────────────────────────────────────────────
+
+ThreadLocalGuiVars = threading.local()  # Store GUI State per thread
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Aliases
+#  ────────────────────────────────────────────────────────────────────────────
+
+UILoader = Gui.UiLoader()
+Vector = Base.Vector
+Numeric = Union[int, float]
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Util] Common utilities
+#  ────────────────────────────────────────────────────────────────────────────
+
+def to_vec(input : Any) -> Vector:
+    """
+    Convert tuple/list/vector to Vector.
+    """
+    if isinstance(input, Vector):
+        return input
+    if isinstance(input, (tuple, list)):
+        if len(input) == 3:
+            return Vector(*input)
+        if len(input) == 2:
+            return Vector(*input, 0)
+        if len(input) == 1:
+            return Vector(*input, 0, 0)
+    if isinstance(input, (float, int)):
+        return Vector(input, 0, 0)
+    if hasattr(input, "X"):        
+        if hasattr(input, "Y"):
+            if hasattr(input, "Z"):
+                return Vector(input.X, input.Y, input.Z)
+            else:
+                return Vector(input.X, input.Y, 0)
+        else:
+            return Vector(input.X, 0, 0)
+    raise TypeError(f"Invalid input, {type(input)} is not convertible to Vector")
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+class Color(QColor):
+    """
+    QColor with additional constructor for hex rgba color code.
+    Use like Color(code='#ff0000'), Color(code='#ff0000ff')
+    """
+    def __init__(self, *args, code: str = None, **kwargs):
+        if code is not None:
+            if code.startswith('#'):
+                code = code[1:]
+            if len(code) < 8:
+                code += 'FFFFFFFF'
+            r, g, b, a = int(code[:2], 16), int(code[2:4], 16), int(code[4:6], 16), int(code[6:8], 16)
+            super().__init__(r, g, b, a)
+        else:
+            super.__init__(*args, **kwargs)
+
+
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Utils
+#  ────────────────────────────────────────────────────────────────────────────
+
+def set_qt_attrs(qobject: QObject, **kwargs):
+    """
+    Call setters on QT objects by argument names.
+    """
+    for name, value in kwargs.items():
+        if value is not None:
+            if name == 'properties':
+                for prop_name, prop_value in value.items():
+                    qobject.setProperty(prop_name, prop_value)
+                continue
+            setter = getattr(qobject, f'set{name[0].upper()}{name[1:]}', None)
+            if setter:
+                if isinstance(value, tuple):
+                    setter(*value)
+                else:
+                    setter(value)
+            else:
+                raise NameError(f"Invalid property {name}")
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+def setup_layout(layout: QLayout, add: bool = True, **kwargs):
+    """
+    Setup layouts adding wrapper widget if required.
+    """
+    set_qt_attrs(layout, **kwargs)
+    parent = build_context().current()
+    if parent.layout() is not None or add is False:
+        w = QWidget()
+        w.setLayout(layout)
+        if add:
+            parent.layout().addWidget(w)
+        with build_context().stack(w):
+            yield w
+    else:
+        parent.setLayout(layout)
+        yield parent
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+def widget_with_label_row(
+        widget: QWidget, 
+        label: Union[QWidget, str], 
+        stretch: int=0, 
+        alignment=Qt.Alignment(), 
+        orientation: Qt.Orientation = Qt.Orientation.Horizontal) -> QWidget:
+    
+    """
+    Create a widget with a label.
+    """
+    row = QWidget()
+    if orientation == Qt.Orientation.Vertical:
+        layout = QVBoxLayout()
+    else:
+        layout = QHBoxLayout()
+    row.setLayout(layout)        
+    layout.setContentsMargins(0,0,0,0)
+    if isinstance(label, QWidget):
+        layout.addWidget(label)
+    elif label:
+        layout.addWidget(QLabel(str(label)))
+    layout.addWidget(widget, stretch, alignment)
+    return row
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+def place_widget(
+        widget: QWidget, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment=Qt.Alignment()) -> None:
+
+    """
+    Place widget in layout.
+    """
+    current = build_context().current()
+    if isinstance(current, QScrollArea):
+        if current.widget():
+            raise ValueError('Scroll can contains only one widget')
+        current.setWidget(widget)
+        return
+    
+    if isinstance(current, QSplitter):
+        current.addWidget(widget)
+        return
+    
+    if isinstance(current, QMainWindow):
+        current.setCentralWidget(widget)
+        return
+    
+    layout = current.layout()
+    if layout is None:
+        layout = build_context().default_layout_provider()
+        current.setLayout(layout)   
+
+    if label is None:
+        layout.addWidget(widget, stretch, alignment)
+    else:
+        layout.addWidget(widget_with_label_row(widget, label, stretch, alignment))
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+class PySignal:
+    """
+    Imitate Qt Signals for non QObject objects
+    """
+    _listeners: Set
+    
+    def __init__(self):
+        self._listeners = set()
+
+    def connect(self, listener):
+        self._listeners.add(listener)
+
+    def disconnect(self, listener):
+        try:
+            self._listeners.remove(listener)
+        except:
+            pass # Not found, Ok
+
+    def emit(self, *args, **kwargs):
+        for listener in self._listeners:
+            listener(*args, **kwargs)
+
+
+#: Decorator @on_event
+#  ────────────────────────────────────────────────────────────────────────────
+def on_event(target, event=None):
+    """
+    Decorator: Event binder
+    """
+    if not target:
+        raise ValueError('Invalid empty target')
+    
+    if not isinstance(target, (list, tuple, set)):
+        target = [target]
+
+    if event is None:
+        def deco(fn):
+            for t in target: t.connect(fn)
+            return fn
+    else:
+        def deco(fn):
+            for t in target: getattr(t, event).connect(fn)
+            return fn
+    return deco
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Selection
+#  ────────────────────────────────────────────────────────────────────────────
+
+class SelectedObject:
+    """
+    Store Selection information
+    """
+    
+    def __init__(self, doc, obj, sub=None, pnt=None):
+        self.doc = doc
+        self.obj = obj
+        self.sub = sub
+        self.pnt = pnt
+    
+    def __iter__(self):
+        yield App.getDocument(self.doc).getObject(self.obj)
+        yield self.sub
+        yield self.pnt
+
+    def __repr__(self) -> str:
+        return f"{self.doc}#{self.obj}.{self.sub}"
+
+    def __hash__(self) -> int:
+        return hash((self.doc, self.obj, self.sub))
+
+    def __eq__(self, __o: object) -> bool:
+        return hash(self) == hash(__o)
+
+    def __ne__(self, __o: object) -> bool:
+        return not self.__eq__(__o)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+def register_select_observer(owner: QWidget, observer):
+    """Add observer with auto remove on owner destroyed"""
+    Gui.Selection.addObserver(observer)
+    def destroyed(_):
+        Gui.Selection.removeObserver(observer)
+    owner.destroyed.connect(destroyed)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+@contextmanager
+def selection(*names, clean: bool = True, doc: App.Document = None):
+    sel = Gui.Selection
+    try:
+        doc_name = (doc or App.ActiveDocument).Name
+        if len(names) == 0:
+            yield sel.getSelection(doc_name)
+        else:
+            sel.clearSelection()
+            for name in names:
+                if isinstance(name, (tuple, list)):
+                    sel.addSelection(doc_name, *name)
+                elif isinstance(name, SelectedObject):
+                    sel.addSelection(name.doc, name.obj, name.sub)
+                else:
+                    sel.addSelection(doc_name, name)
+            yield sel.getSelection(doc_name)
+    finally:
+        if clean:
+            sel.clearSelection()
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Build Context
+#  ────────────────────────────────────────────────────────────────────────────
+
+class _BuildContext:
+    """
+    Qt Widget three build context stack
+    """
+
+    def __init__(self):
+        self._stack = []
+        self.default_layout_provider = QVBoxLayout
+
+    def push(self, widget):
+        self._stack.append(widget)
+
+    def pop(self):
+        self._stack.pop()
+
+    @contextmanager
+    def stack(self, widget):
+        self.push(widget)
+        try:
+            yield widget
+        finally:
+            self.pop()
+
+    @contextmanager
+    def parent(self):
+        if len(self._stack) > 1:
+            current = self._stack[-1]
+            self._stack.pop()
+            parent = self._stack[-1]
+            try:
+                yield parent
+            finally:
+                self._stack.append(current)
+
+    def current(self):
+        return self._stack[-1]
+
+    def dump(self):
+        print(f"BuildContext: {self._stack}")    
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+def build_context() -> _BuildContext:
+    """
+    Build context for the current thread.
+    """
+    bc = getattr(ThreadLocalGuiVars, 'BuildContext', None)
+    if bc is None:
+        ThreadLocalGuiVars.BuildContext = _BuildContext()
+        return ThreadLocalGuiVars.BuildContext
+    else:
+        return bc
+
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+@contextmanager
+def Parent():
+    """Put parent on top of BuildContext"""
+    with build_context().parent() as p:
+        yield p
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Dialog
+#  ────────────────────────────────────────────────────────────────────────────
+
+class Dialogs:
+    """
+    Keeps a list of Active dialogs
+    """
+
+    _list = []
+
+    @classmethod
+    def dump(cls):
+        print(f"Dialogs: {cls._list}")
+
+    @classmethod
+    def register(cls, dialog):
+        cls._list.append(dialog)
+        dialog.closeEvent = lambda e: cls.destroy_dialog(dialog)
+
+    @classmethod
+    def destroy_dialog(cls, dlg):
+        cls._list.remove(dlg)
+        dlg.deleteLater()
+
+    @classmethod
+    def open(cls, w, modal: bool = True):
+        Dialogs.register(w)
+        if modal:
+            w.open()
+        else:
+            w.show()
+
+
+def find_active_window():
+    focus = QApplication.focusWidget()
+    if focus:
+        parent = focus.parent()
+        if isinstance(parent, (QDialog, QMainWindow)) and parent.isVisible():
+            return parent
+    return Gui.getMainWindow()
+
+
+class DialogWidget(QDialog):
+    
+    onClose = Signal(QCloseEvent)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def closeEvent(self, event: QCloseEvent):
+        self.onClose.emit(event)
+        super().closeEvent(event)
+
+
+@contextmanager
+def Dialog(
+    title: str = None, 
+    *,
+    size: Tuple[int, int] = None, 
+    show: bool = True, 
+    modal: bool = True,
+    parent: QWidget = None,
+    **kwargs) -> QDialog:
+
+    """
+    Dialog widget
+    """
+
+    if parent is None:
+        parent = find_active_window()
+
+    w = DialogWidget(parent=parent)
+
+    if title is not None:
+        w.setWindowTitle(title)
+    set_qt_attrs(w, **kwargs)
+    with build_context().stack(w):
+        yield w
+        if isinstance(size, (tuple,list)):
+            w.resize(size[0], size[1])
+        else:
+            w.adjustSize()
+        if show:
+            Dialogs.open(w, modal)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Scroll
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def Scroll(*, add: bool = True, **kwargs) -> QScrollArea:
+    w = QScrollArea()
+    set_qt_attrs(w, **kwargs)    
+    if add:
+        place_widget(w)
+    with build_context().stack(w):
+        yield w
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] GroupBox
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def GroupBox(title: str = None, *, add: bool = True, **kwargs) -> QGroupBox:
+    w = QGroupBox()
+    if title:
+        w.setTitle(title)
+    set_qt_attrs(w, **kwargs)
+    if add:
+        place_widget(w)
+    with build_context().stack(w):
+        yield w
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Container
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def Container(*, add: bool = True, **kwargs) -> QFrame:
+    w = QWidget()    
+    set_qt_attrs(w, **kwargs)
+    if add:
+        place_widget(w)
+    with build_context().stack(w):
+        yield w
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Stretch
+#  ────────────────────────────────────────────────────────────────────────────
+
+def Stretch(stretch: int = 0) -> None:
+    """Add Layout stretch"""
+    layout = build_context().current().layout()
+    if layout:
+        layout.addStretch(stretch)
+
+
+def Spacing(size: int) -> None:
+    """Add Layout spacing"""
+    layout = build_context().current().layout()
+    if layout:
+        layout.addSpacing(size)
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] TabContainer
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def TabContainer(*, stretch: int = 0, add: bool = True, **kwargs) -> QTabWidget:
+    w = QTabWidget()
+    set_qt_attrs(w, **kwargs)
+    if add:
+        place_widget(w, stretch=stretch)
+    with build_context().stack(w):
+        yield w
+
+
+@contextmanager
+def Splitter(*, add=True, **kwargs):
+    w = QSplitter()
+    set_qt_attrs(w, **kwargs)
+    if add:
+        place_widget(w)
+    with build_context().stack(w):
+        yield w
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Tab
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def Tab(title:str, *, icon: QIcon = None, add: bool = True, **kwargs):
+    w = QWidget()
+    set_qt_attrs(w, **kwargs)
+    with build_context().stack(w):
+        yield w
+    if add:
+        if icon:
+            build_context().current().addTab(w, icon, title)
+        else:
+            build_context().current().addTab(w, title)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Layout] Col
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager 
+def Col(*, add: bool = True, **kwargs):
+    """Vertical Layout"""
+    yield from setup_layout(QVBoxLayout(), add=add, **kwargs)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Layout] Row
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager 
+def Row(*, add: bool = True, **kwargs):
+    """Horizontal Layout"""
+    yield from setup_layout(QHBoxLayout(), add=add, **kwargs)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] Html
+#  ────────────────────────────────────────────────────────────────────────────
+
+class HtmlWidget(QLabel):
+    VAR_RE = re.compile(r'\{\{(.*?)\}\}')
+    base_path: Path
+    css: str
+
+    def __init__(self, base_path: Path, css: str):
+        super().__init__()
+        self.css = css or ''
+        self.base_path = base_path
+
+    def interpolator(self, variables: Dict[str, Any]):
+        if variables:
+            def replacer(match: re.Match) -> str:
+                var_name = match.group(1)
+                if var_name == '__base__': return str(self.base_path)
+                return str(variables.get(var_name, ''))
+        else:
+            def replacer(match: re.Match) -> str:
+                if match.group(1) == '__base__': 
+                    return str(self.base_path)
+                else:
+                    return ''
+        return replacer
+    
+    def setValue(self, html: str, variables: Dict[str, Any] = None):
+        content = HtmlWidget.VAR_RE.sub(self.interpolator(variables), html)
+        self.setText(f'<style>{self.css}</style>{content}') 
+
+
+def Html(
+        *, 
+        html: str = None, 
+        file: str = None, 
+        css: str = None, 
+        css_file: str = None, 
+        base_path: str = None,
+        background: str = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        variables: Dict[str, Any] = None,
+        add: bool = True, 
+        **kwargs) -> HtmlWidget:
+    
+    if html and file:
+        raise ValueError('html and file arguments are mutually exclusive')
+
+    if base_path:
+        base_path = Path(base_path)
+        if file:
+            file = Path(base_path, file)
+        if css_file:
+            css_file = Path(base_path, css_file)
+    elif file:
+        base_path = Path(file).parent
+        if css_file:
+            css_file = Path(base_path, css_file)
+
+    if html is None:
+        with open(file, 'r') as f:
+            html = f.read()
+
+    base_css = ""
+    if css_file:
+        with open(css_file, 'r') as f:
+            base_css = f.read()
+
+    if css is not None:
+        base_css += css
+
+    label = HtmlWidget(base_path, base_css)
+    label.setValue(html, variables)
+
+    if background is not None:
+        label.setStyleSheet(f"background-color: {background};")
+
+    set_qt_attrs(label, **kwargs)
+    if add:
+        place_widget(label, stretch=stretch, alignment=alignment)
+    return label
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] TextLabel
+#  ────────────────────────────────────────────────────────────────────────────
+
+def TextLabel(
+        text: str = "", 
+        *, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add: bool = True,
+        **kwargs) -> QLabel:
+    
+    label = QLabel(text)
+    set_qt_attrs(label, **kwargs)
+    if add:
+        place_widget(label, stretch=stretch, alignment=alignment)
+    return label
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputFloat
+#  ────────────────────────────────────────────────────────────────────────────
+
+def InputFloat(
+        value: float = 0.0, 
+        *, 
+        name: str = None, 
+        min: float = 0.0, 
+        max: float = sys.float_info.max, 
+        decimals: int = 6, 
+        step: float = 0.01, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add: bool = True, 
+        **kwargs) -> QDoubleSpinBox:
+    
+    widget = QDoubleSpinBox()
+    widget.setMinimum(min)
+    widget.setMaximum(max)
+    widget.setSingleStep(step)
+    widget.setDecimals(decimals)
+    widget.setValue(value)
+    set_qt_attrs(widget, **kwargs)
+    if name:
+        widget.setObjectName(name)
+    if add:
+        place_widget(widget, label=label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputText
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputTextWidget(QLineEdit):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    def value(self):
+        return self.text()
+    def setValue(self, value):
+        self.setText(str(value))
+
+def InputText(
+        value: str = "", 
+        *, 
+        name: str = None, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add: bool = True,
+        **kwargs):
+    
+    widget = InputTextWidget()
+    widget.setText(value)
+    set_qt_attrs(widget, **kwargs)
+    if name:
+        widget.setObjectName(name)
+    if add:
+        place_widget(widget, label=label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputQuantity
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputQuantityWidget:
+    def __init__(self, editor) -> None:
+        self.editor = editor
+    def value(self) -> Any:
+        return self.editor.property('rawValue')
+    def rawValue(self) -> Any:
+        return self.editor.property('rawValue')
+    def setValue(self, value: Any):
+        return self.editor.setProperty('rawValue', value)
+    def setMinimum(self, value: float):
+        return self.editor.setProperty('minimum', value)
+    def setMaximum(self, value: float):
+        return self.editor.setProperty('maximum', value)
+    def setSingleStep(self, value: float):
+        return self.editor.setProperty('singleStep', value)
+    def setUnit(self, value: str):
+        return self.editor.setProperty('unit', value)
+
+
+def InputQuantity(
+        value: Numeric = None, 
+        *, 
+        name: str = None, 
+        min: Numeric = None, 
+        max: Numeric = None, 
+        step: Numeric = 1.0, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        unit: str = None, 
+        obj: object = None, 
+        property: str = None, 
+        add: bool = True,
+        **kwargs) -> InputQuantityWidget:
+
+    if obj and property:
+        if not property in obj.PropertiesList:
+            raise ValueError(f'Invalid property name: {property}')
+
+    editor = UILoader.createWidget("Gui::QuantitySpinBox")
+    widget = InputQuantityWidget(editor)
+    if min is not None:
+        widget.setMinimum(min)
+    if max is not None:
+        widget.setMaximum(max)
+    if step is not None:
+        widget.setSingleStep(step)
+    if value is not None:
+        widget.setValue(value)
+    if unit is not None:
+        widget.setUnit(unit)
+    set_qt_attrs(editor, **kwargs)
+    
+    if name:
+        editor.setObjectName(name)
+
+    if obj and property:    
+        Gui.ExpressionBinding(editor).bind(obj, property)
+
+    if add:        
+        place_widget(editor, label=label, stretch=stretch, alignment=alignment)
+    
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputInt
+#  ────────────────────────────────────────────────────────────────────────────
+
+def InputInt(
+        value: int = 0, 
+        *, 
+        name: str = None, 
+        min: int = 0, 
+        max: int = None, 
+        step: int = 1, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add: bool = True, 
+        **kwargs) -> QSpinBox:
+    
+    widget = QSpinBox()
+    widget.setMinimum(min)
+    if max is not None:
+        widget.setMaximum(max)
+    widget.setSingleStep(step)
+    widget.setValue(value)
+    set_qt_attrs(widget, **kwargs)
+    if name:
+        widget.setObjectName(name)
+    if add:
+        place_widget(widget, label=label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputBoolean
+#  ────────────────────────────────────────────────────────────────────────────
+
+class QCheckBoxExt(QCheckBox):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    def value(self) -> bool:
+        return self.checkState() == Qt.Checked
+
+    def setValue(self, value : bool):
+        self.setCheckState(Qt.Checked if value else Qt.Unchecked)
+
+
+def InputBoolean(
+        value: bool = False, 
+        *, 
+        name: str = None, 
+        label: Union[QWidget, str] = None, 
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add: bool = True, 
+        **kwargs) -> QCheckBoxExt:
+    
+    widget = QCheckBoxExt()
+    widget.setValue(value)
+    set_qt_attrs(widget, **kwargs)
+    if name:
+        widget.setObjectName(name)
+    if add:
+        place_widget(widget, label=label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+class LayoutWidget(QWidget):
+    def __init__(self, layout_builder, **kwargs):
+        super().__init__()
+        layout = layout_builder()
+        set_qt_attrs(layout, **kwargs)
+        self.setLayout(layout)
+
+    def addWidget(self, widget, stretch=0, alignment=Qt.Alignment()):
+        self.layout().addWidget(widget, stretch, alignment)
+
+    def addStretch(self, stretch: int = 0):
+        self.layout().addStretch(stretch)
+
+    def addSpacing(self, size: int):
+        self.layout().addSpacing(size)
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputFloatList
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputFloatListWidget(QWidget):
+    
+    valueChanged = Signal()
+
+    def __init__(self, 
+                 count: int = 0, 
+                 values: List[float] = None, 
+                 label_fn: Callable[[int],str] = None, 
+                 resizable: bool = False, 
+                 min_count: int = 0,
+                 **kwargs):
+        
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
+        self.setLayout(layout)
+        self.options = kwargs
+        self.min_count = min_count
+        
+        if not values:
+            values = [0.0] * count
+        else:
+            count = len(values)
+        
+        if count < min_count:
+            raise ValueError(f"Minimum rows required are {min_count}")
+        
+        if not label_fn:
+            label_fn = str
+
+        self._label_fn = label_fn
+
+        self.inputs = []
+        labels = tuple(QLabel(label_fn(i)) for i in range(count))
+        for i in range(count):
+            ctrl = InputFloat(value=values[i], add=False, **kwargs)
+            ctrl.valueChanged.connect(self.valueChanged)
+            self.inputs.append(ctrl)    
+    
+        panel = LayoutWidget(QVBoxLayout, contentsMargins=(0,0,0,0))
+        layout.addWidget(panel)
+        for i in range(count):
+            panel.addWidget(widget_with_label_row(self.inputs[i], labels[i]))
+        self.panel = panel
+
+        if resizable:
+            self.resize_controls()
+
+    def resize_controls(self):
+        buttons = LayoutWidget(QHBoxLayout, contentsMargins=(0,0,0,0))
+        self.layout().addWidget(buttons, 0, alignment=Qt.AlignRight)
+
+        @button(label='+', add=False, tool=True)
+        def add():
+            self.addValue(**self.options)
+
+        @button(label='−', add=False, tool=True)
+        def remove():
+            self.removeLast()
+
+        buttons.addWidget(add, alignment=Qt.AlignRight)
+        buttons.addWidget(remove, alignment=Qt.AlignRight)
+
+
+    def value(self) -> Tuple[float, ...]:
+        return tuple(i.value() for i in self.inputs)
+
+    def setValue(self, value):
+        if len(value) != len(self.inputs):
+            raise ValueError(f"value must contains exactly {len(self.inputs)} elements")
+        for i, input in enumerate(self.inputs):
+            input.setValue(value[i])
+
+    def addValue(self, **kwargs):
+        input = InputFloat(add=False, **kwargs)
+        input.valueChanged.connect(self.valueChanged)
+        i = len(self.inputs)
+        self.inputs.append(input)
+        self.panel.addWidget(widget_with_label_row(input, self._label_fn(i)))
+
+    def removeLast(self):
+        if len(self.inputs) > self.min_count:
+            item = self.inputs.pop()
+            item.parent().setParent(None)
+
+
+def InputFloatList(
+        values: List[float] = None, 
+        label: Union[QWidget, str] = None, 
+        name: str = None, 
+        label_fn: Callable[[int],str] = None, 
+        count: int = 0, 
+        resizable: bool = False, 
+        min_count: int = 0,
+        add: bool = True, 
+        **kwargs):
+    
+    widget = InputFloatListWidget(
+        count=count, 
+        label_fn=label_fn, 
+        values=values, 
+        resizable=resizable, 
+        min_count=min_count,
+        **kwargs)
+    if name:
+        widget.setName(name)
+    if add:
+        place_widget(widget, label=label)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputVector
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputVectorWrapper:
+    def __init__(self, g, x, y, z):
+        self.group = g
+        self.x = x
+        self.y = y
+        self.z = z
+    
+    def value(self) -> Vector:
+        return Vector(self.x.value(), self.y.value(), self.z.value())
+
+    def setValue(self, value):
+        v = to_vec(value)
+        self.x.setValue(v.x)
+        self.y.setValue(v.y)
+        self.z.setValue(v.z)
+
+def InputVector(label=None, value=(0.0,0.0,0.0)):
+    with GroupBox(title=label) as g:
+        with Col():
+            x = InputFloat(label="X:")
+            y = InputFloat(label="Y:")
+            z = InputFloat(label="Z:")
+            widget = InputVectorWrapper(g, x, y, z)
+            widget.setValue(value)
+            return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputOptions
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputOptionsWidget(QComboBox):
+    def __init__(self, data: Dict[str,Any]):
+        super().__init__()
+        self.index = dict()
+        self.lookup = dict()
+        i = 0
+        for label, value in data.items():
+            self.index[i] = value
+            self.lookup[value] = i
+            i += 1
+            self.addItem(label)
+
+    def value(self):
+        return self.index.get(self.currentIndex(), None)
+
+    def setValue(self, value):
+        index = self.lookup.get(value, None)
+        if index is not None:
+            self.setCurrentIndex(index)
+
+
+def InputOptions(options, value=None, label=None, name=None, stretch=0, 
+                 alignment=Qt.Alignment(), **kwargs):
+    widget = InputOptionsWidget(options)
+    set_qt_attrs(widget, **kwargs)
+    if value is not None:
+        widget.setValue(value)
+    if name:
+        widget.setObjectName(name)
+    place_widget(widget, label=label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputSelectOne
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputSelectOne:
+
+    def __init__(self, label=None, name=None, active=False, auto_deactivate=True):
+        self._value = None
+        self._pre = None
+        self._auto_deactivate = auto_deactivate
+        self.selected = PySignal()
+        with Row(add=False, spacing=0, margin=0, contentsMargins=(0,0,0,0)) as ctl:
+            
+            @button(
+                text="Select...", 
+                tool=True,
+                checkable=True, 
+                styleSheet="QToolButton:checked{background-color: #FF0000; color:#FFFFFF;}",
+                focusPolicy=Qt.FocusPolicy.NoFocus,
+                objectName=name,
+                checked=active)
+            def select(): pass
+
+            @button(
+                tool=True,
+                focusPolicy=Qt.FocusPolicy.NoFocus,
+                icon=QIcon(':icons/edit-cleartext.svg'))
+            def clear(): self.setValue(None)
+
+            display = QLineEdit()
+            display.setReadOnly(True)
+            place_widget(display)
+
+            self.display = display
+            self.button = select
+            register_select_observer(select, self)
+
+            with Parent():
+                place_widget(ctl, label=label)
+
+    @property
+    def active(self) -> bool:
+        return self.button.isChecked()
+
+    def value(self) -> Optional[SelectedObject]:
+        return self._value
+
+    def pre(self) -> Optional[SelectedObject]:
+        return self._pre
+
+    def setValue(self, value: Optional[SelectedObject]) -> None:
+        self._value = value
+        if value:
+            self.display.setText(f"{value.doc}#{value.obj}.{value.sub}")
+            if self._auto_deactivate:
+                self.button.setChecked(False)
+            self.selected.emit(self._value)
+        else:
+            self.display.setText(f"")
+
+    def setPreselection(self, doc, obj, sub):
+        if self.button.isChecked():
+            self._pre = SelectedObject(doc, obj, sub)
+
+    def addSelection(self, doc, obj, sub, pnt):
+        if self.button.isChecked():
+            self.setValue(SelectedObject(doc, obj, sub, pnt))
+
+    def removeSelection(self, doc, obj, sub):
+        if self.button.isChecked():
+            if self._value:
+                v = self._value
+                if (v.doc, v.obj) == (doc, obj):
+                    self.setValue(None)
+
+    def setSelection(self, doc):   
+        if self.button.isChecked():
+            self.setValue(SelectedObject(doc, Gui.Selection.getSelection()[-1].Name))
+
+    def clearSelection(self, doc):
+        pass
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] InputSelectMany
+#  ────────────────────────────────────────────────────────────────────────────
+
+class InputSelectMany:
+
+    ValueDataRole = Qt.UserRole
+
+    def __init__(self, label=None, name=None, active=False):
+        self._value = set()
+        self.selected = PySignal()
+        with Col(add=False, spacing=0, margin=0, contentsMargins=(0,0,0,0)) as ctl:
+            with Row(spacing=0, margin=0, contentsMargins=(0,0,0,0)):
+                @button(
+                    text="Add", 
+                    alignment=Qt.AlignLeft,
+                    tool=True,
+                    checkable=True, 
+                    styleSheet="QToolButton:checked{background-color: #FF0000; color:#FFFFFF;}",
+                    focusPolicy=Qt.FocusPolicy.NoFocus,
+                    objectName=name,
+                    checked=active)
+                def select(): pass
+
+                @button(
+                    text="Remove", 
+                    tool=True,
+                    alignment=Qt.AlignLeft,
+                    focusPolicy=Qt.FocusPolicy.NoFocus)
+                def remove():
+                    selected = self.display.selectedItems()
+                    for item in selected:
+                        value = item.data(0, InputSelectMany.ValueDataRole)
+                        self._value.remove(value)
+                        self.display.takeTopLevelItem(self.display.indexOfTopLevelItem(item))
+
+                @button(
+                    text="Clean",
+                    tool=True,
+                    alignment=Qt.AlignLeft,
+                    focusPolicy=Qt.FocusPolicy.NoFocus,
+                    icon=QIcon(':icons/edit-cleartext.svg'))
+                def clear(): 
+                    self._value.clear()
+                    self.display.clear()
+
+                Stretch()
+
+            display = QTreeWidget()
+            display.setColumnCount(2)
+            display.setHeaderLabels(['Object', 'SubObject'])
+            place_widget(display)
+
+            self.display = display
+            self.button = select
+            register_select_observer(select, self)
+
+            with Parent():
+                with GroupBox(title=label):
+                    place_widget(ctl)
+
+    @property
+    def active(self) -> bool:
+        return self.button.isChecked()
+
+    def value(self) -> List[SelectedObject]:
+        return self._value
+
+    def addValue(self, value: SelectedObject) -> None:
+        if value not in self._value:
+            item = QTreeWidgetItem([value.obj, value.sub])
+            item.setData(0, InputSelectMany.ValueDataRole, value)
+            self.display.addTopLevelItem(item)
+            self._value.add(value)
+            self.selected.emit(value)
+
+    def setPreselection(self, doc, obj, sub):
+        pass
+
+    def addSelection(self, doc, obj, sub, pnt):
+        if self.button.isChecked():
+            self.addValue(SelectedObject(doc, obj, sub, pnt))
+
+    def removeSelection(self, doc, obj, sub):
+        pass
+
+    def setSelection(self, doc):   
+        if self.button.isChecked():
+            self.addValue(SelectedObject(doc, Gui.Selection.getSelection()[-1].Name))
+
+    def clearSelection(self, doc):
+        pass
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] [Widget] button
+#  ────────────────────────────────────────────────────────────────────────────
+
+def button(
+        label: str = None, 
+        *,
+        tool : bool = False, 
+        icon : Union[QIcon, str] = None,
+        stretch: int = 0, 
+        alignment: Qt.Alignment = Qt.Alignment(), 
+        add : bool = True, 
+        **kwargs):
+
+    btn = QToolButton() if tool else QPushButton()
+    set_qt_attrs(btn, **kwargs)
+
+    if label: 
+        btn.setText(label)
+    elif 'text' not in kwargs:
+        btn.setText("Button")
+
+    if isinstance(icon, QIcon):
+        btn.setIcon(icon)
+    elif isinstance(icon, str):
+        btn.setIcon(QIcon(icon))
+
+    if add:
+        place_widget(btn, stretch=stretch, alignment=alignment)
+
+    def wrapper(handler):
+        btn.clicked.connect(handler)
+        return btn
+    return wrapper
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] progress_indicator
+#  ────────────────────────────────────────────────────────────────────────────
+
+class ProgressIndicator:
+    def __init__(self, *args, **kwargs) -> None:
+        try:
+            self.control = Base.ProgressIndicator(*args, **kwargs)
+        except:
+            self.control = None
+    def start(self, *args, **kwargs):
+        if self.control:
+            self.control.start(*args, **kwargs)
+    def next(self, *args, **kwargs):
+        if self.control:
+            self.control.next(*args, **kwargs)
+    def stop(self, *args, **kwargs):
+        if self.control:
+            self.control.stop(*args, **kwargs)
+
+@contextmanager
+def progress_indicator(message: str = "Working...", steps: int = 0):
+    bar = ProgressIndicator()
+    bar.start(message, steps)
+    try:
+        yield bar
+    finally:
+        bar.stop()
+        del bar
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] ImageView
+#  ────────────────────────────────────────────────────────────────────────────
+
+
+class SvgImageViewWidget(QWidget):
+    """
+    High resolution Svg Widget
+    """
+
+    def __init__(self, uri: str):
+        super().__init__()
+        self.uri = uri
+        self._size = (0, 0)
+        self._renderer = None
+        self.update_img(QRect(QPoint(0,0), self.size()))
+
+    def update_img(self, rect: QRect):
+        if not self.uri or not Path(self.uri).exists():
+            return
+
+        renderer = QSvgRenderer(self.uri, self)
+        view_box = renderer.viewBoxF()
+        
+        width, height = 0, 0
+        r_width, r_height = rect.width(), rect.height()
+        svg_width, svg_height = view_box.width(), view_box.height()
+
+        if svg_width <= 0 or svg_height <= 0:
+            svg_width = r_width
+            svg_height = r_height
+
+        scale_w, scale_h = 1.0, 1.0
+        if svg_width > 0 and r_width > 0:
+            scale_w = r_width / svg_width
+        if svg_height > 0 and r_height > 0:
+            scale_h = r_height / svg_height
+
+        scale = min(scale_h, scale_w)
+        width = svg_width * scale
+        height = svg_height * scale
+
+        self._renderer = renderer
+        self._size = (width, height)
+        self.setMinimumSize(width, height)
+
+
+    def paintEvent(self, e):
+        qp = QPainter(self)
+        try:
+            rect = e.rect()
+            if self._size == (0,0) or self._size != (rect.width(), rect.height()) or self._renderer is None:
+                self.update_img(rect)
+            if self._renderer:
+                qp.save()
+                qp.setViewport(0, 0, *self._size)
+                self._renderer.render(qp)
+                qp.restore()
+        finally:
+            qp.end()
+
+    def setValue(self, uri):
+        self.uri = uri
+        self._renderer = None
+        self.update()
+
+    def value(self):
+        return self.uri
+
+
+class ImageViewWidget(QLabel):
+    def __init__(self, uri, background=None) -> None:
+        super().__init__()
+        self._pixmap = QPixmap(uri)
+        self._bg = None
+        if isinstance(background, QColor):
+            self._bg = background
+        elif isinstance(background, str):
+            self._bg = Color(code=background)
+
+    def setValue(self, uri):
+        self._pixmap = QPixmap(uri)
+        self.update()
+
+    def value(self):
+        return self.uri
+
+    def paintEvent(self, e):
+        qp = QPainter(self)
+        try:
+            qp.setRenderHint(QPainter.SmoothPixmapTransform)
+            winSize = e.rect()
+            if self._bg:
+                qp.fillRect(winSize, self._bg)
+            pixmapRatio = float(self._pixmap.width()) / self._pixmap.height() if self._pixmap.height() else 1.0
+            windowRatio = float(winSize.width()) / winSize.height() if winSize.height() else 1.0
+            if pixmapRatio < windowRatio:
+                newWidth = int(winSize.height() * pixmapRatio)
+                qp.drawPixmap(0, 0, newWidth, winSize.height(), self._pixmap)
+            else:
+                newHeight = int(winSize.width() / pixmapRatio)
+                qp.drawPixmap(0, 0, winSize.width(), newHeight, self._pixmap)
+        finally:
+            qp.end()
+
+
+def ImageView(uri, label=None, name=None, background=None, add=True, **kwargs):
+    widget = ImageViewWidget(uri, background)
+    if name:
+        widget.setObjectName(name)
+    set_qt_attrs(widget, **kwargs)
+    if add:
+        place_widget(widget, label=label)
+    return widget
+
+
+def SvgImageView(uri: str, name: str = None, label: str = None, stretch=0, 
+                 alignment=Qt.Alignment(), **kwargs) -> SvgImageViewWidget:
+    """
+    High resolution Svg Image box
+
+    :param str uri: file path if the svg
+    :param str name: Widget name, defaults to None
+    :return SvgImageViewWidget: The widget
+    """
+    widget = SvgImageViewWidget(uri)
+    if name:
+        widget.setObjectName(name)
+    set_qt_attrs(widget, **kwargs)
+    place_widget(widget, label, stretch=stretch, alignment=alignment)
+    return widget
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Table
+#  ────────────────────────────────────────────────────────────────────────────
+
+class TableWidget(QTableWidget):
+    def __init__(self, headers: List[str], rows: List[List[Any]]):
+        num_rows = len(rows)
+        num_cols = len(headers)
+        super().__init__(num_rows, num_cols)
+        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        def column(col_spec: str):
+            if col_spec.startswith('<'):
+                return (col_spec[1:], Qt.AlignLeft)
+            if col_spec.startswith('>'):
+                return (col_spec[1:], Qt.AlignRight)
+            if col_spec.startswith('^'):
+                return (col_spec[1:], Qt.AlignCenter)
+            return (col_spec, Qt.AlignLeft)
+
+        aligns = []
+        for col in range(num_cols):
+            text, align = column(str(headers[col]))
+            aligns.append(align | Qt.AlignVCenter)
+            item = QTableWidgetItem(text)
+            item.setTextAlignment(align | Qt.AlignVCenter)
+            self.setHorizontalHeaderItem(col, item)
+
+        self.num_cols = num_cols
+        self.aligns = aligns
+        self.setRowsData(rows)
+
+    def setRowsData(self, rows: List[List[Any]]):
+        num_rows = len(rows)
+        aligns = self.aligns
+        self.setRowCount(0) # Force Clean
+        self.setRowCount(num_rows)
+        for row in range(num_rows):
+            row_data = rows[row]
+            for col in range(min(self.num_cols, len(row_data))):
+                text, align = row_data[col], aligns[col]
+                item = QTableWidgetItem('' if text is None else str(text))
+                item.setTextAlignment(align)
+                self.setItem(row, col, item)
+
+
+def Table(headers, rows, *, name=None, stretch=0,
+          alignment=Qt.Alignment(), add=True, **kwargs):
+    
+    table = TableWidget(headers, rows)
+    set_qt_attrs(table, **kwargs)
+    if name:
+        table.setObjectName(name)
+    if add:
+        place_widget(table, stretch=stretch, alignment=alignment)
+    return table
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] State
+#  ────────────────────────────────────────────────────────────────────────────
+
+def qt_get_widget_path(widget, index):
+    name = widget.objectName()
+    if not name:
+        name = f"{widget.__class__.__name__}_{index}"
+    path = [name]
+    parent = widget.parent()
+    while parent:
+        path.append(parent.objectName() or parent.__class__.__name__)
+        parent = parent.parent()
+    return "/".join(reversed(path))
+
+
+def save_widget_state(widget, file):
+    data = {}
+    index = 0
+    for child in widget.findChildren(QWidget):
+        if hasattr(child, 'value'):       
+            path = qt_get_widget_path(child, index)
+            index += 1
+            try:     
+                data[path] = child.value()
+            except:
+                print(f"Ignoring value of {path}")
+    with open(file, 'w') as f:
+        f.write(json.dumps(data))
+
+
+def load_widget_state(widget, file):
+    file = Path(file)
+    if file.exists():
+        with open(file, 'r') as f:
+            data = json.load(f)
+            index = 0
+            for child in widget.findChildren(QWidget):
+                if hasattr(child, 'setValue'):       
+                    path = qt_get_widget_path(child, index)
+                    index += 1
+                    if path in data:
+                        try:     
+                            child.setValue(data[path])
+                        except:
+                            print(f"Ignoring value of {path} because it was not found")
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] UI Thread
+#  ────────────────────────────────────────────────────────────────────────────
+
+class _ui_thread_hook_class(QObject):
+    queued = Signal(object)
+
+    def __init__(self):
+        super().__init__(QApplication.instance())
+        self.moveToThread(QApplication.instance().thread())
+        self.queued.connect(self.run, Qt.QueuedConnection)
+
+    def send(self, func):
+        self.queued.emit(func)
+
+    @Slot(object)
+    def run(self, func):
+        func()
+
+_ui_thread_hook_obj = _ui_thread_hook_class()
+
+def ui_thread(delay: int = 0):
+    """
+    Decorator for running callables in Qt's UI Thread
+
+    :param _type_ f: Callable
+    :return _type_: type(f)
+    """
+    def decorator(f):
+        @wraps(f)
+        def wrapper(*args, **kwargs):
+            if delay > 0:
+                def call():
+                    QTimer.singleShot(delay, lambda: f(*args, **kwargs))
+            else:
+                def call():
+                    f(*args, **kwargs)
+            _ui_thread_hook_obj.send(call)
+        return wrapper
+    return decorator
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [GUI] Message Boxes
+#  ────────────────────────────────────────────────────────────────────────────
+
+@ui_thread(delay=10)
+def show_info(message, title="Information", std_icon=QMessageBox.Information, std_buttons=QMessageBox.Ok, parent=None):
+    diag = QMessageBox(parent or find_active_window())
+    diag.setIcon(std_icon)
+    diag.setWindowTitle(str(title))
+    diag.setText(str(message))
+    diag.setStandardButtons(std_buttons)
+    diag.open()
+
+def show_warning(message, title="Warning", std_icon=QMessageBox.Warning, std_buttons=QMessageBox.Ok, parent=None):
+    show_info(message, title, std_icon, std_buttons, parent)
+
+def show_error(message, title="Error", std_icon=QMessageBox.Critical, std_buttons=QMessageBox.Ok, parent=None):
+    show_info(message, title, std_icon, std_buttons, parent)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Widget] Canvas
+#  ────────────────────────────────────────────────────────────────────────────
+
+class CanvasHelper:
+    def __init__(self, widget: QWidget, painter: QPainter, event: QPaintEvent) -> None:
+        self.widget = widget
+        self.painter = painter
+        self.event = event
+
+    def setBackgroundColor(self, color: QColor):
+        self.painter.fillRect(self.event.rect(), color)
+
+    @contextmanager
+    def pen(self, **kwargs):
+        self._old_pen = self.painter.pen()
+        pen = QPen()
+        set_qt_attrs(pen, **kwargs)
+        self.painter.setPen(pen)
+        yield pen
+        self.painter.setPen(self._old_pen)
+
+    @contextmanager
+    def brush(self, **kwargs):
+        self._old_brush = self.painter.brush()
+        brush = QBrush()
+        set_qt_attrs(brush, **kwargs)
+        self.painter.setBrush(brush)
+        yield brush
+        self.painter.setBrush(self._old_brush)
+
+
+class CanvasWidget(QWidget):
+    def __init__(self, *, paint=None, setup=None, parent=None):
+        super().__init__(parent)
+        self._paint = paint
+        self._setup = setup
+
+    def paintEvent(self, e):
+        qp = QPainter(self)
+        qp.save()
+        helper = CanvasHelper(self, qp, e)
+        try:
+            if self._setup:
+                self._setup(self, qp, helper)
+            if self._paint:
+                self._paint(self, qp, helper)
+        finally:
+            qp.restore()
+            qp.end()
+
+
+def Canvas(paint, *, setup=None, name=None, stretch=0, width=0, height=0, **kwargs):   
+    widget = CanvasWidget(paint=paint, setup=setup)
+    widget.setMinimumSize(width, height)
+    set_qt_attrs(widget, **kwargs)
+    if name:
+        widget.setObjectName(name)
+    place_widget(widget, stretch=stretch, alignment=Qt.AlignVCenter | Qt.AlignCenter)
+    return widget
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Widget] Header
+#  ────────────────────────────────────────────────────────────────────────────
+
+class HeaderWidget(QWidget):
+    def __init__(self, text: str, line=True, **kwargs):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0,0,0,0)
+        layout.setSpacing(0)
+        self.setLayout(layout)
+        
+        label = QLabel(text)
+        label.setStyleSheet('font-weight: bold')
+        label.setProperty('styleClass', 'header-label')
+        set_qt_attrs(label, **kwargs)
+        layout.addWidget(label)
+
+        if line:
+            sep = QFrame()
+            label.setProperty('styleClass', 'header-line')
+            sep.setFrameShape(QFrame.HLine)
+            sep.setFrameShadow(QFrame.Sunken)        
+            layout.addWidget(sep)
+
+
+def Header(text, add=True, **kwargs):   
+    widget = HeaderWidget(text, **kwargs)
+    if add:
+        place_widget(widget)
+    return widget
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Widget] Log
+#  ────────────────────────────────────────────────────────────────────────────
+
+class LogViewWidget(QPlainTextEdit):
+    def __init__(self, style: str = None, err_style: str = None, warn_style: str = None) -> None:
+        super().__init__()
+        self.style = style
+        self.err_style = err_style or ''
+        self.warn_style = warn_style or ''
+        if style:
+            self.setStyleSheet(style)
+        self.setReadOnly(True)
+        self.setCenterOnScroll(True)
+    
+    def info(self, message: str):
+        self.appendHtml(f"<p>{message}</p>")
+        self.ensureCursorVisible()
+
+    def error(self, message: str):
+        self.appendHtml(f"<p style='{self.err_style}'>{message}</p>")
+        self.ensureCursorVisible()
+
+    def warn(self, message: str):
+        self.appendHtml(f"<p style='{self.warn_style}'>{message}</p>")
+        self.ensureCursorVisible()
+
+
+def LogView(style: str = None, err_style: str = None, warn_style: str = None, add=True, **kwargs):   
+    widget = LogViewWidget(style, err_style, warn_style)
+    set_qt_attrs(widget, **kwargs)
+    if add:
+        place_widget(widget)
+    return widget
+
+
+def margins(left: int = 0, top: int = 0, right: int = 0, bottom: int = 0) -> QMargins:
+    return QMargins(left, top, right, bottom)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Widget] Section
+#  ────────────────────────────────────────────────────────────────────────────
+
+@contextmanager
+def Section(header: Union[QWidget,str], indent: int = 0, **kwargs):
+    with Container():
+        with Col(contentsMargins=(indent,0,0,0), spacing=0):
+            if isinstance(header, QWidget):
+                place_widget(header)
+            else:
+                Header(header)
+            with Container(contentsMargins=(indent,0,0,0)):
+                yield Container(**kwargs)
+
+
+#  ────────────────────────────────────────────────────────────────────────────
+#    [SECTION] [Util] Utils
+#  ────────────────────────────────────────────────────────────────────────────
+
+def update_style(widget: QWidget):
+    style = widget.style()
+    style.unpolish(widget)
+    style.polish(widget)
+    widget.update()
+
+
+def get_open_file(caption='Open', filter=None):
+    names = QFileDialog.getOpenFileName(
+        QApplication.activeWindow(), 
+        caption=caption, 
+        filter=filter)
+    if names and names[0]:
+        return names[0]
+
+def get_save_file(caption='Save', filter=None):
+    names = QFileDialog.getSaveFileName(
+        QApplication.activeWindow(), 
+        caption=caption, 
+        filter=filter)
+    if names and names[0]:
+        return names[0]
+
+def load_font(path: str):
+    QFontDatabase.addApplicationFont(path)
+
+class ColorIcon(QIcon):
+    def __init__(self, path, color):
+        pixmap = QPixmap(path)
+        mask = pixmap.createMaskFromColor(QColor('transparent'), Qt.MaskInColor)
+        pixmap.fill(color)
+        pixmap.setMask(mask)
+        super().__init__(pixmap)
+        self.setIsMask(True)
+
+class StyleColor(QColor):
+    def __init__(self, color: QColor, alpha: float = None) -> None:
+        super().__init__()
+        self.setRgba(color.rgba())
+        if alpha is not None:
+            self.setAlphaF(alpha)
+
+    def __str__(self) -> str:
+        return f"rgba({self.red()},{self.green()},{self.blue()},{self.alpha()})"

@@ -2,3 +2,5 @@ __pycache__/
 notes.ipynb
 .env
 build/
+lab.ipynb
+__bawr_cache__/

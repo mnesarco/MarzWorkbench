@@ -18,26 +18,17 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import Gui
+from freecad.marz.extension.fc import Gui
 
 # Import Commands
-from .create_body import CmdCreateBody
-from .create_constructions import CmdCreateConstructionLines
-from .create_fretboard import CmdCreateFretboard
-from .create_instrument import CmdCreateInstrument
-from .create_neck import CmdCreateNeck
-from .import_body import CmdImportBodyShape
-from .import_headstock import CmdImportHeadstockShape
-from .import_inlays import CmdImportFretInlays
+from .parameters import CmdShowParameters
 from .windows import ShowAboutWindow
+from .visibility import CmdToggle2D, CmdToggle3D
+from .export import CmdExportSvg
 
 # Register Commands
-Gui.addCommand('MarzCmdCreateBody', CmdCreateBody())
-Gui.addCommand('MarzCmdCreateConstructionLines', CmdCreateConstructionLines())
-Gui.addCommand('MarzCmdCreateFretboard', CmdCreateFretboard())
-Gui.addCommand('MarzCmdCreateInstrument', CmdCreateInstrument())
-Gui.addCommand('MarzCmdCreateNeck', CmdCreateNeck())
-Gui.addCommand('MarzCmdImportBodyShape', CmdImportBodyShape())
-Gui.addCommand('MarzCmdImportHeadstockShape', CmdImportHeadstockShape())
-Gui.addCommand('MarzCmdImportFretInlays', CmdImportFretInlays())
+Gui.addCommand('MarzCmdShowParameters', CmdShowParameters())
 Gui.addCommand('MarzCmdShowAboutWindow', ShowAboutWindow())
+Gui.addCommand('MarzCmdToggle2D', CmdToggle2D)
+Gui.addCommand('MarzCmdToggle3D', CmdToggle3D)
+Gui.addCommand('MarzCmdExportSvg', CmdExportSvg())

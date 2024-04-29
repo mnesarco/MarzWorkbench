@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,18 +18,18 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import ui
+from freecad.marz.extension.lang import tr
+from freecad.marz.extension.paths import iconPath
 from freecad.marz.feature.widget_about import MarzAboutWindow
 
-
 class ShowAboutWindow:
-    """Base Command for Opening windows"""
+    """Show splash window"""
 
     def GetResources(self):
         return {
-            "MenuText": "About Marz Designer Workbench",
-            "ToolTip": "About Marz Designer Workbench",
-            "Pixmap": ui.iconPath('Marz.svg')
+            "MenuText": tr("About Marz Designer Workbench"),
+            "ToolTip": tr("About Marz Designer Workbench"),
+            "Pixmap": iconPath('Marz.svg')
         }
 
     def IsActive(self):

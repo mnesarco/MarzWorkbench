@@ -40,7 +40,7 @@ def fret(n, scale):
     return scale * (1 - (1 / math.pow(FRET_RATIO, n)))
 
 
-def inches(i):
+def inch_to_mm(i):
     """
     Return millimeters from `i`.
     #! Important note: This function name seems confusing but it is not.
@@ -51,7 +51,7 @@ def inches(i):
     return i * 25.4
 
 
-def toinches(millimeters):
+def mm_to_inch(millimeters):
     """
     Return inches from `millimeters`
     
@@ -66,7 +66,7 @@ def deg_to_rad(degrees):
     return math.pi * degrees / 180.0
 
 
-def todeg(radians):
+def rad_to_deg(radians):
     """Returns degrees from `radians`)"""
     return 180.0 * radians / math.pi
 
@@ -87,7 +87,7 @@ class NeckJoint(Enum):
     """Type of Neck Joint"""
     BOLTED = 'Bolt On'
     SETIN = 'Set In'
-    THROUHG = 'Through All'
+    THROUGH = 'Through All'
 
 
 class FretboardCut(Enum):
@@ -232,7 +232,7 @@ class Nut(Feature):
 class Neck(Feature):
     """Neck Feature Specs"""
 
-    def __init__(self, instrument, joint=NeckJoint.THROUHG, startThickness=15,
+    def __init__(self, instrument, joint=NeckJoint.THROUGH, startThickness=15,
                  endThickness=17, jointFret=16, topOffset=0, angle=3, tenonThickness=10,
                  tenonLength=10, tenonOffset=2, profile="C Classic",
                  transitionLength=50, transitionTension=10, transitionFunction=TransitionFunction.CATENARY,
@@ -274,7 +274,7 @@ class Neck(Feature):
 class Fretboard(Feature):
     """Fretboard Feature Specs"""
 
-    def __init__(self, instrument, thickness=7.0, startRadius=inches(10), endRadius=inches(14),
+    def __init__(self, instrument, thickness=7.0, startRadius=inch_to_mm(10), endRadius=inch_to_mm(14),
                  startMargin=5.0, endMargin=5.0, sideMargin=3.0, cut=FretboardCut.PARALLEL,
                  frets=24, fretNipping=2, cutBassDistance=400, cutTrebleDistance=400,
                  perpendicularFret=7, inlayDepth=1, filletRadius=1.0):
@@ -335,21 +335,21 @@ class StringSet(Feature):
         super().__init__(instrument)
         self.name = name or 'Guitar Std 6 strings 10,13,17,26,36,46'
         self.strings = strings or [
-            inches(0.010),
-            inches(0.013),
-            inches(0.017),
-            inches(0.026),
-            inches(0.036),
-            inches(0.046)
+            inch_to_mm(0.010),
+            inch_to_mm(0.013),
+            inch_to_mm(0.017),
+            inch_to_mm(0.026),
+            inch_to_mm(0.036),
+            inch_to_mm(0.046)
         ]
 
     @property
     def gauges(self):
-        return [str(toinches(g)) for g in self.strings]
+        return [str(mm_to_inch(g)) for g in self.strings]
 
     @gauges.setter
     def gauges(self, gauges):
-        self.strings = [inches(float(g)) for g in gauges]
+        self.strings = [inch_to_mm(float(g)) for g in gauges]
 
     @property
     def count(self):
@@ -395,10 +395,10 @@ class FretWire(Feature):
             crownWidth  : Crown Width
         """
         self.name = name or "Medium/Medium (Stewmac_TM)"
-        self.tangDepth = tangDepth or inches(0.055)
-        self.tangWidth = tangWidth or inches(0.020)
-        self.crownHeight = crownHeight or inches(0.039)
-        self.crownWidth = crownWidth or inches(0.084)
+        self.tangDepth = tangDepth or inch_to_mm(0.055)
+        self.tangWidth = tangWidth or inch_to_mm(0.020)
+        self.crownHeight = crownHeight or inch_to_mm(0.039)
+        self.crownWidth = crownWidth or inch_to_mm(0.084)
 
 
 class HeadStock(Feature):

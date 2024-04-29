@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <title>Icon Tests</title>
+        <style>
+            img {
+                margin: 2px;
+            }
+            div {
+                padding: 5px;
+                margin: 5px;
+                white-space: nowrap;
+            }
+            .tiny img {
+                width: 16px;
+                height: 16px;
+            }
+            .small img {
+                width: 24px;
+                height: 24px;
+            }
+            .medium img {
+                width: 32px;
+                height: 32px;
+            }
+            .huge img {
+                width: 64px;
+                height: 64px;
+            }
+            .dark {
+                background-color: #333333;
+            }
+            .light {
+                background-color: #eeeeee;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="dark tiny">
+            {{icons}}
+        </div>
+        <div class="dark small">
+            {{icons}}
+        </div>
+        <div class="dark medium">
+            {{icons}}
+        </div>
+        <div class="dark huge">
+            {{icons}}
+        </div>
+
+        <div class="light tiny">
+            {{icons}}
+        </div>
+        <div class="light small">
+            {{icons}}
+        </div>
+        <div class="light medium">
+            {{icons}}
+        </div>
+        <div class="light huge">
+            {{icons}}
+        </div>
+    </body>
+</html>

@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,40 +18,18 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+from typing import Any, Callable, Dict, Iterable, TypeVar
 
-from freecad.marz.extension import ui, App, Gui
-from freecad.marz.feature import MarzInstrument_Name
-from freecad.marz.feature.instrument import MarzInstrument
+T = TypeVar('T')
+K = TypeVar('K')
 
-
-class CmdCreateInstrument:
-    """Create Instrument"""
-
-    def GetResources(self):
-        return {
-            "MenuText": "Create Instrument",
-            "ToolTip": "Create Instrument",
-            "Pixmap": ui.iconPath('create_instrument.svg')
-        }
-
-    def IsActive(self):
-        return App.ActiveDocument is None or App.ActiveDocument.getObject(MarzInstrument_Name) is None
-
-    def Activated(self):
-        try:
-            if App.ActiveDocument is None:
-                App.newDocument("Instrument")
-            obj = App.ActiveDocument.getObject(MarzInstrument_Name)
-            if obj is None:
-                obj = App.ActiveDocument.addObject('App::FeaturePython', MarzInstrument_Name)
-                obj.Label = "Instrument Parameters"
-                MarzInstrument(obj)
-            else:
-                Gui.Selection.clearSelection()
-                Gui.Selection.addSelection(App.ActiveDocument.Name, MarzInstrument_Name)
-        except:
-            ui.Msg(traceback.format_exc())
-
-
-
+def group_by(iterable: Iterable[T], keyfn: Callable[[T], K]) -> Dict[K,Iterable[T]]:
+    map = dict()
+    for e in iterable:
+        k = keyfn(e)
+        values = map.get(k, None)
+        if values is None:
+            values = []
+            map[k] = values
+        values.append(e)
+    return map

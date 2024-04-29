@@ -18,8 +18,13 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+#! TODO: Deprecate this file
+#! This file is very old, It was created because I ported my existing 
+#! Javascript code but all the code here can be replaced with Part.Edge
+#! class.
+
 from freecad.marz.model.vxy import vxy
-from freecad.marz.extension import Vector
+from freecad.marz.extension.fc import Vector
 import Part
 
 class linexy:
@@ -36,6 +41,10 @@ class linexy:
 
     def __str__(self):
         return f"linexy({self.v1}=>{self.v2})"
+
+    @property
+    def points(self):
+        return self.v1, self.v2
 
     @property
     def vector(self):
@@ -140,7 +149,7 @@ class linexy:
             end.y = y
         return linexy(start, end)
     
-    def edge(self):
+    def edge(self) -> Part.Edge:
         return Part.Edge(Part.Vertex(self.start.x, self.start.y, 0), Part.Vertex(self.end.x, self.end.y, 0))
 
 

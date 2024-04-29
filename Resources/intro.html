@@ -1,0 +1,108 @@
+<html>
+    <style>
+        a { 
+            color: #0000ff; 
+        }
+        .dep-supported { 
+            color: green; 
+            font-weight: normal; 
+        }
+        .dep-unsupported { 
+            color: red; 
+            font-weight: bold; 
+        }
+        table.env-table td, table.env-table th { 
+            color: #333333;
+            border: 1px solid #c0c0c0; 
+            font-size: 12pt; 
+            font-weight: normal; 
+            padding: 5px;
+            text-align: left;
+        }
+        table.env-table {
+            border-collapse: collapse;
+        }
+        table.env-table th {
+            background-color: #e0e0e0;;
+        }
+    </style>    
+
+    <h1>Official Repository</h1>
+    <p>
+        Github: <a href="https://github.com/mnesarco/MarzWorkbench/">https://github.com/mnesarco/MarzWorkbench</a>
+    </p>
+
+    <p>
+        <img src="{{__base__}}/graphics/showcase.png" />
+    </p>
+    
+    <h3>Local Environment</h3>
+    <table class="env-table" width="100%">
+        <tr>
+            <th>Dependency</th>
+            <th>Installed Version</th>
+            <th>Support</th>
+        </tr>
+        <tr>
+            <td>Marz Workbench</td>
+            <td>{{version}}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>FreeCAD</td>
+            <td>{{freecad_version}}</td>
+            <td>{{freecad_supported}}</td>
+        </tr>
+        <tr>
+            <td>Curves Workbench</td>
+            <td>{{curves_version}}</td>
+            <td>{{curves_supported}}</td>
+        </tr>
+    </table>
+    
+
+    <br /> 
+    <h1>Help</h1>
+
+    <h3>FreeCAD Forum</h3>
+    <ul>
+        <li>
+            <a href="https://forum.freecad.org/viewtopic.php?t=44928">https://forum.freecad.org/viewtopic.php?t=44928</a>
+        </li>
+    </ul>
+
+
+    <h3>Youtube channel</h3>
+    <ul>
+        <li>
+            <a href="https://www.youtube.com/@mnesarcox">https://www.youtube.com/@mnesarcox</a>    
+        </li>
+    </ul>
+
+    <h3>Wiki</h3>
+    <p>
+        <ul>
+            <li><a href="https://github.com/mnesarco/MarzWorkbench/wiki">https://github.com/mnesarco/MarzWorkbench/wiki</a></li>
+            <li><a href="https://github.com/mnesarco/MarzWorkbench/wiki/Custom-Shapes">https://github.com/mnesarco/MarzWorkbench/wiki/Custom-Shapes</a></li>
+        </ul>
+    </p>
+
+    <h3>Bug tracking</h3>
+    <ul>
+        <li>
+            <a href="https://github.com/mnesarco/MarzWorkbench/issues">https://github.com/mnesarco/MarzWorkbench/issues</a>     
+        </li>
+    </ul>
+
+
+    <br /> 
+    <h2>Operating system support</h2>
+    <p>
+        Any OS supported by the current version of FreeCAD should work,<br /> 
+        but in case of issues related to the OS, <b>Linux</b> has first<br /> 
+        class support and issues will be resolved there first. Issues<br /> 
+        specifically related to <b>Mac</b> or <b>Windows</b> has second<br /> 
+        class support and has lower priority.<br />
+    </p>
+
+</html>

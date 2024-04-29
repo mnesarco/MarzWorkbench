@@ -20,7 +20,6 @@
 
 import functools
 
-
 def rsetattr(obj, attr, val):
     """Set attribute by dot notation.
     See: https://stackoverflow.com/questions/31174295/

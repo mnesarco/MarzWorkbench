@@ -18,16 +18,21 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import Gui, ui
+from freecad.marz.extension.fc import Gui
+from freecad.marz.extension.paths import iconPath
+from freecad.marz.extension.threading import task, Task
+from freecad.marz.extension.lang import tr
+from freecad.marz.feature.logging import MarzLogger
 
+_dep_loader : Task[None] = None
 
 class MarzWorkbench(Gui.Workbench):
     """"Marz Workbench"""
 
-    Icon = ui.iconPath('Marz.svg')
-    MenuText = "Marz Guitar Designer"
-    ToolTip = "Guitar Design Workbench"
-    Categories = ['Musical Instruments']
+    Icon = iconPath('Marz.svg')
+    MenuText = tr("Marz Guitar Designer")
+    ToolTip = tr("Guitar Design Workbench")
+    Categories = ['Instruments', 'Music', 'Guitar', 'Luthiery']
 
     def __init__(self):
         self.showAbout = True
@@ -38,19 +43,18 @@ class MarzWorkbench(Gui.Workbench):
     def Initialize(self):
         import freecad.marz.command
         commands = [
-            "MarzCmdCreateInstrument",
-            "MarzCmdCreateFretboard",
-            "MarzCmdCreateNeck",
-            "MarzCmdCreateBody",
-            "MarzCmdCreateConstructionLines",
-            "MarzCmdImportBodyShape",
-            "MarzCmdImportHeadstockShape",
-            "MarzCmdImportFretInlays",
+            "MarzCmdShowParameters",
+            "MarzCmdToggle2D",
+            "MarzCmdToggle3D",
+            "MarzCmdExportSvg",
         ]
         self.appendToolbar("Marz", commands)
-        self.appendMenu("&Guitar", commands + ['MarzCmdShowAboutWindow'])
+        self.appendMenu(tr("&Guitar"), commands + ['MarzCmdShowAboutWindow'])
 
     def Activated(self):
+        global _dep_loader
+        if _dep_loader is None:
+            _dep_loader = import_dependencies()
         if self.showAbout:
             self.showAbout = False
             from freecad.marz.feature.widget_about import MarzAboutWindow
@@ -60,5 +64,17 @@ class MarzWorkbench(Gui.Workbench):
         pass
 
 
-Gui.addWorkbench(MarzWorkbench)
+# Load expensive imports in background
+@task
+def import_dependencies():
+    MarzLogger.info(tr("Preloading dependencies..."))
+    import Part # type: ignore
+    try:
+        from freecad.Curves import ( # type: ignore
+            gordon as tigl, 
+            BSplineApproxInterp, 
+            BSplineAlgorithms)
+    except:
+        MarzLogger.error(tr("Error importing Curves Workbench"))
 
+Gui.addWorkbench(MarzWorkbench)

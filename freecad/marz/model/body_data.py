@@ -19,6 +19,17 @@
 # +---------------------------------------------------------------------------+
 
 
+import math
+from freecad.marz.model.instrument import deg_to_rad
+from freecad.marz.extension.fc import App, Placement, Rotation, Vector
+import Part # type: ignore
+
+def find_x_on_midline(shape):
+    mid = Part.Edge(Part.Vertex(10000,0,0), Part.Vertex(-10000, 0, 0))
+    dist, vs, *_ = mid.distToShape(shape)
+    if dist < 1e-7:
+        return vs[0][0].x
+
 class BodyData(object):
     """
     Body reference constructions
@@ -88,3 +99,29 @@ class BodyData(object):
 
     def totalThicknessWithOffset(self):
         return self.totalThickness() + self.topOffset
+
+    def placements(self, bridge_ref):
+        """
+        return (top_placement, back_placement)
+
+        :param _type_ bridge_ref: Bridge reference geometry
+        """
+        angle = deg_to_rad(self.neckAngle)
+        y = 0 # -self.width/2
+        x = self.neckd.fbd.neckFrame.bridge.mid().x + self.neckPocketLength
+        b = Vector(x,y,0)
+
+        if bridge_ref:
+            ref_x = find_x_on_midline(bridge_ref.Shape) + x
+            if ref_x is not None:
+                mod_x = find_x_on_midline(self.neckd.fbd.bridgePos.edge())
+                if mod_x is not None:
+                    adjust = mod_x - ref_x
+                    b = Vector(x + adjust, y, 0)
+
+        back_pos = b.add(Vector(self.totalThicknessWithOffset()*math.sin(angle), 0, -self.totalThicknessWithOffset()*math.cos(angle)))
+        top_pos = Vector(back_pos.x - self.backThickness*math.sin(angle), y, back_pos.z + self.backThickness*math.cos(angle))
+
+        back_placement = Placement(back_pos, Rotation(Vector(0,1,0), -self.neckAngle))
+        top_placement = Placement(top_pos, Rotation(Vector(0,1,0), -self.neckAngle))
+        return top_placement, back_placement

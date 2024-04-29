@@ -19,7 +19,9 @@
 # +---------------------------------------------------------------------------+
 
 from freecad.marz import __author__, __version__, __copyright__
-from freecad.marz.extension import ui, Gui, QtGui, QtCore
+from freecad.marz.extension import paths
+from freecad.marz.extension.fc import Gui
+from freecad.marz.extension.qt import QtGui, QtCore
 
 
 class MarzAboutWindow(QtGui.QDialog):
@@ -39,7 +41,7 @@ class MarzAboutWindow(QtGui.QDialog):
         height = 350
         width = height * 1.61803398875
         self.setGeometry((screenWidth-width)/2, (screenHeight-height)/2, width, height)
-        self.setWindowTitle(ui.MARZ_WINDOW_LABEL)
+        self.setWindowTitle(f"FreeCAD :: Marz Workbench {__version__}")
         if not self.frame:
             self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setFixedSize(self.size())
@@ -62,7 +64,7 @@ class MarzAboutWindow(QtGui.QDialog):
             </p>
         """)
         content.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignCenter)
-        backgroundImage = ui.graphicsPath('logo.svg').replace('\\', '/') # Fix for windows paths
+        backgroundImage = paths.graphicsPath('logo.svg').replace('\\', '/') # Fix for windows paths
         content.setStyleSheet(f"""
             color: #eeeeee; 
             font-size: 12px; 

@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,13 +18,6 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import App
-
-FreeCadVersion = App.Version()
-
-def isVersion19():
-    return FreeCadVersion[1] == '19'
-
-def isVersion18():
-    return FreeCadVersion[1] == '18'    
-
+import FreeCAD as App                                     # type: ignore
+import FreeCADGui as Gui                                  # type: ignore
+from FreeCAD import Base, Placement, Rotation, Vector     # type: ignore

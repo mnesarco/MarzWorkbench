@@ -18,36 +18,16 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+def tr(text: str, *args, **kwargs) -> str:
+    """
+    Translate text
 
-from freecad.marz.extension import ui, App, QtGui
-from freecad.marz.feature import MarzInstrument_Name
-from freecad.marz.utils import filesystem as fs
-
-class CmdImportHeadstockShape:
-    """Import body shape from svg Command"""
-
-    def GetResources(self):
-        return {
-            "MenuText": "Import headstock shape svg",
-            "ToolTip": "Import headstock shape svg",
-            "Pixmap": ui.iconPath('import_headstock_shape.svg')
-        }
-
-    def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-        )
-
-    def Activated(self):
-        try:
-            name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
-            if name:
-                App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importHeadstockShape(name)
-                fs.start_monitoring(name, 'headstock', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importHeadstockShape(path))
-
-        except:
-            ui.Msg(traceback.format_exc())
-
-
+    :param str text: source text
+    :param *args Iterable: positional arguments
+    :param **kwargs Dict: named arguments
+    :return str: translated text
+    """
+    try:
+        return text.format(*args, **kwargs)
+    except:
+        return text

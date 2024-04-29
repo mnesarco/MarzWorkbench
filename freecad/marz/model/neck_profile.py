@@ -22,8 +22,8 @@ import json
 
 import Part
 
-from freecad.marz.extension import Vector
-from freecad.marz.extension.ui import resourcePath
+from freecad.marz.extension.fc import Vector
+from freecad.marz.extension.paths import resourcePath
 from freecad.marz.utils import geom
 
 
@@ -37,7 +37,13 @@ class NeckProfile:
         self.h2Offset = d.get('h2_offset', 0.5)
         self.h2 = d.get('h2', 0.75)
 
-    def __call__(self, width, height):
+    def __hash__(self) -> int:
+        return hash(self.name)
+
+    def __eq__(self, value: 'NeckProfile') -> bool:
+        return isinstance(value, NeckProfile) and value.name == self.name
+
+    def __call__(self, width: float, height: float, wire: bool = True):
         """
         Create neck profile section wire
         """
@@ -49,9 +55,11 @@ class NeckProfile:
         points = [leftTop, hl, h, hr, rightTop]
         curve = Part.BSplineCurve()
         curve.interpolate(points)
-        endl = Part.LineSegment(points[-1], points[0])
-        return Part.Wire(Part.Shape([curve, endl]).Edges)
-
+        if wire:
+            endl = Part.LineSegment(points[-1], points[0])
+            return Part.Wire(Part.Shape([curve, endl]).Edges)
+        return curve.toShape()
+    
     def getHPoint(self, width, height):
         return Vector(-height, width * self.h1Offset / 2, 0)
 
@@ -96,5 +104,5 @@ with open(resourcePath('neck_profiles.json')) as jf:
     NeckProfile.LIST = {d['name']: NeckProfile(d) for d in data}
 
 
-def getNeckProfile(name):
+def getNeckProfile(name) -> NeckProfile:
     return NeckProfile.LIST.get(name, NeckProfile.DEFAULT)

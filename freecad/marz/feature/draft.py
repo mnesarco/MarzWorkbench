@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,34 +18,29 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+from freecad.marz.feature.document import Body2DDraft, BridgeRef, FretInlays2DDraft, InstrumentFeature
+from freecad.marz.feature.fretboard import makeInlays
+from freecad.marz.feature.progress import ProgressListener
+from freecad.marz.extension.lang import tr
+from freecad.marz.model import fretboard_builder
+from freecad.marz.model.body_data import BodyData
+from freecad.marz.model.neck_data import NeckData
 
-from freecad.marz.extension import ui, App
-from freecad.marz.feature.fretboard import FretboardFeature
-from freecad.marz.feature import MarzInstrument_Name
+def build_drafts(progress: ProgressListener):
+    proxy = InstrumentFeature().Proxy
 
+    progress.add(tr('Generating construction lines'))
+    inst = proxy.build_constructions(progress)
 
-class CmdCreateFretboard:
-    """Create Fretboard Command"""
+    progress.add(tr('Generating fretboard inlays'))
+    fbd = fretboard_builder.buildFretboardData(inst)
+    inlays = makeInlays(fbd)
+    if inlays:
+        FretInlays2DDraft.set(inlays)
 
-    def GetResources(self):
-        return {
-            "MenuText": "Create Fretboard",
-            "ToolTip": "Create Guitar Fretboard",
-            "Pixmap": ui.iconPath('create_fretboard.svg')
-        }
-
-    def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-            and App.ActiveDocument.getObject(FretboardFeature.NAME) is None
-        )
-
-    def Activated(self):
-        try:
-            App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.createFretboard()
-        except:
-            ui.Msg(traceback.format_exc())
-
-
+    body_2d = Body2DDraft()
+    if body_2d:
+        progress.add(tr('Adjusting positioning'))
+        body_data = BodyData(inst, NeckData(inst, fbd))
+        top_placement, _back_placement = body_data.placements(BridgeRef())
+        body_2d.Placement = top_placement

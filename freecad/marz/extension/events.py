@@ -18,8 +18,12 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import App, QtCore
-from freecad.marz.extension.ui import Log
+from warnings import warn
+warn('freecad.marz.extension.events is deprecated', DeprecationWarning, stacklevel=2)
+
+from freecad.marz.extension.fc import App
+from freecad.marz.extension.qt import QtCore
+from typing import List
 from weakref import WeakMethod
 
 class MarzEventQueue:
@@ -63,7 +67,7 @@ class MarzTrigger:
 class MarzEvents:
 
     def __init__(self):
-        self.triggers = []  # List[MarzTrigger]
+        self.triggers: List[MarzTrigger] = []
         self.timer = QtCore.QTimer()
         self.timer.setInterval(100)
         self.timer.timeout.connect(self.process) 

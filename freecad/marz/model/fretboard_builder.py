@@ -21,12 +21,12 @@
 import math
 
 from freecad.marz.model.fretboard_data import FretboardBox, FretboardData
-from freecad.marz.model.instrument import FretboardCut, fret, NutPosition, NeckJoint
+from freecad.marz.model.instrument import FretboardCut, fret, NutPosition, NeckJoint, Instrument
 from freecad.marz.model.linexy import line, lineFrom, lineIntersection, lineTo, linexy
 from freecad.marz.model.vxy import vxy
 
 
-def buildFretboardData(inst):
+def buildFretboardData(inst: Instrument) -> FretboardData:
     """
     Create Fretboard reference constructions
     """
@@ -166,7 +166,7 @@ def buildFretboardData(inst):
         nut = linexy(p.point, q.point)                      # nut line
 
         # Left hand side limit x
-        if inst.neck.joint is NeckJoint.THROUHG:
+        if inst.neck.joint is NeckJoint.THROUGH:
             x = min(frame.bass.end.x, frame.treble.start.x) - inst.body.length
         else:
             x = min(frame.bass.end.x, frame.treble.start.x)

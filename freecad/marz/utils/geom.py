@@ -18,14 +18,8 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import math
-
-import Part
-
-from freecad.marz.extension import Placement, Rotation, Vector
-from freecad.marz.extension.threading import RunInUIThread
-from freecad.marz.utils import traceTime
-
+import Part # type: ignore
+from freecad.marz.extension.fc import Placement, Vector
 
 def vec(v, z=0):
     """Convert vxy to Vector"""
@@ -35,16 +29,6 @@ def vec(v, z=0):
 def vecs(vs, z=0):
     """Convert vxy[] to Vector[]"""
     return [vec(v, z) for v in vs]
-
-
-def vecsxz(vs, y=0):
-    """Convert vxy[] to Vector[]"""
-    return [vecxz(v, y) for v in vs]
-
-
-def vecsyz(vs, x=0):
-    """Convert vxy[] to Vector[]"""
-    return [vecyz(v, x) for v in vs]
 
 
 def polygon(vs, z=0):
@@ -59,97 +43,14 @@ def extrusion(vs, z, dir):
     return face(vs, z).extrude(Vector(dir[0], dir[1], dir[2]))
 
 
-def vecxz(v, y=0):
-    return Vector(v.x, y, v.y)
-
-
-def vecyz(v, x=0):
-    return Vector(x, v.x, v.y)
-
-
-@RunInUIThread
-def showPoint(v):
-    Part.show(Part.Shape([Part.Point(v)]))
-
-@RunInUIThread
-def showShape(v):
-    Part.show(v)
-
-def showPoints(vs):
-    for v in vs: showPoint(v)
-
-
-def intersect3d(line1, line2):
-    s1 = Part.Line(line1[0], line1[1])
-    s2 = Part.Line(line2[0], line2[1])
-    return s1.intersect(s2)
-
-
-def makeTransition(edge, fnProfile, fnWidth, fnHeight, steps=10, limits=None, solid=True, ruled=True,
-                   useProfileTransition=False, angle=0, lastHeight=40):
-    with traceTime("Prepare transition geometry"):
-        curve = edge.Curve
-        points = edge.discretize(Number=steps + 1)
-        direction = curve.Direction
-        length = edge.Length
-        step = length / steps
-        rot = Rotation(Vector(0, 0, 1), direction)
-
-        def wire(i):
-            l = i * step
-            h = fnHeight(l)
-            point = Vector(points[i].x, points[i].y, points[i].z)
-            if angle != 0:
-                point.z = -l * math.tan(angle)
-            if useProfileTransition:
-                progress = l / length
-                w = fnWidth(i)
-                p = fnProfile.transition(w, h, i, l / length, length, lastHeight)
-                if p: p.Placement = Placement(point, rot)
-            else:
-                w = fnWidth(l)
-                p = fnProfile(w, h)
-                if p: p.Placement = Placement(point, rot)
-            return p
-
-        wires = [wire(i) for i in range(steps + 1)]
-        wires = [w for w in wires if w is not None]
-
-    with traceTime("Make transition solid"):
-        loft = Part.makeLoft(wires, solid, not useProfileTransition)
-
-    if limits:
-        with traceTime("Apply transition limits"):
-            loft = limits.common(loft)
-
-    return loft
-
-
 def bspSegment(curve, a, b):
     curve = curve.copy()
     curve.segment(a, b)
     return curve
 
 
-def bsp3p(a, b, c):
-    curve = Part.BSplineCurve()
-    curve.interpolate([a, b, c])
-    return curve
-
-
-def bspDiscretize(curve, n):
-    params = [curve.parameter(p) for p in curve.discretize(n + 1)]
-    return [bspSegment(curve, a, b) for a, b in zip(params, params[1:])]
-
-
 def wireFromPrim(primitives):
     return Part.Wire(Part.Shape(primitives).Edges)
-
-
-def sectionSegment(shape, line):
-    (d, vs, es) = line.distToShape(shape)
-    if d < 1e-5 and len(vs) > 1:
-        return Part.LineSegment(vs[0][0], vs[1][0])
 
 
 def is_edge_at(edge, point, tol=1e-5):
@@ -157,12 +58,15 @@ def is_edge_at(edge, point, tol=1e-5):
     end = edge.valueAt(edge.LastParameter) 
     return point.isEqual(end, tol) or point.isEqual(start, tol)
 
+
 def are_parallel(vec_a, vec_b, tol=1e-6):
     vec_c = vec_a.cross(vec_b)
     return vec_c.Length <= tol
 
+
 def are_perpendicular(vec_a, vec_b, tol=1e-6):
     return vec_a.dot(vec_b) <= tol
+
 
 def is_planar(shape, normal=None, coplanar=None):
     plane = shape.findPlane()
@@ -171,6 +75,7 @@ def is_planar(shape, normal=None, coplanar=None):
     if isinstance(coplanar, Vector):
         return bool(plane) and are_perpendicular(coplanar, plane.normal(0,0))
     return bool(plane)
+
 
 def query(shapes, where=None, order_by=None, limit=None):
     if where is None:
@@ -182,7 +87,13 @@ def query(shapes, where=None, order_by=None, limit=None):
         select = select[0:limit]
     return select
 
-def query_one(shapes, where, order_by=None):
+
+def query_one(shapes, where=None, order_by=None):
     select = query(shapes, where=where, order_by=order_by, limit=1)
     if len(select) == 1:
         return select[0]
+    
+
+def move_rel(shape, *, x: float = 0.0, y: float = 0.0, z: float = 0.0):
+    pos = shape.Placement.Base + Vector(x,y,z)
+    shape.Placement = Placement(pos, shape.Placement.Rotation)

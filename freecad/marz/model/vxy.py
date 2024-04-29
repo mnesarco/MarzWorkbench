@@ -20,6 +20,11 @@
 
 import math
 
+#! TODO: Deprecate this file
+#! This file is very old, It was created because I ported my existing 
+#! Javascript code but all the code here can be replaced with the FreeCAD.Vector
+#! class.
+
 
 class vxy:
     """

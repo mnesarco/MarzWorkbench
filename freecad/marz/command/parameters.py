@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -20,32 +20,32 @@
 
 import traceback
 
-from freecad.marz.extension import App, ui
-from freecad.marz.feature.body import BodyFeature
+from freecad.marz.extension.fc import App, Gui
+from freecad.marz.extension.paths import iconPath
+from freecad.marz.extension.lang import tr
 from freecad.marz.feature import MarzInstrument_Name
+from freecad.marz.feature.instrument import MarzInstrumentProxy
+from freecad.marz.feature.logging import MarzLogger
 
-
-class CmdCreateBody:
-    """Create Body Command"""
+class CmdShowParameters:
+    """Instrument parameters"""
 
     def GetResources(self):
         return {
-            "MenuText": "Create Body",
-            "ToolTip": "Create Guitar Body",
-            "Pixmap": ui.iconPath('create_body.svg')
+            "MenuText": tr("Instrument parameters"),
+            "ToolTip": tr("Instrument parameters"),
+            "Pixmap": iconPath('data.svg'),
+            "Accel": "W,S"
         }
 
     def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-            and App.ActiveDocument.getObject(BodyFeature.NAME + '_Top') is None
-            and App.ActiveDocument.getObject(BodyFeature.NAME + '_Back') is None
-        )
+        return True
 
     def Activated(self):
         try:
-            App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.createBody()
+            instrument = MarzInstrumentProxy()
+            Gui.Selection.clearSelection()
+            Gui.Selection.addSelection(App.ActiveDocument.Name, MarzInstrument_Name)
+            instrument.show_form()
         except:
-            ui.Msg(traceback.format_exc())
-
+            MarzLogger.error(traceback.format_exc(), escape=True)

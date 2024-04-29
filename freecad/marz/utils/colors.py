@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -18,32 +18,11 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+from typing import Tuple
 
-from freecad.marz.extension import ui, App
-from freecad.marz.feature import MarzInstrument_Name
-
-
-class CmdCreateConstructionLines:
-    """Command: Create construction lines"""
-
-    def GetResources(self):
-        return {
-            "MenuText": "Create construction lines",
-            "ToolTip": "Create construction lines",
-            "Pixmap": ui.iconPath('create_constructions.svg')
-        }
-
-    def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-        )
-
-    def Activated(self):
-        try:
-            App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.createConstructionLines()
-        except:
-            ui.Msg(traceback.format_exc())
-
+def hex_to_rgb_tuple(hex_color: str) -> Tuple[int, int, int]:
+    if hex_color.startswith('#'):
+        hex_color = hex_color[1:]
+    hex_color = f'{hex_color}000000'
+    return int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16) 
 

@@ -20,12 +20,16 @@
 
 from freecad.marz.model.linexy import lineIntersection, linexy
 from freecad.marz.model.vxy import vxy
-
+import Part
 
 class FretboardBox(object):
     """
     Reference Construction Box for Fretboard Parts
     """
+    bass: linexy
+    treble: linexy
+    nut: linexy
+    bridge: linexy
 
     # ! Using __slots__ to make this class Immutable and Fast.
     # ! Immutability is required here because instances of
@@ -84,12 +88,20 @@ class FretboardBox(object):
         # ! Does not change this instance, returns a new translated instance
         tr = [l.clone().translate(v) for l in (self.bass, self.treble, self.nut, self.bridge)]
         return FretboardBox(*tr)
+    
+    def wire(self):
+        return Part.Wire([self.nut.edge(), self.bass.edge(), self.bridge.edge(), self.treble.edge()])
 
 
-class FretboardData(object):
+class FretboardData:
     """
     Fretboard reference constructions
     """
+    frame: FretboardBox
+    virtStrFrame: FretboardBox
+    scaleFrame: FretboardBox
+    nutFrame: FretboardBox
+    neckFrame: FretboardBox
 
     # ! Using __slots__ to make this class Immutable.
     # ! Immutability is required here because instances of

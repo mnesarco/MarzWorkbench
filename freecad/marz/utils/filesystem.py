@@ -18,7 +18,12 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from freecad.marz.extension import App, Gui, QtCore, ui
+from warnings import warn
+warn('freecad.marz.utils.filesystem is deprecated', DeprecationWarning, stacklevel=2)
+
+from freecad.marz.extension.fc import Gui
+from freecad.marz.extension.qt import QtCore
+from freecad.marz.feature.logging import MarzLogger
 
 def start_monitoring(path, component, handler):
     old_file = None
@@ -47,7 +52,7 @@ def on_file_changed(path):
         try:
             _components[comp][1](path)
         except:
-            ui.Log("Error importing file {}".format(path))
+            MarzLogger.error("Error importing file {}", path)
 
 _paths = dict()
 _components = dict()

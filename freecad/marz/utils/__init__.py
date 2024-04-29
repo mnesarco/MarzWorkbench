@@ -18,10 +18,12 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+from functools import wraps
 import time
 import random
 
-from freecad.marz.extension import App
+from freecad.marz.extension.fc import App
+from freecad.marz.feature.progress import ProgressListener
 
 
 def startTimeTrace(label):
@@ -35,25 +37,30 @@ def randomString(size=16, symbols="ABCDEFGHIJKLMNOPQRST"):
 
 class traceTime:
 
-    def __init__(self, label=''):
+    def __init__(self, label='', progress_listener: ProgressListener=None):
         self.label = label
+        self.progress = progress_listener
 
     def __enter__(self):
         self.t = time.time()
+        if self.progress:
+            self.progress.add(self.label)
         return self
 
     def __exit__(self, type, value, traceback):
-        App.Console.PrintLog(f"[MARZ] {self.label}: {int((time.time() - self.t) * 1000)} ms\n")
+        duration = int((time.time() - self.t) * 1000)
+        App.Console.PrintLog(f"[MARZ] {self.label}: {duration:,d} ms\n")
+        if self.progress:
+            self.progress.add(f"{self.label} (Done in {{duration:,d}} ms)", duration=duration)
 
 
 def traced(label):
     def deco(f):
+        @wraps(f)
         def wrapper(*args, **kwargs):
             s = time.time()
             r = f(*args, **kwargs)
             App.Console.PrintLog(f"[MARZ] {label}: {int((time.time() - s) * 1000)} ms\n")
             return r
-
         return wrapper
-
     return deco

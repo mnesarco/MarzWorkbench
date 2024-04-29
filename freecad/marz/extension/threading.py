@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -20,41 +20,24 @@
 
 import traceback
 
-from freecad.marz.extension import App, QtCore
-
-
-def RunInUIThread(f):
-    """UITread Decorator: Any decorated function will be called in UIThread"""
-
-    def wrapper(*args, **kwargs):
-        UIThread.run(lambda: f(*args, **kwargs))
-
-    return wrapper
-
-
-@QtCore.Slot(object)
-def mainTreadRunner(callableToRunInUI): 
-    """Slot: Catch UIThread.runSignal and run in Main Thread"""
-
-    callableToRunInUI()
-
-
-class UIThread(QtCore.QObject):
-    """QObject to emit signals to UITread"""
-
-    runSignal = QtCore.Signal(object)
-
-    @staticmethod 
-    def run(callableToRunInUI):
-        MAIN_UI_THREAD.runSignal.emit(callableToRunInUI)
-
+from freecad.marz.extension.fc import App
+from freecad.marz.extension.qt import QtCore
+from functools import wraps
+from typing import TypeVar, Generic
 
 class TaskSignals(QtCore.QObject):
-    # onComplete Signal( tuple(task.result, task.error, task) )
+    """
+    Task lifecycle events.
+    """    
     onComplete = QtCore.Signal(tuple)
 
+    def __init__(self):
+        super().__init__()
 
-class Task(QtCore.QRunnable):
+
+
+T = TypeVar('T')
+class Task(Generic[T], QtCore.QRunnable):
     """
     Qt Based Runnable.
     """
@@ -78,15 +61,13 @@ class Task(QtCore.QRunnable):
             self.result = self.fn(*self.args, **self.kwargs)
         except BaseException as ex:
             self.error = ex
-        except Exception as ex:
-            self.error = ex
         except:
             self.error = BaseException(traceback.format_exc())
         finally:
             self._isTerminated = True
             self.signals.onComplete.emit((self.result, self.error, self))
 
-    def get(self):
+    def get(self) -> T:
         """
         Wait until completion and return result
         """
@@ -96,15 +77,21 @@ class Task(QtCore.QRunnable):
                     raise self.error
                 else:
                     return self.result
+            else:
+                # QtCore.QThread.yieldCurrentThread()
+                QtCore.QThread.msleep(25)
+
+    def __call__(self) -> T:
+        return self.get()
 
     @staticmethod
-    def execute(fn, *args, **kwargs):
+    def execute(fn, *args, **kwargs) -> 'Task[T]':
         t = Task(fn, *args, **kwargs)
         Task.defaultThreadPool.start(t, QtCore.QThread.HighestPriority)
         return t
 
     @staticmethod
-    def joinAll(jobs):
+    def join(jobs):
         """
         Wait for all jobs to complete. 
         Throws: First exception encountered after all jobs are completed.
@@ -113,7 +100,41 @@ class Task(QtCore.QRunnable):
         return [j.get() for j in jobs]
 
 
-MAIN_UI_THREAD = UIThread()
-MAIN_UI_THREAD.runSignal.connect(mainTreadRunner)
+def task(fn):
+    """
+    Decorator. Converts a normal function into a Task builder.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        return Task.execute(fn, *args, **kwargs)    
+    return wrapper
 
 
+def run_later(fn, delay=0):
+    """
+    Runs fn delayed
+
+    :param function fn: callback
+    :param int delay: milliseconds, defaults to 0
+    """
+    QtCore.QTimer.singleShot(delay, fn)
+
+
+def timer(interval: int):
+    """
+    timer decorator. Create a Lazy QTimer property.
+
+    :param int interval: milliseconds
+    """
+    def deco(func):
+        attr = f'__timer_{func.__name__}'
+        def getter(self):
+            timer = getattr(self, attr, None)
+            if not timer:
+                timer = QtCore.QTimer()
+                timer.setInterval(interval)
+                timer.timeout.connect(lambda: func(self))
+                setattr(self, attr, timer)
+            return timer
+        return property(getter)
+    return deco

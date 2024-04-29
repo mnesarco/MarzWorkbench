@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -19,60 +19,82 @@
 # +---------------------------------------------------------------------------+
 
 import re
-import time
+import traceback
+from typing import Dict, List
 
-from freecad.marz.extension import App, Vector, ui
-from freecad.marz.feature import MarzInstrument_Name
+from freecad.marz.extension.fc import App
 from freecad.marz import utils
+from freecad.marz.extension.fcui import Vector
+from freecad.marz.feature.document import (
+    FretInlaysImports,
+    ImportTarget, 
+    FretInlays)
+
+from freecad.marz.feature.progress import ProgressListener
+from freecad.marz.extension.svg import import_svg
+
+import Part         # type: ignore
 
 POCKET_ID_PATTERN = re.compile(r'h([tb]?)\d*_(\d+)_(\d+).*', re.IGNORECASE)
-
 FRET_INLAY_ID_PATTERN = re.compile(r'f(\d+)_.*', re.IGNORECASE)
+
+
+def ImportValidationItem(kind: str, reference: str, message: str, start: float = None, depth: float = None):
+    return dict(kind=kind, reference=reference, message=message, start=start, depth=depth)
 
 
 class Pocket:
     def __init__(self, obj, start, depth, target):
+        self.name = obj.Name
         self.edges = obj.Shape.copy().Edges
         self.start = start
         self.depth = depth
         self.target = target
 
+class FretInlayPart:
+    def __init__(self, obj, fret):
+        self.fret = fret
+        self.name = obj.Name
+        self.edges = obj.Shape.copy().Edges
 
 class FretInlay:
+    fret: int
+    parts: List[FretInlayPart]
+    shape: Part.Shape
 
-    def __init__(self, part):
+    def __init__(self, part: FretInlayPart):
         self.fret = part.fret
         self.parts = [part]
         self.shape = None
     
-    def add(self, part):
+    def add(self, part: FretInlayPart):
         self.parts.append(part)
     
     def buildShape(self):
-        import Part
         self.shape = Part.makeCompound([Part.Face(Part.Wire(part.edges)) for part in self.parts])
         c = self.shape.BoundBox.Center
         self.shape.translate(-c)
     
-    def createPart(self, baseName):
-        from freecad.marz.extension import ui
-        ui.addOrUpdatePart(
-            self.shape, 
-            f'{baseName}_Fret{self.fret}', 
-            f'FretInlay{self.fret}', 
-            visibility=False, 
-            group=ui.UIGroup_Imports
-        )
+    def createPart(self, doc):
+        FretInlays.set(self.shape, index=self.fret, visibility=False, doc=doc)
 
 
-class FretInlayPart:
+def with_temp_doc(fn):
+    def wrapper(*args, **kwargs):
+        workingDoc = App.ActiveDocument
+        name = utils.randomString(16)
+        tempDoc = App.newDocument(name, 'Importing', True, True)
+        try:
+            return fn(workingDoc, tempDoc, *args, **kwargs)
+        except:
+            traceback.print_exc()
+        finally:
+            App.setActiveDocument(workingDoc.Name)
+            App.closeDocument(tempDoc.Name)
+    return wrapper
 
-    def __init__(self, obj, fret):
-        self.fret = fret
-        self.edges = obj.Shape.copy().Edges
 
-
-def extractPocket(obj, pockets):
+def extract_pocket(obj, pockets):
     """Appends (obj, startDepth, depth, part) to `holes` if id match hole pattern."""
 
     m = POCKET_ID_PATTERN.match(obj.Name)
@@ -83,7 +105,7 @@ def extractPocket(obj, pockets):
         pockets.append(Pocket(obj, start, length, part))
 
 
-def extractInlay(obj, inlays):
+def extract_inlay(obj, inlays: Dict[int, FretInlay]):
     m = FRET_INLAY_ID_PATTERN.match(obj.Name)
     if m and obj.Shape.isClosed():
         fret = int(m.group(1))
@@ -94,23 +116,23 @@ def extractInlay(obj, inlays):
             inlay = FretInlay(FretInlayPart(obj, fret))
             inlays[fret] = inlay
 
+@with_temp_doc
+def import_custom_shapes(
+    doc, tmp_doc, filename, targets: ImportTarget, progress_listener: ProgressListener = None,
+    require_contour=True, require_midline=True, for_validation=False):
 
-def extractCustomShape(filename, baseName, requireContour=True, requireMidline=True):
+    if progress_listener is None:
+        progress_listener = ProgressListener()
 
-    # Deferred Imports to speedup Workbench activation
-    import importSVG
-    import Part
+    validation = []
 
     # Contour implies midline
-    requireMidline = requireMidline or requireContour
+    require_midline = require_midline or require_contour
 
-    # Save Working doc
-    workingDoc = App.ActiveDocument
+    progress_listener.add('Importing {file}', file=filename)
+    import_svg(filename, tmp_doc.Name)
 
-    # Import SVG File
-    name = utils.randomString(16)
-    doc = App.newDocument(name, 'Importing', True)
-    importSVG.insert(filename, name)
+    progress_listener.add('Validating {file}', file=filename)
 
     # Find contour and midline by id
     contour = None
@@ -118,71 +140,102 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
     transition = None
     bridge = None
     pockets = []
+    comp2d = []
 
-    for obj in doc.Objects:
+    for obj in tmp_doc.Objects:
         if obj.Name == 'contour':
+            validation.append(ImportValidationItem('Contour', obj.Name, 'Found'))
             contour = obj
         elif obj.Name == 'midline':
+            validation.append(ImportValidationItem('MidLine', obj.Name, 'Found'))
             midline = obj
         elif obj.Name == 'transition':
+            validation.append(ImportValidationItem('Transition', obj.Name, 'Found'))
             transition = obj
         elif obj.Name == 'bridge':
+            validation.append(ImportValidationItem('Bridge', obj.Name, 'Found'))
             bridge = obj
         else:
-            extractPocket(obj, pockets)
+            extract_pocket(obj, pockets)
 
-    if not contour and requireContour:
-        ui.errorDialog('The SVG File does not contain any contour path. Make sure you have a path with id=contour')
-        return
+    if not contour and require_contour:
+        validation.append(ImportValidationItem('Error', 'contour', 'Required. Not found'))
+        if not for_validation:
+            validation.append(ImportValidationItem('Notify', 'contour', 'The SVG File does not contain any contour path. '
+                        'Make sure you have a path with id=contour'))
+            return validation
 
-    if not midline and requireMidline:
-        ui.errorDialog('The SVG File does not contain any midline path. Make sure you have a path with id=midline')
-        return
+    if not midline and require_midline:
+        validation.append(ImportValidationItem('Error', 'midline', 'Required. Not found'))
+        if not for_validation:
+            validation.append(ImportValidationItem('Notify', 'midline', 'The SVG File does not contain any midline path. '
+                        'Make sure you have a path with id=midline'))
+            return validation
 
     # Load contour
-    wcontour = None
-    if requireContour:
+    contour_wire = None
+    anchor = None
+    if contour and midline:
         # Find contour and midline intersection
         (d, vs, es) = midline.Shape.distToShape( contour.Shape )
-        anchor = vs[0][0]
         # Intersection tolerance
         if d > 0.0000001:
-            ui.errorDialog('contour path and midline path must intersect where the neck will be anchored')
-            return
+            validation.append(ImportValidationItem('Error', 'midline', 'Must intersect contour exactly once'))
+            validation.append(ImportValidationItem('Error', 'contour', 'Must intersect midline exactly once'))
+            if not for_validation:
+                validation.append(ImportValidationItem('Notify', 'contour', 'contour path and midline path must intersect '
+                            'where the neck will be anchored'))
+                return validation
+        anchor = vs[0][0]
         # Copy Shapes and Upgrade Paths to Wires 
-        wcontour = Part.Wire( contour.Shape.copy().Edges )
-        wcontour.translate( -anchor )
+        contour_wire = Part.Wire( contour.Shape.copy().Edges )
+        contour_wire.translate( -anchor )
+        comp2d.append(contour_wire.copy())
 
     anchor = anchor or Vector(0,0,0) # If no reference anchor
 
-    # Load Bridge reference
-    wbridge = None
-    if bridge:
-        wbridge = Part.Wire( bridge.Shape.copy().Edges )
-        wbridge.translate( -anchor )
+    progress_listener.add('Processing imported objects...')
 
+    # Load Bridge reference
+    bridge_wire = None
+    if bridge:
+        bridge_wire = Part.Wire( bridge.Shape.copy().Edges )
+        bridge_wire.translate( -anchor )
+        comp2d.append(bridge_wire.copy())
+        
     # Find transition Segment
-    wtransition = None
+    transition_wire = None
     if transition:
         (d, vs, es) = transition.Shape.distToShape( contour.Shape )
         if d < 1e-5 and len(vs) > 1:
-            wtransition = Part.Wire( Part.Shape( [Part.LineSegment(vs[0][0], vs[1][0])] ) )
-            wtransition.translate( -anchor )
+            transition_wire = Part.Wire( Part.Shape( [Part.LineSegment(vs[0][0], vs[1][0])] ) )
+            transition_wire.translate( -anchor )
+            comp2d.append(transition_wire.copy())
 
     # Build pockets compound
     solids = []
     for pocket in pockets:
+        validation.append(ImportValidationItem('Pocket', pocket.name, 'Found', pocket.start, pocket.depth))
         wire = Part.Wire( pocket.edges )
         wire.translate( -anchor )
         wire.translate( Vector(0,0,-pocket.start) )
+        comp2d.append(wire.copy())        
         solid = Part.Face( wire ).extrude(Vector(0,0,-pocket.depth))
         solids.append((pocket, solid))
 
-    # Restore Active Doc
-    App.setActiveDocument(workingDoc.Name)
-    App.closeDocument(doc.Name)
+    targets.clean(doc=doc)
 
+    # Update 2d compound
+    if comp2d:
+        progress_listener.add('Updating draft objects (2d)...')
+        targets.draft.set(Part.makeCompound(comp2d), visibility=False, doc=doc)
+
+    if for_validation:
+        return validation
+    
     # ---------------------------------------------
+    App.setActiveDocument(doc.Name)
+    progress_listener.add('Preparing imported objects...')
 
     # Build pockets
     def merge(base, s):
@@ -190,7 +243,6 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
         else: return base.fuse(s)
 
     if solids:
-
         comp = None
         compT = None
         compB = None
@@ -202,96 +254,71 @@ def extractCustomShape(filename, baseName, requireContour=True, requireMidline=T
             else:
                 comp = merge(comp, s)
 
-        if comp:
-            ui.addOrUpdatePart(comp, baseName + '_Pockets', 'Pockets', visibility=False, group=ui.UIGroup_Imports)
-        if compT:
-            ui.addOrUpdatePart(compT, baseName + '_Pockets_Top', 'Pockets', visibility=False, group=ui.UIGroup_Imports)
-        if compB:
-            ui.addOrUpdatePart(compB, baseName + '_Pockets_Back', 'Pockets', visibility=False, group=ui.UIGroup_Imports)
+        if comp and targets.pockets:
+            targets.pockets.set(comp, visibility=False, doc=doc)
+        if compT and targets.pockets_top:
+            targets.pockets_top.set(compT, visibility=False, doc=doc)
+        if compB and targets.pockets_back:
+            targets.pockets_back.set(compB, visibility=False, doc=doc)
 
     # Add contour to document
-    if wcontour:
-        ui.addOrUpdatePart(wcontour, baseName + '_Contour', 'Contour', visibility=False, group=ui.UIGroup_Imports)
+    if contour_wire and targets.contour:
+        targets.contour.set(contour_wire, visibility=False, doc=doc)
 
-    if wtransition:
-        ui.addOrUpdatePart(wtransition, baseName + '_Transition', 'Transition', visibility=False, group=ui.UIGroup_Imports)
+    if transition_wire and targets.transition:
+        targets.transition.set(transition_wire, visibility=False, doc=doc)
 
-    if wbridge:
-        ui.addOrUpdatePart(wbridge, baseName + '_Bridge', 'Bridge Reference', visibility=False, group=ui.UIGroup_Imports)
+    if bridge_wire and targets.bridge_ref:
+        targets.bridge_ref.set(bridge_wire, visibility=False, doc=doc)
 
-    # Recalculate
-    if baseName == 'Marz_Headstock':
-        App.ActiveDocument.getObject(MarzInstrument_Name).Internal_HeadstockImport = int(time.time())
-    elif baseName == 'Marz_Body':
-        App.ActiveDocument.getObject(MarzInstrument_Name).Internal_BodyImport = int(time.time())
+    # Embed
+    progress_listener.add('Including imported objects into the document...')
+    targets.internal_file.load(filename, meta=validation, doc=doc)
+
+    return validation
 
 
-def extractInlays(filename, baseName):
+@with_temp_doc
+def import_fretboard_inlays(doc, tmpDoc, filename, progress_listener: ProgressListener = None, forValidation=False):
 
-    # Deferred Imports to speedup Workbench activation
-    import importSVG
+    if progress_listener is None:
+        progress_listener = ProgressListener()
 
-    # Save Working doc
-    workingDoc = App.ActiveDocument
+    progress_listener.add('Importing {file}', file=filename)
 
-    # Import SVG File
-    name = utils.randomString(16)
-    doc = App.newDocument(name, 'Importing', True)
-    importSVG.insert(filename, name)
+    validation = []
+    import_svg(filename, tmpDoc.Name)
+
+    progress_listener.add('Validating {file}', file=filename)
 
     # Extract
-    inlays = {}
-    for obj in doc.Objects: extractInlay(obj, inlays)
+    inlays : Dict[int, FretInlay] = {}
+    for obj in tmpDoc.Objects: extract_inlay(obj, inlays)
+
+    for fret, inl in inlays.items():
+        for part in inl.parts:
+            validation.append(ImportValidationItem('Inlay', part.name, f"Fret{fret} Found"))
 
     if len(inlays) == 0:
-        ui.errorDialog('The SVG File does not contain any inlay path')
-        return
+        validation.append(ImportValidationItem('Notify', '', 'The SVG File does not contain any inlay path'))
+
+    if forValidation:
+        return validation
+
+    App.setActiveDocument(doc.Name)
+
+    progress_listener.add('Processing imported objects...')
+
+    FretInlays.remove_all(doc=doc)
 
     # Build inlays
     for fret, inlay in inlays.items(): inlay.buildShape()
 
-    # Restore Active Doc
-    App.setActiveDocument(workingDoc.Name)
-    App.closeDocument(doc.Name)
-
     # Create parts
-    for fret, inlay in inlays.items(): inlay.createPart(baseName)
+    for fret, inlay in inlays.items(): inlay.createPart(doc)
 
-    # Recalculate
-    App.ActiveDocument.getObject(MarzInstrument_Name).Internal_InlayImport = int(time.time())
+    # Embed
+    progress_listener.add('Including imported objects into the document...')
+    FretInlaysImports.load(filename, meta=validation, doc=doc)
 
-
-class ImportHeadstock:
-
-    def __init__(self, file):
-        self.name = file
-
-    def create(self, model):
-        extractCustomShape(self.name, 'Marz_Headstock')
-
-    def update(self, model):
-        pass
-
-
-class ImportBody:
-
-    def __init__(self, file):
-        self.name = file
-
-    def create(self, model):
-        extractCustomShape(self.name, 'Marz_Body')
-
-    def update(self, model):
-        pass
-
-
-class ImportInlays:
-
-    def __init__(self, file):
-        self.name = file
-
-    def create(self, model):
-        extractInlays(self.name, 'Marz_FInlay')
-
-    def update(self, model):
-        pass
+    return validation

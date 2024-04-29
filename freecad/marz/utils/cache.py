@@ -21,6 +21,7 @@
 import gc
 from time import time
 from threading import RLock
+from functools import wraps
 
 # !-----------------------------------------------------------------------------
 # ! Poor man's cache implementation. Not too good but better than nothing.
@@ -75,6 +76,7 @@ def cleanCache():
 # ! use it only in costly functions.
 def PureFunctionCache(f):
     if CACHE_ENABLED:
+        @wraps(f)
         def wrapper(*args, **kwargs):
             key = cacheKey(str(id(f)), *args, **kwargs)
             (cached, _) = MAIN_CACHE.get(key) or (None, 0)

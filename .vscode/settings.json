@@ -1,7 +1,37 @@
 {
     "cSpell.words": [
+        "Antialiasing",
+        "Autoupdate",
+        "BAWR",
+        "Bezier",
+        "beziers",
+        "bspline",
+        "BSplineApproxInterp",
+        "cleartext",
+        "fcdoc",
+        "fclog",
+        "fcpref",
+        "fcscript",
+        "fcui",
         "freecad",
         "fretboard",
-        "Marz"
-    ]
+        "Fretwire",
+        "linexy",
+        "Luthiery",
+        "Marz",
+        "OCCT",
+        "Peghead",
+        "pivy",
+        "Pixmap",
+        "Preselection",
+        "qobject",
+        "rgetattr",
+        "rsetattr",
+        "SETIN",
+        "Stringset",
+        "tigl",
+        "Trussrod",
+        "unpolish"
+    ],
+    "python.defaultInterpreterPath": "/usr/bin/python3"
 }

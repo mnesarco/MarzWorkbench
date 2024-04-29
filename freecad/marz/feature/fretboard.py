@@ -9,7 +9,7 @@
 # |  the Free Software Foundation, either version 3 of the License, or        |
 # |  (at your option) any later version.                                      |
 # |                                                                           |
-# |  Marz Workbench is distributed in the hope that it will be useful,                |
+# |  Marz Workbench is distributed in the hope that it will be useful,        |
 # |  but WITHOUT ANY WARRANTY; without even the implied warranty of           |
 # |  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            |
 # |  GNU General Public License for more details.                             |
@@ -19,21 +19,31 @@
 # +---------------------------------------------------------------------------+
 
 import math
+from typing import List, Tuple
 
-import Draft
-import Part
+import Part # type: ignore
 
-from freecad.marz.extension import App, Vector
+from freecad.marz.extension.fc import App, Vector
+from freecad.marz.extension.fcdoc import PartFeature
+from freecad.marz.extension.fcui import ui_thread
+from freecad.marz.feature.progress import ProgressListener
 from freecad.marz.model import fretboard_builder as builder
 from freecad.marz.utils import geom, traceTime
 from freecad.marz.utils.cache import PureFunctionCache, getCachedObject
 from freecad.marz.model.linexy import lineIntersection, linexy
-from freecad.marz.model.instrument import ModelException, fret, todeg
-from freecad.marz.extension.threading import Task, UIThread
-from freecad.marz.extension.ui import Log, color as hexColor
-from freecad.marz.extension.ui import (createPartBody, findDraftByLabel, updateDraftPoints,
-                                       updatePartShape, UIGroup_XLines, getUIGroup)
-
+from freecad.marz.model.instrument import ModelException, fret, rad_to_deg
+from freecad.marz.extension.threading import Task
+from freecad.marz.utils.collections import group_by
+from freecad.marz.feature.document import (
+    FretboardPart,
+    RefBridgePos, 
+    RefFretboardFrame, 
+    RefFrets, 
+    RefMidLine, 
+    RefNeckFrame, 
+    RefProjFrame, 
+    RefScaleFrame)
+from freecad.marz.feature.logging import MarzLogger
 
 def fretPos(f, line, h):
     scale = line.length
@@ -43,7 +53,7 @@ def fretPos(f, line, h):
     return Vector(p.x, p.y, h+1)
 
 
-def makeInlays(fbd, thickness, inlayDepth):
+def makeInlays(fbd, thickness=-1, inlayDepth=0):
 
     line = fbd.scaleFrame.midLine
     shapes = []
@@ -56,12 +66,12 @@ def makeInlays(fbd, thickness, inlayDepth):
                 ishape.translate(fretPos(i, line, thickness))
                 shapes.append(ishape)
     
-    comp = None
-    with traceTime("Build inlay pockets substractive solid"):
-        if shapes:
-            comp = Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
+    if shapes:
+        if thickness <= 0:
+            return Part.makeCompound(shapes)
     
-    return comp
+        with traceTime("Build inlay pockets subtractive solid"):
+            return Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
 
 
 @PureFunctionCache
@@ -77,15 +87,23 @@ def fretboardSection(c, r, w, t, v):
 
     # Half angle of the top Arc
     alpha = math.asin(w/(2*r))
-    alpha_deg = todeg(alpha)
+    alpha_deg = rad_to_deg(alpha)
     
     # Guess top Arc
     arc = Part.makeCircle(r, c, v, -alpha_deg, alpha_deg)
-    
+
     # If arc fails: Guess at 90deg
     if arc.Vertexes[0].Point.z <= 0:
         arc = Part.makeCircle(r, c, v, 90-alpha_deg, 90+alpha_deg)
-    
+
+    # If arc fails: Guess at 180deg
+    if arc.Vertexes[0].Point.z <= 0:
+        arc = Part.makeCircle(r, c, v, 180-alpha_deg, 180+alpha_deg)
+
+    # If arc fails: Guess at 270deg
+    if arc.Vertexes[0].Point.z <= 0:
+        arc = Part.makeCircle(r, c, v, 270-alpha_deg, 270+alpha_deg)
+
     # If arc fails again: Impossible
     if arc.Vertexes[0].Point.z <= 0:
         raise ModelException("Current Fretboard's radius is inconsistent with Fretboard's geometry")
@@ -117,15 +135,15 @@ def fretboardSection(c, r, w, t, v):
 def fretboard_fillet(fb, radius):
     Z = Vector(0,0,1)
     Y = Vector(0,1,0)
-    NINF = Vector(-10000, 0, 0)
+    N_INF = Vector(-10000, 0, 0)
     selected = []
 
     face = geom.query_one(fb.Faces, 
                       where=lambda f: geom.is_planar(f, coplanar=Y), 
-                      order_by=lambda f: f.CenterOfGravity.distanceToPoint(NINF))
+                      order_by=lambda f: f.CenterOfGravity.distanceToPoint(N_INF))
 
     if face is None:
-        Log("[Info] fretboard fillet was not possible due to missing face")
+        MarzLogger.warn("Fretboard fillet was not possible due to a missing face")
         return fb
 
     def is_vert(edge):
@@ -135,7 +153,7 @@ def fretboard_fillet(fb, radius):
     if len(selected) == 2:
         fb = fb.makeFillet(radius, selected) 
     else:
-        Log("[Info] fretboard fillet was not possible due to missing edges")
+        MarzLogger.warn("[Info] fretboard fillet was not possible due to missing edges")
 
     return fb
 
@@ -266,7 +284,8 @@ def base(inst, fbd):
                     if fillet and fillet.isValid():
                         board = fillet
                 except:
-                    Log("Error filleting the fretboard with radius: {}".format(fillet_radius))
+                    MarzLogger.warn("It was not possible to fillet the fretboard with radius: {}", 
+                                    fillet_radius)
 
         cache(board)
     return board
@@ -300,14 +319,17 @@ class FretboardFeature:
     def __init__(self, instrument):
         self.instrument = instrument
 
-    def createFretboardShape(self):
+    def createFretboardShape(self, progress_listener: ProgressListener):        
         """Create a Fretboard."""
 
+        progress_listener.add("Updating Fretboard...")
+
         # Calculate model
-        with traceTime('Calc Model'):
+        with traceTime('Building Fretboard models...', progress_listener):
             inst = self.instrument
             fbd = builder.buildFretboardData(self.instrument)
         
+        # Build Inlays in background
         inlaysTask = Task.execute(makeInlays, fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
 
         (fretboard, cache) = getCachedObject('FretboardFeature', 
@@ -318,13 +340,14 @@ class FretboardFeature:
         if not fretboard:
 
             # Generate primitives in parallel. (They are independent)
-            (board, nut, fretSlots) = Task.joinAll([
-                Task.execute(t, self.instrument, fbd) 
-                for t in [base, nutSlot, fretsCut]
-            ])
+            with traceTime('Generating Fretboard components...', progress_listener):
+                (board, nut, fretSlots) = Task.join([
+                    Task.execute(t, self.instrument, fbd) 
+                    for t in [base, nutSlot, fretsCut]
+                ])
 
             # Cut Slots
-            with traceTime('Cut slots from fretboard'):
+            with traceTime('Cutting fret slots from Fretboard...', progress_listener):
                 if board and nut and fretSlots:
                     fretboard = board.cut(tuple([*fretSlots, nut]))
                     if fretboard.Solids:
@@ -332,76 +355,59 @@ class FretboardFeature:
 
             cache(fretboard)
 
-        with traceTime("Cut fretboard inlays"):
+        with traceTime("Carving Fretboard inlays...", progress_listener):
             inlays = inlaysTask.get()
             if inlays:
                 fretboard = fretboard.cut(inlays)
         
+        progress_listener.add('Fretboard done.')
         return fretboard
 
-    def createFretboardPart(self):
-        part = App.ActiveDocument.getObject(FretboardFeature.NAME)
-        if part is None:
-            createPartBody(self.createFretboardShape(), FretboardFeature.NAME, "Fretboard", True)
+    def createFretboardPart(self, progress_listener: ProgressListener):
+        FretboardPart.set(self.createFretboardShape(progress_listener))
 
-    def updateFretboardShape(self):
-        if self.instrument.autoUpdate.fretboard:
-            part = App.ActiveDocument.getObject(FretboardFeature.NAME)
-            if part is not None:
-                updatePartShape(part, self.createFretboardShape())
-
-    def createConstructionShapes(self):
-        shapes = [] # [ (label, shape, color) ]
-        g = self.instrument
+    def createConstructionShapes(self) -> List[Tuple[PartFeature, List[Vector]]]:
+        shapes = [] # [ (target, shape) ]
 
         # Calculate model
-        fbd = builder.buildFretboardData(g)
+        fbd = builder.buildFretboardData(self.instrument)
 
         # Scale Frame
-        shapes.append(('ScaleFrame', geom.vecs(fbd.scaleFrame.polygon), hexColor('555555')))
+        shapes.append((RefScaleFrame, geom.vecs(fbd.scaleFrame.polygon)))
 
         # Projection Frame
-        shapes.append(('ProjectionFrame', geom.vecs(fbd.virtStrFrame.polygon), hexColor('999999')))
+        shapes.append((RefProjFrame, geom.vecs(fbd.virtStrFrame.polygon)))
 
         # Projection Frame
-        shapes.append(('FretboardFrame', geom.vecs(fbd.frame.polygon), hexColor('F0F00F')))
+        shapes.append((RefFretboardFrame, geom.vecs(fbd.frame.polygon)))
 
         # Neck Frame
-        shapes.append(('NeckFrame', geom.vecs(fbd.neckFrame.polygon), hexColor('F0F0FF')))
+        shapes.append((RefNeckFrame, geom.vecs(fbd.neckFrame.polygon)))
 
         # Mid Line
         midLine = fbd.neckFrame.midLineExtendedWith(400, 300)
-        shapes.append(('MidLine', geom.vecs([midLine.start, midLine.end]), hexColor('0000FF')))
+        shapes.append((RefMidLine, geom.vecs([midLine.start, midLine.end])))
 
         # Bridge Position
         pos = fbd.bridgePos
-        shapes.append(('BridgePos', geom.vecs([pos.start, pos.end]), hexColor('FF0000')))
+        shapes.append((RefBridgePos, geom.vecs([pos.start, pos.end])))
+
+        # Frets
+        for fret_n, fret_line in enumerate(fbd.frets):
+            shapes.append((RefFrets, geom.vecs(fret_line.points)))
 
         return shapes
 
-    def updateConstructionShapes(self):
-        for suffix, points, color in self.createConstructionShapes():
-            draft = findDraftByLabel(suffix)
-            if draft is not None:
-                updateDraftPoints(draft, points)
-
     def createConstructionShapesParts(self):
-        placement = App.Placement()
-        placement.Rotation.Q = (0,0,0,1)
-        placement.Base = Vector(0,0,0)
-
+        @ui_thread()
         def createInUI():
-            group = getUIGroup(UIGroup_XLines)
-            for suffix, points, color in self.createConstructionShapes():
-                part = findDraftByLabel(suffix)
-                if part is None:
-                    wire = Draft.makeWire(points, placement=placement, face=False)
-                    wire.Label = suffix
-                    Draft.autogroup(wire)
-                    obj = findDraftByLabel(wire.Label)
-                    obj.ViewObject.LineColor = color
-                    group.addObject(obj)
-
-        UIThread.run(createInUI)
+            doc = App.ActiveDocument
+            shapes = self.createConstructionShapes()
+            for parts in group_by(shapes, lambda s: s[0].name).values():
+                compound = []
+                for target, points in parts:
+                    compound.append(Part.makePolygon(points))
+                target.set(Part.makeCompound(compound), doc=doc)
+        createInUI()
 
 

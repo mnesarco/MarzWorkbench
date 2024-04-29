@@ -18,35 +18,15 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import traceback
+from typing import Any, Dict
+import re
 
-from freecad.marz.extension import ui, App, QtGui
-from freecad.marz.feature import MarzInstrument_Name
-from freecad.marz.utils import filesystem as fs
+INTERPOLATE_RE = re.compile(r'\{\{(.*?)\}\}')
 
-class CmdImportFretInlays:
-    """Import custom Fret Inlays from SVG Command"""
+def interpolator(values: Dict[str, Any]) -> str:
+    def sub(m: re.Match) -> str:
+        return str(values.get(m.group(1), '???'))
+    return sub
 
-    def GetResources(self):
-        return {
-            "MenuText": "Import fret inlays svg",
-            "ToolTip": "Import fret inlays svg",
-            "Pixmap": ui.iconPath('import_fret_inlays.svg')
-        }
-
-    def IsActive(self):
-        return (
-            App.ActiveDocument is not None 
-            and App.ActiveDocument.getObject(MarzInstrument_Name) is not None
-        )
-
-    def Activated(self):
-        try:
-            name = QtGui.QFileDialog.getOpenFileName(QtGui.QApplication.activeWindow(), 'Select .svg file', '*.svg')[0]
-            if name:
-                App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(name)
-                fs.start_monitoring(name, 'inlays', lambda path: App.ActiveDocument.getObject(MarzInstrument_Name).Proxy.importInlays(path))
-
-        except:
-            ui.Msg(traceback.format_exc())
-
+def merge(template: str, values: Dict[str, Any]) -> str:
+    return INTERPOLATE_RE.sub(interpolator(values), template)

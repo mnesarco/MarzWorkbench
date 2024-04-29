@@ -1,20 +1,20 @@
 [
     {
         "name": "C Classic",
-        "center_offset": 0,
+        "center_offset": 0.00,
         "h2": 0.75,
-        "h2_offset": 0.5
+        "h2_offset": 0.50
     },
     {
         "name": "D Classic",
-        "center_offset": 0,
+        "center_offset": 0.00,
         "h2": 0.75,
         "h2_offset": 0.65
     },
     {
         "name": "V Classic",
-        "center_offset": 0,
-        "h2": 0.5,
-        "h2_offset": 0.6
+        "center_offset": 0.00,
+        "h2": 0.50,
+        "h2_offset": 0.60
     }
 ]
