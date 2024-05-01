@@ -77,7 +77,9 @@ class SvgFile:
             h1Style=h_style)
         self.add(code)
 
-    def save(self, filename):
+    def save(self, filename: str):
+        if not filename.lower().endswith('.svg'):
+            filename = f"{filename}.svg"
         with open(filename, 'w') as f:
             f.write(svg_header.format(size=self.size_code, transform=self.transform_code))
             for code in self.content:

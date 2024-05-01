@@ -16,6 +16,9 @@
         "freecad",
         "fretboard",
         "Fretwire",
+        "inkex",
+        "inkscape",
+        "ISVGDocumentElement",
         "linexy",
         "Luthiery",
         "Marz",
@@ -33,5 +36,6 @@
         "Trussrod",
         "unpolish"
     ],
-    "python.defaultInterpreterPath": "/usr/bin/python3"
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "editor.fontLigatures": true
 }

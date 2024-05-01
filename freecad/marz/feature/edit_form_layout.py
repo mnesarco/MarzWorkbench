@@ -88,12 +88,14 @@ def tab_general(form):
                 intro = ui.Html(file=resourcePath('intro.html'), 
                                 variables=variables,
                                 styleSheet=intro_style(),
-                                textInteractionFlags=Qt.TextBrowserInteraction,
-                                openExternalLinks=True)
+                                textInteractionFlags=Qt.TextBrowserInteraction | Qt.LinksAccessibleByMouse,
+                                openExternalLinks=False)
                 intro.setAlignment(Qt.AlignTop)
                 ui.Stretch()
                 
-
+                @ui.on_event(intro.linkActivated)
+                def navigate(url: str):
+                    form.open_link(url)
 
 # ────────────────────────────────────────────────────────────────────────────
 def form_nut(form):

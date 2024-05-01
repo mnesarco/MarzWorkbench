@@ -75,7 +75,8 @@ from PySide.QtGui import (  # type: ignore
     QPen,
     QFontDatabase,
     QCloseEvent,
-    QGuiApplication
+    QGuiApplication,
+    QDesktopServices,
 )
 
 from PySide.QtWidgets import (  # type: ignore
@@ -1881,10 +1882,11 @@ def get_open_file(caption='Open', filter=None):
     if names and names[0]:
         return names[0]
 
-def get_save_file(caption='Save', filter=None):
+def get_save_file(caption: str = 'Save', filter: str = "", file: str = ""):
     names = QFileDialog.getSaveFileName(
         QApplication.activeWindow(), 
         caption=caption, 
+        dir=file,
         filter=filter)
     if names and names[0]:
         return names[0]

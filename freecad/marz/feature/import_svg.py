@@ -80,8 +80,8 @@ class FretInlay:
 
 
 def with_temp_doc(fn):
-    def wrapper(*args, **kwargs):
-        workingDoc = App.ActiveDocument
+    def wrapper(doc: App.Document, *args, **kwargs):
+        workingDoc = doc
         name = utils.randomString(16)
         tempDoc = App.newDocument(name, 'Importing', True, True)
         try:

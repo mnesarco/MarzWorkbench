@@ -1,7 +1,8 @@
 <html>
     <style>
         a { 
-            color: #0000ff; 
+            color: #325ca1; 
+            text-decoration: none;
         }
         .dep-supported { 
             color: green; 
@@ -25,17 +26,70 @@
         table.env-table th {
             background-color: #e0e0e0;;
         }
+        table.examples {
+            margin: 10px;
+            border-collapse: separate;
+        }
+        table.examples img {
+            margin-top: 5px;
+        }
+        table.examples td {
+            padding: 4px;
+            border: 1px solid #c0c0c0;
+            border-radius: 5px;
+            background-color: #e0e0e0;
+            text-align: center;
+        }
     </style>    
+
+    <h1>Examples</h1>
+    <table class="examples" cellspacing="10">
+        <tr>
+            <td>
+                <a href="open:Blackmachine_B6/cad.FCStd">
+                    <p>Black Machine B6</p>
+                    <p>
+                        <img src="{{__base__}}/examples/Blackmachine_B6/preview.png" width="200" />
+                    </p>                    
+                </a>
+            </td>
+            <td>
+                <a href="open:RedSpecial/cad.FCStd">
+                    <p>Red Special</p>
+                    <p>
+                        <img src="{{__base__}}/examples/RedSpecial/preview.png" width="200" />
+                    </p>
+                </a>
+            </td>
+            <td>
+                <a href="open:LesPaul/cad.FCStd">
+                    <p>Les Paul</p>
+                    <p>
+                        <img src="{{__base__}}/examples/LesPaul/preview.png" width="200" />
+                    </p>
+                </a>
+            </td>
+        </tr>
+    </table>
+
+
+    <h1>Inkscape Extension</h1>
+    <p>
+        There is an optional Inkscape extension available to help in setting up
+        the svg files before importing them:
+        <ul>
+            <li><a href="download:inkscape/marz/marz.zip">Download here</a></li>
+            <li>Install it in Inkscape: Extensions/Manage Extensions.../Install packages/Install package</li>
+            <li>Once installed, access it in Extensions/FreeCAD/Marz Guitars Selector...</li>
+        </ul>        
+    </p>
+
 
     <h1>Official Repository</h1>
     <p>
         Github: <a href="https://github.com/mnesarco/MarzWorkbench/">https://github.com/mnesarco/MarzWorkbench</a>
     </p>
 
-    <p>
-        <img src="{{__base__}}/graphics/showcase.png" />
-    </p>
-    
     <h3>Local Environment</h3>
     <table class="env-table" width="100%">
         <tr>

@@ -214,6 +214,8 @@ class InternalFile(QObject):
         return get_doc_file(self.name, doc=doc)
     
     def export(self, filename: str, doc: App.Document = None):
+        if not filename.lower().endswith('.svg'):
+            filename = f"{filename}.svg"
         export_doc_file(self.name, filename, doc=doc)
 
         

@@ -18,10 +18,12 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import json
+from pathlib import Path
+import json, shutil, tempfile
 
 from freecad.marz.extension.fc import App
 from freecad.marz.extension.lang import tr
+from freecad.marz.extension.paths import resourcePath
 from freecad.marz.feature.edit_form_base import InstrumentFormBase
 from freecad.marz.feature import edit_form_layout as view
 from freecad.marz.feature.import_svg import import_custom_shapes, import_fretboard_inlays
@@ -36,14 +38,12 @@ import freecad.marz.extension.fcui as ui
 from freecad.marz.extension.qt import QRect, QApplication
 
 from freecad.marz.feature.document import (
-    Body2DDraft, 
     BodyImports, 
-    Headstock2DDraft, 
-    FretInlays2DDraft,
     HeadstockImports,
     File_Svg_Body,
     File_Svg_Headstock,
     File_Svg_Fret_Inlays)
+from freecad.marz.utils import randomString
 
 
 class InstrumentForm(InstrumentFormBase):
@@ -117,6 +117,7 @@ class InstrumentForm(InstrumentFormBase):
             pass # Ignore bad saved window geometry
 
     def open(self):
+        App.setActiveDocument(self.Object.Document.Name)
         self.build_ui()
         self.load_from_obj(self.Object)        
         self.window.setModal(False)
@@ -142,6 +143,7 @@ class InstrumentForm(InstrumentFormBase):
         return float(gauges[string])
 
     def import_svg(self, title, import_action, form: ImportSvgWidget):
+        App.setActiveDocument(self.Object.Document.Name)
         try:
             validation = form.load(title, import_action)
             notification = []
@@ -160,28 +162,29 @@ class InstrumentForm(InstrumentFormBase):
             self.message_err(ex.args[0])
         finally:
             self.Object.touch()
-            recompute()
+            recompute(self.Object.Document)
 
     def import_body(self):
         self.import_svg(
             tr(f'Import a custom body shape'),
-            lambda name: import_custom_shapes(name, BodyImports, progress_listener=self.progress), 
+            lambda name: import_custom_shapes(self.Object.Document, name, BodyImports, progress_listener=self.progress), 
             self.body_svg)
 
     def import_headstock(self):
         self.import_svg(
             tr(f'Import a custom headstock shape'),
-            lambda name: import_custom_shapes(name, HeadstockImports, progress_listener=self.progress), 
+            lambda name: import_custom_shapes(self.Object.Document, name, HeadstockImports, progress_listener=self.progress), 
             self.headstock_svg)
 
     def import_inlays(self):
         self.import_svg(
             tr(f'Import custom fretboard inlays'),
-            lambda name: import_fretboard_inlays(name, progress_listener=self.progress), 
+            lambda name: import_fretboard_inlays(self.Object.Document, name, progress_listener=self.progress), 
             self.inlays_svg)
 
 
     def export_doc_file(self, title: str, file: InternalFile):
+        App.setActiveDocument(self.Object.Document.Name)
         if not file.exists():
             self.message_warn(tr('There is nothing to export here'))
             return
@@ -190,7 +193,7 @@ class InstrumentForm(InstrumentFormBase):
         if filename:
             with ui.progress_indicator(title):
                 try:
-                    file.export(filename)
+                    file.export(filename, self.Object.Document)
                 except:
                     self.message_err(tr("Error exporting this file"))
 
@@ -207,24 +210,27 @@ class InstrumentForm(InstrumentFormBase):
         return [float(f) for f in self.stringSet_gauges]
     
     def update_3d(self):
+        App.setActiveDocument(self.Object.Document.Name)
         self.save_to_obj(self.Object)
         self.update_2d(save=False, make_visible=False)
         self.Object.Proxy.build_all(self.progress)
         self.Object.touch()
-        recompute()
+        recompute(self.Object.Document)
 
     def update_2d(self, save=True, make_visible=True):
+        App.setActiveDocument(self.Object.Document.Name)
         if save:
             self.save_to_obj(self.Object)
 
         build_drafts(self.progress)
 
         if make_visible:
-            for obj in (Body2DDraft(), Headstock2DDraft(), FretInlays2DDraft()):
-                if obj: obj.ViewObject.Visibility = True
+            for obj in self.Object.Document.Objects:
+                if (obj.Name.startswith('Marz_') and obj.Name.endswith('2D')) or obj.Name.startswith('Ref_'):
+                    obj.ViewObject.Visibility = True
 
         self.Object.touch()
-        recompute()
+        recompute(self.Object.Document)
 
     def on_progress(self, message: str):
         self.message_info(message)
@@ -237,6 +243,26 @@ class InstrumentForm(InstrumentFormBase):
         if self.window:
             self.window.hide()
     
+    def open_link(self, url):
+        if url.startswith('open:'):
+            example = resourcePath('examples', url[5:])
+            tmp = Path(tempfile.gettempdir(), f"{randomString()}.FCStd")
+            shutil.copy2(example, tmp)
+            App.openDocument(resourcePath('examples', tmp))
+            self.hide()
+        elif url.startswith('download:'):
+            src_path = Path(resourcePath(url[9:]))
+            target = ui.get_save_file(tr("Save to"), tr("All files (*.*)"), file=src_path.name)
+            if target:
+                shutil.copy2(str(src_path), target)
+                self.hide()
+        elif url.startswith('https:'):
+            try:
+                import webbrowser
+                webbrowser.open(url)
+            except:
+                pass
+
     @timer(interval=200)
     def checks(self):
         self.body_svg.set_export_enable(File_Svg_Body.exists())

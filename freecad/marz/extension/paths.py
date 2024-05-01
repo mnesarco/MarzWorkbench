@@ -35,5 +35,5 @@ def graphicsPath(name):
 def fontPath(name):
     return os.path.join(MARZ_FONTS_PATH, name)
 
-def resourcePath(name):
-    return os.path.join(MARZ_RESOURCES_PATH, name)
+def resourcePath(*args):
+    return os.path.join(MARZ_RESOURCES_PATH, *args)

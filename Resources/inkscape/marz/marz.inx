@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Marz Guitars Selector</name>
+  <id>com.marzguitars.tool</id>
+
+  <param name="type" type="notebook">
+    <page name="contour" gui-text="Contour">
+      <label>
+        Select a path to be used as a custom
+        shape for body or headstock. The path
+        must be closed, non self-intersecting
+        and must intersect midline in exactly
+        one point.
+      </label>      
+      <image>marz_contour.svg</image>
+    </page>
+
+    <page name="midline" gui-text="Mid Line">
+      <label>
+        Select a line (path) to be used as a 
+        reference for mid-line. The selection
+        must be a path with exactly two nodes.
+      </label>      
+      <image>marz_midline.svg</image>
+    </page>
+
+    <page name="bridge" gui-text="Bridge">
+      <label>
+        Select a line (path) to be used as a 
+        reference for bridge position. The selection
+        must be a path with exactly two nodes and
+        it must intersect midline.
+      </label>      
+      <image>marz_bridge.svg</image>
+    </page>
+
+    <page name="inlay" gui-text="Inlays">
+      <param  name="fret" 
+              type="int" 
+              min="1" 
+              max="99"
+              gui-text="Fret:"
+              gui-description="Number of the fret for the fisrt selected object">1</param>
+
+      <label>
+        Select paths to be used as fretboard inlays.
+      </label>      
+      <image>marz_inlay.svg</image>
+    </page>
+
+    <page name="pockets" gui-text="Pockets">
+      <param name="target" type="optiongroup" appearance="combo" gui-text="Part">
+        <option value="">Headstock</option>
+        <option value="">Body Top and Back</option>
+        <option value="t">Body Top only</option>
+        <option value="b">Body Back only</option>
+      </param>
+
+      <param  name="start" 
+              type="float" 
+              precision="2" 
+              min="0.00" 
+              max="999.99"
+              gui-text="Start depth (mm)">0.0</param>
+
+      <param  name="depth" 
+              type="float" 
+              precision="2" 
+              min="0.01" 
+              max="999.99"
+              gui-text="Cut depth (mm)">10.0</param>
+
+      <image>marz_pocket.svg</image>
+
+      <label>
+        Select paths to be used as pockets.
+      </label>      
+    </page>
+
+    <page name="transition" gui-text="Headstock transition">
+      <label>
+        Select a line (path) to be used as a 
+        reference for headstock transition cut. 
+        The selection must be a path with exactly 
+        two nodes and must intersect headstock contour
+        in exactly two points.
+      </label>      
+      <image>marz_transition.svg</image>
+    </page>
+
+  </param>
+
+
+
+  <effect show-stderr="false" needs-live-preview="false">
+    <effects-menu>
+      <submenu name="FreeCAD"/>
+    </effects-menu>
+  </effect>
+
+  <menu-tip>Select shapes for Marz Workbench</menu-tip>
+
+  <script>
+    <command location="inx" interpreter="python">marz.py</command>
+  </script>
+</inkscape-extension>
