@@ -1,5 +1,11 @@
 # Marz Workbench Changelog
 
+## 0.1.1 (Apr 30th 2024)
+
+- Some bugfixes
+- Added examples
+- Added Inkscape extension
+
 ## 0.1.0 (Apr 2024)
 
 - Neck
