@@ -28,20 +28,25 @@ import inkex
 from inkex.interfaces.IElement import ISVGDocumentElement, IBaseElement
 from inkex.paths import Path
 import time
-import os, sys, re
+import os, sys, re, argparse
 import contextlib
+from marz_arguments import add_arguments # type: ignore !Generated code
 
-PATTERN = re.compile(r'^h([bt]?)(\d+)_(\d+)_(\d+).*')
+POCKET_PATTERN = re.compile(r'^h([bt]?)(\d+)_(\d+)_(\d+)$')
+CUTAWAY_PATTERN = re.compile(r'^ec([bt]?)_(\d+)(_\d+)?$')
+
+PRIMARY_COLOR = "#008000"
+SECONDARY_COLOR = "#fc6f03"
 
 # Find previous existing pocket number
-def find_max_id(root: inkex.interfaces.IElement.IBaseElement) -> int:
+def find_max_id(root: IBaseElement, pattern: re.Pattern, group: int) -> int:
     max_ = 0
     for e in root.iter():
         id_ = e.get('id')
         if id_:
-            m = PATTERN.match(id_)
+            m = pattern.match(id_)
             if m:
-                max_ = max(max_, int(m.group(2)))
+                max_ = max(max_, int(m.group(group)))
     return max_
 
 
@@ -108,33 +113,53 @@ def make_multi_closed(element: inkex.PathElement):
         p.close()
         closed_path.extend(p)
     element.path = closed_path
-    set_path_style(element)
+    set_path_style(element, PRIMARY_COLOR)
 
 
 # Apply expected style to make FreeCAD svg importer to
 # import the shapes as Wires.
-def set_path_style(element: inkex.PathElement):
+def set_path_style(element: inkex.PathElement, color):
     element.style['fill'] = None
-    element.style['stroke'] = "#008000"
+    element.style['stroke'] = color
     element.style['stroke-width'] = "1.0"
     element.style['stroke-dasharray'] = None
     element.style['vector-effect'] = "non-scaling-stroke"
     element.style['-inkscape-stroke'] = "hairline"
 
 
+def allow_unknown_args(pars: argparse.ArgumentParser):
+    def parse(args=None, ns=None):
+        known, _unknown = pars.parse_known_args(args, ns)
+        return known        
+    pars.parse_args = parse
+
 class MarzEffectExtension(inkex.EffectExtension):
 
-    def add_arguments(self, pars):
-        pars.add_argument("--type", type=str, default='contour')
-        pars.add_argument("--fret", type=int, default=1)
-        pars.add_argument("--target", type=str, default="")
-        pars.add_argument("--start", type=float, default=0.0)
-        pars.add_argument("--depth", type=float, default=10.0)
+    def add_arguments(self, pars: argparse.ArgumentParser):
+        allow_unknown_args(pars)
+        add_arguments(pars)
 
     def effect(self):
-        type_ = self.options.type
-        action = getattr(self, f"run_{type_}")
+        action = getattr(self, f"run_{self.options.page}")
         action()
+
+    def run_ergo(self):
+        paths: List[inkex.PathElement] = list(self.svg.selection.filter(inkex.PathElement))
+
+        if len(paths) != 2:
+            show_msg("Cutaway", "Select two paths, first the cutaway contour, next the direction")
+            return
+
+        id_ = find_max_id(self.svg, CUTAWAY_PATTERN, 2) + 1
+        angle = int(self.options.angle * 100)
+        side = self.options.ergo_side
+
+        paths[0].set('id', f"ec{side}_{id_}")
+        paths[0].set('inkscape:label', f"ec{side}_{id_}")
+        set_path_style(paths[0], PRIMARY_COLOR)
+        paths[1].set('id', f"ec{side}_{id_}_{angle}")
+        paths[1].set('inkscape:label', f"ec{side}_{id_}_{angle}")
+        set_path_style(paths[1], SECONDARY_COLOR)
 
     def run_bridge(self):
         self.run_line_ref('bridge')
@@ -164,7 +189,7 @@ class MarzEffectExtension(inkex.EffectExtension):
             contour.set('id', 'contour')
             
         contour.set('inkscape:label', 'contour')        
-        set_path_style(contour)
+        set_path_style(contour, PRIMARY_COLOR)
 
     def run_inlay(self):
         paths: List[inkex.PathElement] = list(self.svg.selection.filter(inkex.PathElement))
@@ -193,7 +218,7 @@ class MarzEffectExtension(inkex.EffectExtension):
             show_msg("Pocket", "Select at least one closed path for a pocket")
             return
 
-        id_ = find_max_id(self.svg)
+        id_ = find_max_id(self.svg, POCKET_PATTERN, 2)
         h1_start = int(self.options.start * 100)
         h2_dept = int(self.options.depth * 100)
         target = self.options.target
@@ -231,7 +256,7 @@ class MarzEffectExtension(inkex.EffectExtension):
             element.set('id', reference)
 
         element.set('inkscape:label', reference)
-        set_path_style(element)        
+        set_path_style(element, SECONDARY_COLOR)        
 
 
 if __name__ == '__main__':

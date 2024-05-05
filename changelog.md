@@ -1,5 +1,10 @@
 # Marz Workbench Changelog
 
+## 0.1.2 (May 5th 2024)
+
+- Body ergonomic cutaways
+- Updated inkscape extension
+
 ## 0.1.1 (Apr 30th 2024)
 
 - Some bugfixes

@@ -133,7 +133,7 @@ class PartFeature:
             doc.removeObject(name)
 
     def exists(self, *, index = None, doc: App.Document = None) -> bool:
-        return self.get(index, doc) is not None
+        return self.get(index=index, doc=doc) is not None
 
     def __call__(self, *, index = None, doc: App.Document = None):
         return self.get(index=index, doc=doc)

@@ -18,8 +18,10 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+from typing import Tuple
 import Part # type: ignore
 
+from freecad.marz.utils import geom
 from freecad.marz.model.instrument import Instrument
 from freecad.marz.extension.fc import App, Placement, Vector
 from freecad.marz.feature.progress import ProgressListener
@@ -32,6 +34,8 @@ from freecad.marz.feature.neck import make_neck_pocket
 from freecad.marz.utils import traceTime, traced
 from freecad.marz.feature.logging import MarzLogger
 from freecad.marz.feature.document import (
+    BodyErgoCutsTop,
+    BodyErgoCutsBack,
     BodyBackPart, 
     BodyBackPockets, 
     BodyContour, 
@@ -159,9 +163,48 @@ def make_body_parts(
         with traceTime('Carving Neck pocket from back...', progress_listener):
             back = back.cut(heel[0])
     
+    try:
+        progress_listener.add("Applying Ergonomic cutaways...")
+        top, back = apply_ergo_cutaways(inst, top, top_placement, back, back_placement)
+    except:
+        progress_listener.add("Ergonomic cutaways could not be applied")
+
     progress_listener.add("Body done.")
     return (top, back)
 
+
+@traced("Cutting away ergonomic contours")
+def apply_ergo_cutaways(
+    inst: Instrument, 
+    top: Part.Shape, 
+    top_placement: Placement,
+    back: Part.Shape,
+    back_placement: Placement) -> Tuple[Part.Shape, Part.Shape]:
+    
+    body: Part.Shape = Part.makeCompound([top, back])
+
+    if BodyErgoCutsTop.exists():
+        cutaway = BodyErgoCutsTop().Shape.copy()
+        cutaway.Placement = Placement(top_placement.Base + Vector(0,0,inst.body.topThickness), top_placement.Rotation)
+        body = body.cut(cutaway)
+
+    if BodyErgoCutsBack.exists():
+        cutaway: Part.Shape = BodyErgoCutsBack().Shape.copy()
+        cutaway.Placement = back_placement
+        body = body.cut(cutaway)
+
+    solids = geom.query(body.Solids, order_by=lambda s: -cutaway.BoundBox.ZMax)
+
+    if len(solids) != 1 and inst.body.topThickness == 0:
+        MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
+        return top, back
+
+    if len(solids) != 2 and inst.body.topThickness > 0:
+        MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
+        return top, back
+
+    return solids[0], solids[1]
+    
 
 class BodyFeature:
     """

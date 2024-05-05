@@ -18,6 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+from dataclasses import dataclass
 import re
 import traceback
 from typing import Dict, List
@@ -26,18 +27,23 @@ from freecad.marz.extension.fc import App
 from freecad.marz import utils
 from freecad.marz.extension.fcui import Vector
 from freecad.marz.feature.document import (
+    BodyErgoCutsBack,
+    BodyErgoCutsTop,
     FretInlaysImports,
     ImportTarget, 
     FretInlays)
 
 from freecad.marz.feature.progress import ProgressListener
 from freecad.marz.extension.svg import import_svg
+from freecad.marz.utils import geom
 
-import Part         # type: ignore
+import Part                     # type: ignore
+from BOPTools import SplitAPI   # type: ignore
 
-POCKET_ID_PATTERN = re.compile(r'h([tb]?)\d*_(\d+)_(\d+).*', re.IGNORECASE)
-FRET_INLAY_ID_PATTERN = re.compile(r'f(\d+)_.*', re.IGNORECASE)
-
+POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)$', re.IGNORECASE)
+FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_$', re.IGNORECASE)
+ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)$', re.IGNORECASE)
+ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)$', re.IGNORECASE)
 
 def ImportValidationItem(kind: str, reference: str, message: str, start: float = None, depth: float = None):
     return dict(kind=kind, reference=reference, message=message, start=start, depth=depth)
@@ -79,6 +85,23 @@ class FretInlay:
         FretInlays.set(self.shape, index=self.fret, visibility=False, doc=doc)
 
 
+@dataclass
+class ErgoCutaway:
+    ref: str
+    target: str
+    contour: App.DocumentObject = None
+    control: App.DocumentObject = None
+    angle: float = 0.0
+    shape: Part.Shape = None
+
+    @property
+    def is_top(self):
+        return self.target == 't'
+
+    @property
+    def is_back(self):
+        return self.target == 'b'
+
 def with_temp_doc(fn):
     def wrapper(doc: App.Document, *args, **kwargs):
         workingDoc = doc
@@ -116,10 +139,39 @@ def extract_inlay(obj, inlays: Dict[int, FretInlay]):
             inlay = FretInlay(FretInlayPart(obj, fret))
             inlays[fret] = inlay
 
+def match_ergo_cut(obj: App.DocumentObject, cuts: Dict[str, ErgoCutaway]) -> bool:
+    m = ERGO_CUT_CTL_ID_PATTERN.match(obj.Name)
+    if m:
+        name = f"ec{m.group(1)}_{m.group(2)}"
+        cutaway = cuts.get(name, None)
+        if cutaway is None:
+            cuts[name] = ErgoCutaway(name, m.group(1), control=obj, angle=float(m.group(3))/100.0)
+        else:
+            cutaway.control = obj
+            cutaway.angle = float(m.group(3))/100.0
+        return True
+    
+    m = ERGO_CUT_ID_PATTERN.match(obj.Name)
+    if m:
+        name = f"ec{m.group(1)}_{m.group(2)}"
+        cutaway = cuts.get(name, None)
+        if cutaway is None:
+            cuts[name] = ErgoCutaway(name, m.group(1), contour=obj)
+        else:
+            cutaway.contour = obj
+        return True
+
+
 @with_temp_doc
 def import_custom_shapes(
-    doc, tmp_doc, filename, targets: ImportTarget, progress_listener: ProgressListener = None,
-    require_contour=True, require_midline=True, for_validation=False):
+    doc: App.Document, 
+    tmp_doc: App.Document, 
+    filename: str, 
+    targets: ImportTarget, 
+    progress_listener: ProgressListener = None,
+    require_contour: bool = True, 
+    require_midline: bool = True, 
+    for_validation: bool = False):
 
     if progress_listener is None:
         progress_listener = ProgressListener()
@@ -141,9 +193,12 @@ def import_custom_shapes(
     bridge = None
     pockets = []
     comp2d = []
+    ergo_cuts = dict()
 
     for obj in tmp_doc.Objects:
-        if obj.Name == 'contour':
+        if match_ergo_cut(obj, ergo_cuts):
+            continue
+        elif obj.Name == 'contour':
             validation.append(ImportValidationItem('Contour', obj.Name, 'Found'))
             contour = obj
         elif obj.Name == 'midline':
@@ -223,6 +278,13 @@ def import_custom_shapes(
         solid = Part.Face( wire ).extrude(Vector(0,0,-pocket.depth))
         solids.append((pocket, solid))
 
+    # Ergonomic cutaways
+    if ergo_cuts and contour_wire:
+        try:
+            extract_ergo_cuts(doc, contour_wire, ergo_cuts, anchor, for_validation, validation)
+        except:
+            validation.append(ImportValidationItem('Error', 'Cutaway', 'Invalid ergonomic cutaways'))
+
     targets.clean(doc=doc)
 
     # Update 2d compound
@@ -270,6 +332,7 @@ def import_custom_shapes(
 
     if bridge_wire and targets.bridge_ref:
         targets.bridge_ref.set(bridge_wire, visibility=False, doc=doc)
+
 
     # Embed
     progress_listener.add('Including imported objects into the document...')
@@ -322,3 +385,98 @@ def import_fretboard_inlays(doc, tmpDoc, filename, progress_listener: ProgressLi
     FretInlaysImports.load(filename, meta=validation, doc=doc)
 
     return validation
+
+
+def extract_ergo_cuts(
+        doc: App.Document, 
+        contour_wire: Part.Wire, 
+        references: Dict[str, ErgoCutaway], 
+        anchor: Vector,
+        for_validation: bool, 
+        validation: List):
+    
+    index = 1
+    tolerance = contour_wire.getTolerance(1)
+    body = Part.Face(contour_wire)
+    top = []
+    back = []
+    for name, cutaway in references.items():
+
+        if cutaway.angle <= 0.1:
+            validation.append(
+                ImportValidationItem('Error', name, 
+                                     "Ergonomic Cutaway angle is too small"))
+            continue
+
+        if not cutaway.control or not cutaway.contour:
+            validation.append(
+                ImportValidationItem('Error', name, 
+                                     "Ergonomic Cutaway is incomplete"))
+            continue
+
+        ref : Part.Shape = cutaway.contour.Shape.copy()
+        ref.translate(-anchor)
+        ctl : Part.Shape = cutaway.control.Shape.copy()
+        ctl.translate(-anchor)
+
+        # Validate intersection contour-control
+
+        dist, ctl_vectors_contour, _infos = ctl.distToShape(contour_wire)
+        if dist > tolerance:
+            validation.append(
+                ImportValidationItem('Error', name, 
+                                     "Ergonomic Cutaway direction must intercept body contour"))
+            continue
+
+        # Validate intersection ref-control
+
+        dist, ctl_vectors_ref, _infos = ctl.distToShape(ref)
+        if dist > tolerance:
+            validation.append(
+                ImportValidationItem('Error', name, 
+                                     "Ergonomic Cutaway direction must intercept cutaway contour"))
+            continue
+
+        # Validate cutaway geometry
+
+        slices: Part.Shape = SplitAPI.slice(body, [ref], 'Standard')
+        if slices.isNull() or len(slices.Faces) != 2:
+            validation.append(
+                ImportValidationItem('Error', name, 
+                                     "Ergonomic Cutaway is invalid"))
+            continue
+
+        validation.append(ImportValidationItem('Cutaway', name, "Found", 0, cutaway.angle))
+
+        if for_validation:
+            continue
+
+        # Find cutaway face
+        ctl_vector: Vector = ctl_vectors_ref[0][0] - ctl_vectors_contour[0][0]
+        ctl_vector = ctl_vector.normalize().negative() + ctl_vectors_ref[0][0]        
+        cut_face = geom.query_one(slices.Faces, where=lambda s: s.isInside(ctl_vector, tolerance, True))
+        shape: Part.Shape = cut_face.copy()
+
+        # Extrude with angle
+        ext_edge = Part.Edge(Part.Vertex(ctl_vectors_ref[0][0]), Part.Vertex(ctl_vectors_contour[0][0]))
+        ext_dir = 1 if cutaway.is_back else -1
+        rot_axis = ext_edge.derivative1At(ext_edge.FirstParameter).normalize().cross(Vector(0,0,ext_dir))
+        ext_edge.rotate(ctl_vectors_ref[0][0], rot_axis, cutaway.angle)
+        ext_dir = ext_edge.derivative1At(ext_edge.FirstParameter).normalize()
+        shape.translate(ext_dir.negative())
+        cutaway.shape = shape.extrude(ext_dir * 500)
+
+        if cutaway.is_back:
+            back.append(cutaway.shape)
+        else:
+            top.append(cutaway.shape)
+
+        index += 1        
+            
+    if back:
+        BodyErgoCutsBack.set(Part.makeCompound(back), visibility=False, doc=doc)
+    
+    if top:
+        BodyErgoCutsTop.set(Part.makeCompound(top), visibility=False, doc=doc)
+
+
