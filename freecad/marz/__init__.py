@@ -18,7 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 __author__ = "Frank David Martinez M <mnesarco at gmail.com>"
 __copyright__ = "Copyright (c) 2020, Frank David Martinez M."
 __license__ = "GPLv3"

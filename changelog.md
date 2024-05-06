@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.4 (May 6th 2024)
+
+- Support older FreeCAD's PySide naming schema
+
 ## 0.1.3 (May 6th 2024)
 
 - Added Headless example
