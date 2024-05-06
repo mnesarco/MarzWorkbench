@@ -79,7 +79,7 @@ from PySide.QtGui import (  # type: ignore
     QDesktopServices,
 )
 
-from PySide.QtWidgets import (  # type: ignore
+from PySide.QtGui import (  # type: ignore
     QApplication,
     QWidget,
     QVBoxLayout,
