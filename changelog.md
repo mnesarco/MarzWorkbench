@@ -1,5 +1,10 @@
 # Marz Workbench Changelog
 
+## 0.1.3 (May 6th 2024)
+
+- Added Headless example
+- Fixed some cutaway bugs
+
 ## 0.1.2 (May 5th 2024)
 
 - Body ergonomic cutaways
