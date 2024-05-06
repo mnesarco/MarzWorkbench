@@ -181,7 +181,10 @@ def apply_ergo_cutaways(
     back: Part.Shape,
     back_placement: Placement) -> Tuple[Part.Shape, Part.Shape]:
     
-    body: Part.Shape = Part.makeCompound([top, back])
+    if top:
+        body: Part.Shape = Part.makeCompound([top, back])
+    else:
+        body = back
 
     if BodyErgoCutsTop.exists():
         cutaway = BodyErgoCutsTop().Shape.copy()
@@ -203,7 +206,10 @@ def apply_ergo_cutaways(
         MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
         return top, back
 
-    return solids[0], solids[1]
+    if len(solids) == 1:
+        return top, solids[0]
+    else:
+        return solids[0], solids[1]
     
 
 class BodyFeature:
