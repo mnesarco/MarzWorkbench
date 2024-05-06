@@ -41,7 +41,7 @@ import Part                     # type: ignore
 from BOPTools import SplitAPI   # type: ignore
 
 POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)$', re.IGNORECASE)
-FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_$', re.IGNORECASE)
+FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*$', re.IGNORECASE)
 ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)$', re.IGNORECASE)
 ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)$', re.IGNORECASE)
 
@@ -451,20 +451,24 @@ def extract_ergo_cuts(
         if for_validation:
             continue
 
+
+        ext_edge = Part.Edge(Part.Vertex(ctl_vectors_ref[0][0]), Part.Vertex(ctl_vectors_contour[0][0]))
+        ext_dir_v = ext_edge.derivative1At(ext_edge.FirstParameter).normalize()
+
         # Find cutaway face
         ctl_vector: Vector = ctl_vectors_ref[0][0] - ctl_vectors_contour[0][0]
-        ctl_vector = ctl_vector.normalize().negative() + ctl_vectors_ref[0][0]        
-        cut_face = geom.query_one(slices.Faces, where=lambda s: s.isInside(ctl_vector, tolerance, True))
-        shape: Part.Shape = cut_face.copy()
+        ctl_vector = ctl_vector.normalize().negative() + ctl_vectors_ref[0][0]     
+        ref_points = ref.discretize(Number=100)
+        ref = Part.Edge(Part.BSplineCurve(ref_points), 0, 1.0)
+        shape: Part.Shape = ref.extrude(ext_dir_v * 500)
 
         # Extrude with angle
-        ext_edge = Part.Edge(Part.Vertex(ctl_vectors_ref[0][0]), Part.Vertex(ctl_vectors_contour[0][0]))
         ext_dir = 1 if cutaway.is_back else -1
         rot_axis = ext_edge.derivative1At(ext_edge.FirstParameter).normalize().cross(Vector(0,0,ext_dir))
         ext_edge.rotate(ctl_vectors_ref[0][0], rot_axis, cutaway.angle)
-        ext_dir = ext_edge.derivative1At(ext_edge.FirstParameter).normalize()
-        shape.translate(ext_dir.negative())
-        cutaway.shape = shape.extrude(ext_dir * 500)
+        ext_dir_v = ext_edge.derivative1At(ext_edge.FirstParameter).normalize()
+        shape.translate(ext_dir_v.negative())
+        cutaway.shape = shape.extrude(ext_dir_v * 500)
 
         if cutaway.is_back:
             back.append(cutaway.shape)

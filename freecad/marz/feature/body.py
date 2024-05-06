@@ -44,7 +44,7 @@ from freecad.marz.feature.document import (
     BodyTopPockets)
 
 @task
-@PureFunctionCache
+# @PureFunctionCache
 def create_body_component(
     bodyd: BodyData, 
     height: float, 
@@ -87,7 +87,7 @@ def create_body_component(
     pockets = BodyPockets()
     if pockets:
         shape = pockets.Shape.copy()
-        shape.translate(Vector(0, 0, height + topThickness))
+        shape.translate(Vector(0, 0, height + topThickness if back else height))
         try:
             comp = comp.cut(shape)
         except:
