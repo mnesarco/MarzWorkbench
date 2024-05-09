@@ -30,7 +30,7 @@ class MarzWorkbench(Gui.Workbench):
     """"Marz Workbench"""
 
     Icon = iconPath('Marz.svg')
-    MenuText = tr("Marz Guitar Designer")
+    MenuText = tr("Guitar")
     ToolTip = tr("Guitar Design Workbench")
     Categories = ['Instruments', 'Music', 'Guitar', 'Luthiery']
 

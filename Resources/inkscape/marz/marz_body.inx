@@ -94,8 +94,8 @@
     <effects-menu>
       <submenu name="Marz Guitars - FreeCAD" />
     </effects-menu>
+    <menu-tip>Manage body shapes to import in Marz Workbench</menu-tip>
   </effect>
-  <menu-tip>Manage body shapes to import in Marz Workbench</menu-tip>
   <script>
     <command location="inx" interpreter="python">marz.py</command>
   </script>
