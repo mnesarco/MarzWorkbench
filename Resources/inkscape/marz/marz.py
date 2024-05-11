@@ -23,14 +23,347 @@ This extension is a helper tool to configure inkscape documents to be imported
 into Marz Workbench (FreeCAD).
 """
 
-from typing import List
+from dataclasses import dataclass
+from typing import List, ClassVar
 import inkex
 from inkex.interfaces.IElement import ISVGDocumentElement, IBaseElement
 from inkex.paths import Path
 import time
 import os, sys, re, argparse
 import contextlib
-from marz_arguments import add_arguments # type: ignore !Generated code
+from meta import *
+
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Gui: Common                                            │
+# └────────────────────────────────────────────────────────┘
+
+BASE_MENU = ["Marz Guitars - FreeCAD"]
+
+
+@dataclass
+class Illustration:
+    """
+    Scaled Image with preserved aspect ratio if possible
+    """
+    path: str
+    label: str
+    size: int = 500
+
+    VIEW_BOX_PAT: ClassVar[re.Pattern] = re.compile(r'viewBox\s*=\s*"0 0 (\d+(\.\d+)?) (\d+(\.\d+)?)"')
+
+    def build(self) -> Widgets.Page:
+        image = Widgets.Image(self.path)
+        if self.path.endswith('.svg') and is_inx_mode():
+            try:
+                with open(self.path, 'r') as f:
+                    svg = f.read(2048)
+
+                view_box = self.VIEW_BOX_PAT.findall(svg)    
+                if view_box:
+                    width = float(view_box[0][0])
+                    height = float(view_box[0][2])
+                    ratio = height/width if width else 0
+                    if ratio:
+                        image = Widgets.Image(self.path, width=self.size, height=int(self.size*ratio))
+            except:
+                pass # Fallback to no scaled
+        return Widgets.Page(label=self.label, children=[image])
+    
+
+class BasePage:
+    """
+    Common layout for all pages
+    """
+    name: str
+    label: str 
+    selection: str = None
+    requirements: str = None
+    parameters: List[Widget] = None
+    illustrations: List[Illustration] = None
+
+    @classmethod
+    def build(self) -> Widgets.Page:
+        widgets = []
+        ui = Widgets
+
+        if self.selection:
+            widgets += [
+                ui.Text('Selection:', appearance=LabelAppearance.Header),
+                ui.Text(self.selection, indent=1)]
+
+        if self.requirements:
+            widgets += [
+                ui.Text('Requirements:', appearance=LabelAppearance.Header),
+                ui.Text(self.requirements, indent=1)]
+
+        if self.parameters:
+            widgets += [
+                ui.Text('Parameters:', appearance=LabelAppearance.Header),
+                *self.parameters]
+
+        if self.illustrations:
+            widgets += [
+                ui.Text('Illustrations:', appearance=LabelAppearance.Header),
+                ui.Notebook(children=[img.build() for img in self.illustrations])]
+
+        return ui.Page(self.name, self.label, children=widgets)
+
+
+class ContourPage(BasePage):
+    name = 'contour'
+    label = "Contour"
+    selection = "Select a path to be used as a custom contour"
+    requirements = """
+        The path must be closed, non 
+        self-intersecting and it must intersect with 
+        mid-line in exactly one point.
+        """
+    illustrations = [Illustration('marz_body_contour.svg', 'Paths')]
+
+
+class HeadstockContourPage(ContourPage):
+    illustrations = [Illustration('marz_headstock_contour.svg', 'Paths')]
+
+
+class MidLinePage(BasePage):
+    name = 'midline'
+    label = "Mid-Line"
+    selection = """
+        Select a line (path) to be used as a 
+        reference for mid-line.
+        """
+    requirements = """
+        The selection must be a path with 
+        exactly two nodes and must intercept contour 
+        in exactly one point.
+        """
+    illustrations = [Illustration('marz_body_midline.svg', 'Paths')]
+
+
+class HeadstockMidLinePage(MidLinePage):
+    illustrations = [Illustration('marz_headstock_midline.svg', 'Paths')]
+
+
+class BridgePage(BasePage):
+    name="bridge"
+    label="Bridge"
+    selection="""
+        Select a line (path) to be used as a 
+        reference for bridge position.
+        """
+    requirements="""
+        The selection must be a path with 
+        exactly two nodes and it must intersect with mid-line.
+        """
+    illustrations=[Illustration('marz_bridge.svg', 'Paths')]
+
+
+class PocketsPage(BasePage):
+    ui = Widgets
+    name="pockets"
+    label="Pockets"
+    selection="""
+        Select paths to be used as pockets on parts.
+        """
+    requirements="""
+        Pocket paths must be closed and non self-intersecting, 
+        but they can intersect others.
+        """
+    illustrations = [
+        Illustration('marz_pocket_paths.svg', 'Paths'),
+        Illustration('marz_pocket_more.svg', 'Parameters')]
+    parameters=[
+        ui.Options(
+            name='target', 
+            label="Base parts", 
+            appearance=OptionsAppearance.Combo,
+            indent=1,
+            items=[
+                ui.OptionItem("", "Top + Back"),
+                ui.OptionItem("t", "Top"),
+                ui.OptionItem("b", "Back")]),
+        ui.Float(
+            name="start", 
+            label="Start depth (mm)",
+            indent=1,
+            default=0.0,
+            precision=2,
+            min=0.0,
+            max=999.99,
+            description="Depth measured from top surface where the pocket start"),
+        ui.Float(
+            name="depth", 
+            label="Cut depth (mm)",
+            indent=1,
+            default=10.0,
+            precision=2,
+            min=0.01,
+            max=999.99,
+            description="Cut Depth measured from start in top-to-bottom direction")]
+
+
+class HeadstockPocketsPage(PocketsPage):
+    ui = Widgets
+    illustrations = [
+        Illustration('marz_headstock_pockets.svg', 'Paths'),
+        Illustration('marz_headstock_pocket_more.svg', 'Parameters')]
+    parameters = [
+        ui.Float(
+            name="start", 
+            label="Start depth (mm)",
+            indent=1,
+            default=0.0,
+            precision=2,
+            min=0.0,
+            max=999.99,
+            description="Depth measured from top surface where the pocket start"),
+        ui.Float(
+            name="depth", 
+            label="Cut depth (mm)",
+            indent=1,
+            default=10.0,
+            precision=2,
+            min=0.01,
+            max=999.99,
+            description="Cut Depth measured from start in top-to-bottom direction")]
+
+
+class ErgoPage(BasePage):
+    ui = Widgets
+    name = "ergo"
+    label = "Cutaways"
+    selection = """
+        Select two paths, the first one must be the
+        cutaway contour and the second one must be 
+        the cutaway direction.
+        """
+    requirements = """
+        Selected contour must intersect body contour 
+        in two points, the continuos part must be inside body contour.
+        Selected direction must intercept body contour and cutaway contour.
+        """
+    illustrations=[Illustration('marz_ergo.svg', 'Paths')]
+    parameters=[
+        ui.Options(
+            name="ergo_side", 
+            label="Side",
+            indent=1,
+            appearance=OptionsAppearance.Combo,
+            items=[
+                ui.OptionItem('b', 'Back'), 
+                ui.OptionItem('t', 'Top')]),
+        ui.Float(
+            name="angle",
+            label="Slice Angle (deg)",
+            indent=1,
+            default=20.0,
+            precision=2,
+            min=0.01,
+            max=60.00)]
+
+
+class BodyInterface(EffectMetadata):
+    inx = 'marz_body'
+    id = 'com.marzguitars.body'
+    name = 'Body shapes'
+    tooltip = 'Manage body shapes to import in Marz Workbench'
+    menu = BASE_MENU
+    live_preview = False
+
+    def build_interface(self, ui: Widgets):
+        return ui.Notebook(
+            name="page", 
+            children=[
+                ContourPage.build(),
+                MidLinePage.build(),
+                BridgePage.build(),
+                PocketsPage.build(),
+                ErgoPage.build()])
+
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Gui: Headstock                                         │
+# └────────────────────────────────────────────────────────┘
+
+class TransitionPage(BasePage):
+    ui = Widgets
+    name="transition"
+    label="Transition"
+    selection="""
+        Select a line (path) to be used as a 
+        reference for transition cut.
+        """
+    requirements="""
+        The selection must be a path with 
+        exactly two nodes and it must intersect with contour in
+        two points.
+        """
+    illustrations=[Illustration('marz_headstock_transition.svg', 'Paths')]
+
+
+class HeadstockInterface(EffectMetadata):
+    inx = 'marz_headstock'
+    id = 'com.marzguitars.headstock'
+    name = 'Headstock shapes'
+    tooltip = 'Manage headstock shapes to import in Marz Workbench'
+    menu = BASE_MENU
+    live_preview = False
+
+    def build_interface(self, ui: Widgets):
+        return ui.Notebook(
+            name="page", 
+            children=[
+                HeadstockContourPage.build(),
+                HeadstockMidLinePage.build(),
+                TransitionPage.build(),
+                HeadstockPocketsPage.build()])
+
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Gui: Inlays                                            │
+# └────────────────────────────────────────────────────────┘
+
+class FretboardInlaysPage(BasePage):
+    ui = Widgets
+    name = "inlay"
+    label = "Fretboard inlays"
+    selection = """
+        Select paths to be used as custom
+        shapes for fretboard inlays.
+        """
+    requirements = """
+        Paths must be closed, non self-intersecting
+        """
+    illustrations = [Illustration('marz_inlay.svg', 'Paths')]
+    parameters = [
+        ui.Integer(
+            name='fret',
+            indent=1,
+            label="Initial fret",
+            description="Number of the fret for the first selected object",
+            default=1,
+            min=1,
+            max=60)]   
+
+
+class InlaysInterface(EffectMetadata):
+    inx = 'marz_fb_inlays'
+    id = 'com.marzguitars.fb_inlays'
+    name = 'Fretboard Inlays'
+    tooltip = 'Manage fretboard inlay shapes to import in Marz Workbench'
+    menu = BASE_MENU
+    live_preview = False
+
+    def build_interface(self, ui: Widgets):
+        return ui.Notebook(
+            name="page", 
+            children=[FretboardInlaysPage.build()])
+
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Extension utils                                        │
+# └────────────────────────────────────────────────────────┘
 
 POCKET_PATTERN = re.compile(r'^h([bt]?)(\d+)_(\d+)_(\d+)$')
 CUTAWAY_PATTERN = re.compile(r'^ec([bt]?)_(\d+)(_\d+)?$')
@@ -133,11 +466,13 @@ def allow_unknown_args(pars: argparse.ArgumentParser):
         return known        
     pars.parse_args = parse
 
-class MarzEffectExtension(inkex.EffectExtension):
 
-    def add_arguments(self, pars: argparse.ArgumentParser):
-        allow_unknown_args(pars)
-        add_arguments(pars)
+# ┌────────────────────────────────────────────────────────┐
+# │ Extension class                                        │
+# └────────────────────────────────────────────────────────┘
+
+@metadata(BodyInterface, HeadstockInterface, InlaysInterface)
+class MarzEffectExtension(inkex.EffectExtension):
 
     def effect(self):
         action = getattr(self, f"run_{self.options.page}")
@@ -221,7 +556,7 @@ class MarzEffectExtension(inkex.EffectExtension):
         id_ = find_max_id(self.svg, POCKET_PATTERN, 2)
         h1_start = int(self.options.start * 100)
         h2_dept = int(self.options.depth * 100)
-        target = self.options.target
+        target = self.options.target or ''
         for e in paths:
             make_multi_closed(e)
             id_ += 1

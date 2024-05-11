@@ -1,0 +1,36 @@
+<?xml version='1.0' encoding='utf-8'?>
+<inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
+  <name>Fretboard Inlays</name>
+  <id>com.marzguitars.fb_inlays</id>
+  <param name="page" type="notebook">
+    <page name="inlay" gui-text="Fretboard inlays">
+      <label appearance="header">Selection:</label>
+      <label indent="1">
+Select paths to be used as custom
+shapes for fretboard inlays.
+</label>
+      <label appearance="header">Requirements:</label>
+      <label indent="1">
+Paths must be closed, non self-intersecting
+</label>
+      <label appearance="header">Parameters:</label>
+      <param indent="1" gui-text="Initial fret" gui-description="Number of the fret for the first selected object" name="fret" type="int" min="1" max="60">1</param>
+      <label appearance="header">Illustrations:</label>
+      <param name="param44" type="notebook">
+        <page name="page43" gui-text="Paths">
+          <image width="500" height="272">marz_inlay.svg</image>
+        </page>
+      </param>
+    </page>
+  </param>
+  <effect needs-live-preview="false">
+    <object-type>all</object-type>
+    <effects-menu>
+      <submenu name="Marz Guitars - FreeCAD" />
+    </effects-menu>
+    <menu-tip>Manage fretboard inlay shapes to import in Marz Workbench</menu-tip>
+  </effect>
+  <script>
+    <command interpreter="python" location="inx">marz.py</command>
+  </script>
+</inkscape-extension>

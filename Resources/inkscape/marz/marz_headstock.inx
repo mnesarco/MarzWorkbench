@@ -1,76 +1,94 @@
+<?xml version='1.0' encoding='utf-8'?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
   <name>Headstock shapes</name>
   <id>com.marzguitars.headstock</id>
-  <param type="notebook" name="page">
+  <param name="page" type="notebook">
     <page name="contour" gui-text="Contour">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a path to be used as a custom shape for headstock.</label>
-      <separator />
+      <label indent="1">Select a path to be used as a custom contour</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The path must be closed, non self-intersecting and it must intersect with mid-line in exactly one point.</label>
-      <separator />
+      <label indent="1">
+The path must be closed, non 
+self-intersecting and it must intersect with 
+mid-line in exactly one point.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_headstock_contour.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param35" type="notebook">
+        <page name="page34" gui-text="Paths">
+          <image width="500" height="272">marz_headstock_contour.svg</image>
+        </page>
+      </param>
     </page>
     <page name="midline" gui-text="Mid-Line">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a line (path) to be used as a reference for mid-line.</label>
-      <separator />
+      <label indent="1">
+Select a line (path) to be used as a 
+reference for mid-line.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The selection must be a path with exactly two nodes and must intercept contour in exactly one point.</label>
-      <separator />
+      <label indent="1">
+The selection must be a path with 
+exactly two nodes and must intercept contour 
+in exactly one point.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_headstock_midline.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param37" type="notebook">
+        <page name="page36" gui-text="Paths">
+          <image width="500" height="272">marz_headstock_midline.svg</image>
+        </page>
+      </param>
     </page>
     <page name="transition" gui-text="Transition">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a line (path) to be used as a reference for transition cut.</label>
-      <separator />
+      <label indent="1">
+Select a line (path) to be used as a 
+reference for transition cut.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The selection must be a path with exactly two nodes and it must intersect with contour in two points.</label>
-      <separator />
+      <label indent="1">
+The selection must be a path with 
+exactly two nodes and it must intersect with contour in
+two points.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_headstock_transition.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param39" type="notebook">
+        <page name="page38" gui-text="Paths">
+          <image width="500" height="272">marz_headstock_transition.svg</image>
+        </page>
+      </param>
     </page>
     <page name="pockets" gui-text="Pockets">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select paths to be used as pockets on headstock.</label>
-      <separator />
+      <label indent="1">
+Select paths to be used as pockets on parts.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">Pocket paths must be closed and non self-intersecting, but they can intersect others.</label>
-      <separator />
+      <label indent="1">
+Pocket paths must be closed and non self-intersecting, 
+but they can intersect others.
+</label>
       <label appearance="header">Parameters:</label>
-      <vbox indent="1">
-        <param name="start" type="float" precision="2" min="0.0" max="999.99" gui-text="Start depth (mm):">0.0</param>
-        <param name="depth" type="float" precision="2" min="0.01" max="999.99" gui-text="Cut depth (mm):">10.0</param>
-      </vbox>
+      <param indent="1" gui-text="Start depth (mm)" gui-description="Depth measured from top surface where the pocket start" name="start" type="float" min="0.0" max="999.99" precision="2">0.0</param>
+      <param indent="1" gui-text="Cut depth (mm)" gui-description="Cut Depth measured from start in top-to-bottom direction" name="depth" type="float" min="0.01" max="999.99" precision="2">10.0</param>
       <label appearance="header">Illustrations:</label>
-      <param indent="1" name="uid6" type="notebook">
-        <page name="uid4" gui-text="Paths">
-          <image indent="0" width="450" height="245">marz_headstock_pockets.svg</image>
+      <param name="param42" type="notebook">
+        <page name="page40" gui-text="Paths">
+          <image width="500" height="272">marz_headstock_pockets.svg</image>
         </page>
-        <page name="uid5" gui-text="Parameters">
-          <image indent="0" width="450" height="261">marz_headstock_pocket_more.svg</image>
+        <page name="page41" gui-text="Parameters">
+          <image width="500" height="290">marz_headstock_pocket_more.svg</image>
         </page>
       </param>
     </page>
   </param>
-  <effect show-stderr="false" needs-live-preview="false">
+  <effect needs-live-preview="false">
+    <object-type>all</object-type>
     <effects-menu>
       <submenu name="Marz Guitars - FreeCAD" />
     </effects-menu>
+    <menu-tip>Manage headstock shapes to import in Marz Workbench</menu-tip>
   </effect>
-  <menu-tip>Manage headstock shapes to import in Marz Workbench</menu-tip>
   <script>
-    <command location="inx" interpreter="python">marz.py</command>
+    <command interpreter="python" location="inx">marz.py</command>
   </script>
 </inkscape-extension>

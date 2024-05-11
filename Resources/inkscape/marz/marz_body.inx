@@ -1,102 +1,124 @@
+<?xml version='1.0' encoding='utf-8'?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
   <name>Body shapes</name>
   <id>com.marzguitars.body</id>
-  <param type="notebook" name="page">
+  <param name="page" type="notebook">
     <page name="contour" gui-text="Contour">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a path to be used as a custom shape for body.</label>
-      <separator />
+      <label indent="1">Select a path to be used as a custom contour</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The path must be closed, non self-intersecting and it must intersect with mid-line in exactly one point.</label>
-      <separator />
+      <label indent="1">
+The path must be closed, non 
+self-intersecting and it must intersect with 
+mid-line in exactly one point.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_body_contour.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param24" type="notebook">
+        <page name="page23" gui-text="Paths">
+          <image width="500" height="272">marz_body_contour.svg</image>
+        </page>
+      </param>
     </page>
     <page name="midline" gui-text="Mid-Line">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a line (path) to be used as a reference for mid-line.</label>
-      <separator />
+      <label indent="1">
+Select a line (path) to be used as a 
+reference for mid-line.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The selection must be a path with exactly two nodes and must intercept contour in exactly one point.</label>
-      <separator />
+      <label indent="1">
+The selection must be a path with 
+exactly two nodes and must intercept contour 
+in exactly one point.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_body_midline.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param26" type="notebook">
+        <page name="page25" gui-text="Paths">
+          <image width="500" height="272">marz_body_midline.svg</image>
+        </page>
+      </param>
     </page>
     <page name="bridge" gui-text="Bridge">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select a line (path) to be used as a reference for bridge position.</label>
-      <separator />
+      <label indent="1">
+Select a line (path) to be used as a 
+reference for bridge position.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">The selection must be a path with exactly two nodes and it must intersect with mid-line.</label>
-      <separator />
+      <label indent="1">
+The selection must be a path with 
+exactly two nodes and it must intersect with mid-line.
+</label>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_bridge.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param28" type="notebook">
+        <page name="page27" gui-text="Paths">
+          <image width="500" height="272">marz_bridge.svg</image>
+        </page>
+      </param>
     </page>
     <page name="pockets" gui-text="Pockets">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select paths to be used as pockets on body parts.</label>
-      <separator />
+      <label indent="1">
+Select paths to be used as pockets on parts.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">Pocket paths must be closed and non self-intersecting, but they can intersect others.</label>
-      <separator />
+      <label indent="1">
+Pocket paths must be closed and non self-intersecting, 
+but they can intersect others.
+</label>
       <label appearance="header">Parameters:</label>
-      <vbox indent="1">
-        <param name="target" type="optiongroup" appearance="combo" gui-text="Base parts:">
-          <option value="">Top + Back</option>
-          <option value="t">Top</option>
-          <option value="b">Back</option>
-        </param>
-        <param name="start" type="float" precision="2" min="0.0" max="999.99" gui-text="Start depth (mm):">0.0</param>
-        <param name="depth" type="float" precision="2" min="0.01" max="999.99" gui-text="Cut depth (mm):">10.0</param>
-      </vbox>
+      <param indent="1" gui-text="Base parts" name="target" type="optiongroup" appearance="combo">
+        <option translatable="no" value="">Top + Back</option>
+        <option translatable="no" value="t">Top</option>
+        <option translatable="no" value="b">Back</option>
+      </param>
+      <param indent="1" gui-text="Start depth (mm)" gui-description="Depth measured from top surface where the pocket start" name="start" type="float" min="0.0" max="999.99" precision="2">0.0</param>
+      <param indent="1" gui-text="Cut depth (mm)" gui-description="Cut Depth measured from start in top-to-bottom direction" name="depth" type="float" min="0.01" max="999.99" precision="2">10.0</param>
       <label appearance="header">Illustrations:</label>
-      <param indent="1" name="uid3" type="notebook">
-        <page name="uid1" gui-text="Paths">
-          <image indent="0" width="450" height="262">marz_pocket_paths.svg</image>
+      <param name="param31" type="notebook">
+        <page name="page29" gui-text="Paths">
+          <image width="500" height="291">marz_pocket_paths.svg</image>
         </page>
-        <page name="uid2" gui-text="Parameters">
-          <image indent="0" width="450" height="261">marz_pocket_more.svg</image>
+        <page name="page30" gui-text="Parameters">
+          <image width="500" height="290">marz_pocket_more.svg</image>
         </page>
       </param>
     </page>
     <page name="ergo" gui-text="Cutaways">
       <label appearance="header">Selection:</label>
-      <label indent="1">Select two paths, the first one must be the cutaway contour and the second one must be the cutaway direction.</label>
-      <separator />
+      <label indent="1">
+Select two paths, the first one must be the
+cutaway contour and the second one must be 
+the cutaway direction.
+</label>
       <label appearance="header">Requirements:</label>
-      <label indent="1">selected contour must intersect body contour in two points, the continuos part must be inside body contour. Selected direction must intercept body contour and cutaway contour.</label>
-      <separator />
+      <label indent="1">
+Selected contour must intersect body contour 
+in two points, the continuos part must be inside body contour.
+Selected direction must intercept body contour and cutaway contour.
+</label>
       <label appearance="header">Parameters:</label>
-      <vbox indent="1">
-        <param name="ergo_side" type="optiongroup" appearance="combo" gui-text="Side:">
-          <option value="b">Back</option>
-          <option value="t">Top</option>
-        </param>
-        <param name="angle" type="float" precision="2" min="0.01" max="60.0" gui-text="Slice Angle (deg):">25.0</param>
-      </vbox>
+      <param indent="1" gui-text="Side" name="ergo_side" type="optiongroup" appearance="combo">
+        <option translatable="no" value="b">Back</option>
+        <option translatable="no" value="t">Top</option>
+      </param>
+      <param indent="1" gui-text="Slice Angle (deg)" name="angle" type="float" min="0.01" max="60.0" precision="2">20.0</param>
       <label appearance="header">Illustrations:</label>
-      <hbox>
-        <image indent="1" width="450" height="245">marz_ergo.svg</image>
-        <spacer size="expand" />
-      </hbox>
+      <param name="param33" type="notebook">
+        <page name="page32" gui-text="Paths">
+          <image width="500" height="272">marz_ergo.svg</image>
+        </page>
+      </param>
     </page>
   </param>
-  <effect show-stderr="false" needs-live-preview="false">
+  <effect needs-live-preview="false">
+    <object-type>all</object-type>
     <effects-menu>
       <submenu name="Marz Guitars - FreeCAD" />
     </effects-menu>
     <menu-tip>Manage body shapes to import in Marz Workbench</menu-tip>
   </effect>
   <script>
-    <command location="inx" interpreter="python">marz.py</command>
+    <command interpreter="python" location="inx">marz.py</command>
   </script>
 </inkscape-extension>
