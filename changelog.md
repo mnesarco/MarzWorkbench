@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.5 (May 12th 2024)
+
+- New Icons, thanks to Turan Furkan TOPAK (https://github.com/Reqrefusion)
+
 ## 0.1.4 (May 6th 2024)
 
 - Support older FreeCAD's PySide naming schema
