@@ -7,10 +7,6 @@
    viewBox="0 0 16.933333 16.933334"
    version="1.1"
    id="svg4921"
-   inkscape:version="1.3.2 (091e20e, 2023-11-25)"
-   sodipodi:docname="3d.svg"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:svg="http://www.w3.org/2000/svg"
@@ -20,8 +16,7 @@
   <defs
      id="defs4915">
     <linearGradient
-       id="linearGradient5599"
-       inkscape:collect="always">
+       id="linearGradient5599">
       <stop
          id="stop5595"
          offset="0"
@@ -32,7 +27,6 @@
          style="stop-color:#4d4d4d;stop-opacity:1" />
     </linearGradient>
     <linearGradient
-       inkscape:collect="always"
        xlink:href="#linearGradient5599"
        id="linearGradient5577"
        x1="2.3427279"
@@ -42,40 +36,6 @@
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.0647286,0.07031264,-0.07031264,1.0647286,18.786566,-19.382582)" />
   </defs>
-  <sodipodi:namedview
-     id="base"
-     pagecolor="#ffffff"
-     bordercolor="#666666"
-     borderopacity="1.0"
-     inkscape:pageopacity="0.0"
-     inkscape:pageshadow="2"
-     inkscape:zoom="8.783592"
-     inkscape:cx="27.209825"
-     inkscape:cy="43.945575"
-     inkscape:document-units="px"
-     inkscape:current-layer="layer1"
-     showgrid="true"
-     units="px"
-     inkscape:window-width="1920"
-     inkscape:window-height="1021"
-     inkscape:window-x="1920"
-     inkscape:window-y="0"
-     inkscape:window-maximized="1"
-     inkscape:snap-global="false"
-     inkscape:showpageshadow="2"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1">
-    <inkscape:grid
-       type="xygrid"
-       id="grid5521"
-       empspacing="2"
-       originx="0"
-       originy="0"
-       spacingy="1"
-       spacingx="1"
-       units="px"
-       visible="true" />
-  </sodipodi:namedview>
   <metadata
      id="metadata4918">
     <rdf:RDF>
@@ -88,32 +48,24 @@
     </rdf:RDF>
   </metadata>
   <g
-     inkscape:label="Layer 1"
-     inkscape:groupmode="layer"
-     id="layer1"
-     transform="translate(0,-280.06665)">
+     id="g7"
+     transform="matrix(0.98719842,0,0,0.67788815,0.06050971,-190.73075)"
+     style="display:inline">
+    <rect
+       style="fill:none;stroke:#000000;stroke-width:0.66231;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+       id="rect6"
+       width="8.5239305"
+       height="8.5041676"
+       x="-246.81584"
+       y="241.30309"
+       transform="matrix(0.79359275,-0.6084493,0.81858705,0.57438248,0,0)" />
     <path
-       id="rect2"
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-       d="m 13.106367,285.11541 2.275902,1.59694 -6.7645294,5.18638 -6.9614035,-4.88464 6.7645291,-5.18638 2.5367278,1.77996 -1.9575925,1.40064 2.1372675,1.46809 z"
-       sodipodi:nodetypes="ccccccccc" />
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.646861;stroke-linejoin:round"
+       d="M 8.634967,293.67473 8.693662,304.11149 1.6626938,299.17894 1.604011,288.82171 Z"
+       id="path3" />
     <path
-       id="rect1"
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-       d="m 15.382261,286.71236 -1.3e-5,3.83264 -6.764529,5.18638 -6.9614034,-4.88464 2.05e-5,-3.83265"
-       sodipodi:nodetypes="ccccc" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;paint-order:markers fill stroke"
-       d="m 8.617719,295.73138 c 0,-2.10589 1.54e-5,-3.83265 1.54e-5,-3.83265"
-       id="path5"
-       sodipodi:nodetypes="cc" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;paint-order:markers fill stroke"
-       d="m 10.957593,283.60766 0.04241,1.40065 1.121817,0.78759"
-       id="path6" />
-    <path
-       style="fill:none;stroke:#000000;stroke-width:0.264583;stroke-linecap:butt;stroke-linejoin:round;stroke-dasharray:none;stroke-dashoffset:0;paint-order:markers fill stroke"
-       d="m 11.000001,285.00831 -0.931367,0.73404"
-       id="path7" />
+       style="display:inline;fill:none;stroke:#000000;stroke-width:0.646861;stroke-linejoin:round"
+       d="m 8.652734,293.64389 6.788415,-5.09469 0.02871,10.38153 -6.7761948,5.18076 z"
+       id="path4" />
   </g>
 </svg>
