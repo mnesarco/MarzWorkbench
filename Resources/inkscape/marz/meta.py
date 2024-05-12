@@ -23,23 +23,20 @@ API to generate .inx files and cli arguments directly from python code in
 a declarative way.
 """
 
-import inspect
 import sys
 from argparse import ArgumentParser
-from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
+from functools import wraps
 from itertools import count
 from pathlib import Path
 from textwrap import dedent
-from typing import IO, Any, Callable, Dict, Generic, Iterable, List, Optional, Set, Type, TypeVar, Union
+from typing import (IO, Any, Dict, Generic, Iterable, List, Optional, TypeVar,
+                    Union)
 from xml.etree import ElementTree as ET
-from functools import wraps, lru_cache
 
 import inkex
-from inkex import Color as InkexColor
 import inkex.base
-
 
 # ┌────────────────────────────────────────────────────────┐
 # │ Public API                                             │
@@ -61,7 +58,9 @@ __all__ = (
     'InputMetadata',
     'OutputMetadata',
     'metadata',
-    'is_inx_mode'
+    'is_inx_mode',
+    'Category',
+    'Dependency',
 )
 
 
@@ -469,6 +468,9 @@ class _Page:
 class Widgets:
 
     def cond(self, guard: bool, widget: Widget):
+        """
+        Inline conditional Widget
+        """
         if guard:
             return widget
 
@@ -595,7 +597,7 @@ class Widgets:
 
 
     @dataclass
-    class Color(Widget, _Color, _Param[InkexColor]):
+    class Color(Widget, _Color, _Param[inkex.Color]):
         """
         Color param widget
         """
@@ -743,11 +745,10 @@ class Menu:
         return elem
 
 
-# ┌────────────────────────────────────────────────────────┐
-# │ Metadata                                               │
-# └────────────────────────────────────────────────────────┘
-
 def _io_xml(self, tag: str):
+    """
+    <input>/<output> element base
+    """
     elem = xml_elem(tag)
     xml_attr(elem, 'priority', self.priority)
     xml_add_elem(elem, 'extension', self.extension)
@@ -757,7 +758,23 @@ def _io_xml(self, tag: str):
     return elem
 
 
+# ┌────────────────────────────────────────────────────────┐
+# │ Metadata: Builders                                     │
+# └────────────────────────────────────────────────────────┘
+
 class _BaseMetadata:
+    """
+    Base class for all Metadata types
+
+    :param inx str: Optional name for the generated inx file (without .inx suffix)
+    :param inkex_type str: Base inkex extension class, defaults to inkex.EffectExtension
+    :param id str: required extension id
+    :param name str: required extension name and menu item
+    :param translation_domain str: optional gettext translation domain
+    :param description str: optional extension description
+    :param categories List[Category]: optional list of categories
+    :param dependencies List[Dependency]: optional list of dependencies
+    """
     inx: str = None
     inkex_type: str = inkex.EffectExtension
     id: str = None
@@ -768,9 +785,18 @@ class _BaseMetadata:
     dependencies: List[Dependency] = None
 
     def build_interface(self, ui: Widgets) -> Union[Widget, Iterable[Widget], None]:
+        """
+        User defined method to build the interface.
+
+        :param Widgets ui: Widgets namespace
+        :return Union[Widget, Iterable[Widget], None]: ui widgets
+        """
         return None
 
     def _build_interface(self) -> List[Widget]:
+        """
+        Internal interface normalization. Ensure interface is List[Widget]
+        """
         interface = self.build_interface(Widgets())
         if isinstance(interface, Widget):
             return [interface]
@@ -789,7 +815,7 @@ class _BaseMetadata:
         xml_add_elem(root, 'id', self.id)
 
         if isinstance(self.description, str):
-            root.append(xml_elem('description', description))
+            root.append(xml_elem('description', self.description))
         elif self.description:
             for description in self.description:
                 root.append(xml_elem('description', description))
@@ -815,6 +841,9 @@ class _BaseMetadata:
         return root
 
     def merge_argument(self, pars, *args, **kwargs):
+        """
+        Add cli arguments, ignore if argument already exists
+        """
         try:
             pars.add_argument(*args, **kwargs)
         except:
@@ -822,7 +851,7 @@ class _BaseMetadata:
 
     def add_arguments(self, args: ArgumentParser):
         """
-        Generate all cli arguments
+        Generate all cli arguments for teh current metadata
         """
         def extract(obj, params: List[_Param]):
             if isinstance(obj, _Param):
@@ -849,10 +878,14 @@ class _BaseMetadata:
                             action='store_true')
 
     def _custom_xml(self):
+        """Abstract, implemented by subclasses to build the custom elements"""
         return None
 
 
 class EffectMetadata(_BaseMetadata):
+    """
+    Metadata for inkex.EffectExtension
+    """
     menu: List[str] = None
     tooltip: str = None
     hidden: bool = False
@@ -881,6 +914,9 @@ class EffectMetadata(_BaseMetadata):
     
 
 class InputMetadata(_BaseMetadata):
+    """
+    Metadata for inkex.InputExtension
+    """
     extension: str = None
     mime_type: str = None
     priority: int = None
@@ -892,6 +928,9 @@ class InputMetadata(_BaseMetadata):
 
 
 class OutputMetadata(InputMetadata):
+    """
+    Metadata for inkex.OutputExtension
+    """
     raster: bool = False
     lossy: bool = False
     save_copy_only: bool = False
@@ -903,12 +942,24 @@ class OutputMetadata(InputMetadata):
         xml_add_elem(elem, 'savecopyonly', self.save_copy_only, strict=True)
         return elem
 
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Metadata: Runtime                                      │
+# └────────────────────────────────────────────────────────┘
+
 @dataclass
 class Runner:
+    """
+    Runs the extension, taking care of inx generation and
+    cli arguments generation as required.
+    """
     interfaces: List[_BaseMetadata]
     extension: inkex.base.InkscapeExtension
 
     def build(self):
+        """
+        Generate inx files
+        """
         script = Path(sys.argv[0])
         parent = script.parent
         all_inx = ((ifc.xml(script.name), ifc.inx or ifc.__class__.__name__)
@@ -920,7 +971,8 @@ class Runner:
                 xml_save(inx, str(Path(parent, inx_file_name)))
                 print(f'Saved to "{inx_file_name}"')
         else:
-            for inx in all_inx:
+            for inx, name in all_inx:
+                sys.stdout.write(f"\n<!-- Meta: {name} -->\n")
                 xml_save(inx, sys.stdout.buffer)
 
 
@@ -935,7 +987,16 @@ class Runner:
             _run(self.extension(), *args, **kwargs)
 
 
+# ┌────────────────────────────────────────────────────────┐
+# │ Metadata: Decorators                                   │
+# └────────────────────────────────────────────────────────┘
+
 def metadata(*metadata: Iterable[_BaseMetadata]):
+    """
+    Decorator for extension classes. 
+    - Adds cli arguments
+    - Adds inx generation capabilities
+    """
     def wrapper(cls):
         builders: Iterable[_BaseMetadata] = [m() for m in metadata]
         _run = getattr(cls, 'run')
@@ -954,6 +1015,10 @@ def metadata(*metadata: Iterable[_BaseMetadata]):
         return cls
     return wrapper
 
+
+# ┌────────────────────────────────────────────────────────┐
+# │ Metadata: Utils                                        │
+# └────────────────────────────────────────────────────────┘
 
 __is_inx_mode = '--inx' in sys.argv
 def is_inx_mode():
