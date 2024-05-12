@@ -109,3 +109,8 @@ and it is very practical for quick calculations and references, but it is 2D and
 I decided to go to the next level and make it 3D, so I started this project and work on this in my
 free time. This is a work in progress thing.
 
+## Contributors
+
+### Icons
+
+Icons redesign by Turan Furkan TOPAK (https://github.com/Reqrefusion)
