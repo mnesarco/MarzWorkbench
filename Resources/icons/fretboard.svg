@@ -2,98 +2,30 @@
 <svg
    id="svg8"
    version="1.1"
-   viewBox="0 0 16.933333 16.933334"
    height="64"
    width="64"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:dc="http://purl.org/dc/elements/1.1/">
-  <defs
-     id="defs2">
-    <linearGradient
-       xlink:href="#linearGradient18"
-       id="linearGradient19"
-       x1="5.9358344"
-       y1="287.68317"
-       x2="17.624229"
-       y2="289.08618"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient18">
-      <stop
-         style="stop-color:#555753;stop-opacity:1"
-         offset="0"
-         id="stop18" />
-      <stop
-         style="stop-color:#888a85;stop-opacity:1"
-         offset="1"
-         id="stop19" />
-    </linearGradient>
-    <linearGradient
-       xlink:href="#linearGradient18-3"
-       id="linearGradient19-9"
-       x1="5.9358344"
-       y1="287.68317"
-       x2="17.624229"
-       y2="289.08618"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="linearGradient18-3">
-      <stop
-         style="stop-color:#555753;stop-opacity:1"
-         offset="0"
-         id="stop18-8" />
-      <stop
-         style="stop-color:#888a85;stop-opacity:1"
-         offset="1"
-         id="stop19-1" />
-    </linearGradient>
-  </defs>
-  <metadata
-     id="metadata5">
-    <rdf:RDF>
-      <cc:Work
-         rdf:about="">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
-  <g
-     transform="matrix(0.8430962,0.0126581,-0.01148543,0.8358726,4.7721301,-232.80567)"
-     id="layer1-8"
-     style="display:inline">
-    <path
-       id="path3154-7"
-       d="M 14.675972,280.77876 0.79374996,292.7114 4.3343487,296.19127 15.874999,281.95282 Z"
-       style="font-variation-settings:normal;display:inline;opacity:1;fill:none;fill-opacity:1;stroke:#000000;stroke-width:1.26057612;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000;stop-opacity:1" />
-    <g
-       id="g10"
-       style="display:inline">
-      <path
-         style="display:inline;opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.26057612;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-         d="m 12.034651,283.16141 1.572542,1.57255"
-         id="path4-0" />
-      <path
-         style="display:inline;opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.26057612;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-         d="m 9.9043946,285.09905 1.7759484,1.77594"
-         id="path5-2" />
-      <path
-         style="display:inline;opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.26057612;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-         d="m 7.5736292,286.94133 1.9499955,1.92042"
-         id="path6-7" />
-      <path
-         style="display:inline;opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.26057612;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-         d="m 5.3664646,289.10961 2.3189625,2.45159"
-         id="path7-4" />
-      <path
-         style="display:inline;opacity:1;fill:#ffffff;stroke:#000000;stroke-width:1.26057612;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
-         d="m 3.0739458,290.95989 2.8465207,2.84652"
-         id="path8-8" />
-    </g>
-  </g>
+   xmlns="http://www.w3.org/2000/svg">  <path
+     id="path3154-7"
+     d="M 54.062237,6.074485 6.1723381,45.703108 18.083429,57.648365 58.096143,10.104879 Z"
+     style="font-variation-settings:normal;display:inline;fill:none;fill-opacity:1;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;stop-color:#000000" />
+  <path
+     style="display:inline;fill:#ffffff;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 44.945181,13.994017 5.289008,5.396645"
+     id="path4-0" />
+  <path
+     style="display:inline;fill:#ffffff;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 37.591425,20.435319 5.973135,6.094635"
+     id="path5-2" />
+  <path
+     style="display:inline;fill:#ffffff;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 29.558403,26.543983 6.55989,6.591972"
+     id="path6-7" />
+  <path
+     style="display:inline;fill:#ffffff;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 21.931692,33.761045 7.79332,8.406527"
+     id="path7-4" />
+  <path
+     style="display:inline;fill:#ffffff;stroke:#fcaf3e;stroke-width:4.28031;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;paint-order:markers fill stroke"
+     d="m 14.028712,39.898711 9.573843,9.768631"
+     id="path8-8" />
 </svg>
