@@ -47,10 +47,9 @@ from PySide.QtCore import (  # type: ignore
 from PySide.QtGui import (  # type: ignore
     QSizePolicy,
     QApplication,
-)
-
-from PySide.QtGui import (  # type: ignore
+    QAction,
     QPainter, 
     QColor, 
+    QIcon,
 )
 

@@ -29,6 +29,6 @@ from .export import CmdExportSvg
 # Register Commands
 Gui.addCommand('MarzCmdShowParameters', CmdShowParameters())
 Gui.addCommand('MarzCmdShowAboutWindow', ShowAboutWindow())
-Gui.addCommand('MarzCmdToggle2D', CmdToggle2D)
-Gui.addCommand('MarzCmdToggle3D', CmdToggle3D)
+Gui.addCommand(CmdToggle2D.name, CmdToggle2D)
+Gui.addCommand(CmdToggle3D.name, CmdToggle3D)
 Gui.addCommand('MarzCmdExportSvg', CmdExportSvg())

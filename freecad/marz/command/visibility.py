@@ -20,6 +20,7 @@
 
 from typing import List, Tuple
 from freecad.marz.extension.fc import App, Gui
+from freecad.marz.extension.qt import QAction, QIcon
 from freecad.marz.extension.lang import tr
 from freecad.marz.extension.paths import iconPath
 from freecad.marz.feature import MarzInstrument_Name
@@ -41,10 +42,23 @@ def get_view_objects(predicate) -> Tuple[List[Gui.ViewProviderDocumentObject], b
             objects.append(obj.ViewObject)
     return objects, visible
 
+def toggle_action_icon(name: str, on: str, off: str, state: bool):
+    mw = Gui.getMainWindow()
+    actions = mw.findChildren(QAction, name)
+    if actions:
+        action = actions[0]
+        if state:
+            action.setIcon(QIcon(iconPath(on)))
+        else:
+            action.setIcon(QIcon(iconPath(off)))
+
 class CmdToggleVisibility:
     """Toggle visibility"""
 
-    def __init__(self, menu:str, tooltip:str, icon:str, accel:str, predicate) -> None:
+    def __init__(self, name: str, menu:str, tooltip:str, icon:str, accel:str, predicate) -> None:
+        self.name = name
+        self.icon = icon
+        self.icon_off = icon.replace('.svg', '_off.svg')
         self.resources = {
             "MenuText": menu,
             "ToolTip": tooltip,
@@ -68,15 +82,20 @@ class CmdToggleVisibility:
             obj.Visibility = not visibility
         if not visibility and self.predicate is is_2d_object:
             Gui.runCommand('Std_OrthographicCamera',1)
+        toggle_action_icon(self.name, self.icon, self.icon_off, not visibility)
+
 
 CmdToggle2D = CmdToggleVisibility(
+    'MarzCmdToggle2D',
     tr('Toggle draft objects'),
     tr('Toggle draft objects'),
     'view_2d.svg', 
     'W,D', 
     is_2d_object)
 
+
 CmdToggle3D = CmdToggleVisibility(
+    'MarzCmdToggle3D',
     tr('Toggle 3D parts'),
     tr('Toggle 3D parts'),
     'view_3d.svg', 
