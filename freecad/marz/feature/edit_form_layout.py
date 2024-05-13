@@ -398,13 +398,13 @@ def build(form: InstrumentFormBase):
                     form.status_line = ui.TextLabel(stretch=100, wordWrap=True)
 
                     update_2d = ui.button(
-                        label=tr("Update Drafts"), 
+                        label=tr("  Update Drafts"), 
                         icon=FlatIcon('2d.svg'),
                         autoDefault=True,
                         default=True)
                     
                     update_3d = ui.button(
-                        label=tr("Update 3D"), 
+                        label=tr("  Update Parts"), 
                         icon=FlatIcon('3d.svg'))
                     
                     update_2d(form.update_2d)
