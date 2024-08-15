@@ -109,7 +109,7 @@ def intro_style() -> str:
 
 def svg_preview_container_style() -> str:
     return """
-        background-color: #666666;
+        background-color: #f0f0f0;
         border: 1px solid #333333;
     """
 

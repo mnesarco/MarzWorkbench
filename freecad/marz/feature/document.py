@@ -149,7 +149,9 @@ class InstrumentFeatureController:
         return doc.getObject(MarzInstrument_Name)
 
     def recompute(self, doc: App.Document = None):
-        self(doc).recompute()
+        obj = self(doc)
+        if obj:
+            obj.recompute()
 
     def exists(self, doc: App.Document = None):
         return bool(self(doc))

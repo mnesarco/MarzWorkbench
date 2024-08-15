@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.6 (Oct 15th 2024)
+
+- Minor ui style change (contrast)
+
 ## 0.1.5 (May 12th 2024)
 
 - New Icons, thanks to Turan Furkan TOPAK (https://github.com/Reqrefusion)
