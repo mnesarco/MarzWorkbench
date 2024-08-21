@@ -491,6 +491,11 @@ class Dialogs:
             w.open()
         else:
             w.show()
+            try:
+                w.raise_() # Mac ??
+            except: 
+                pass
+            w.requestActivate()
 
 
 def find_active_window():

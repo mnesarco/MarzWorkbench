@@ -1,6 +1,10 @@
 # Marz Workbench Changelog
 
-## 0.1.6 (Oct 15th 2024)
+## 0.1.7 (Aug 21th 2024)
+
+- Raise the parameters window on MacOS
+
+## 0.1.6 (Jul 15th 2024)
 
 - Minor ui style change (contrast)
 
