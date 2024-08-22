@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.8 (Aug 22th 2024)
+
+- Improve neck-headstock transition geometry (Issue #40)
+
 ## 0.1.7 (Aug 21th 2024)
 
 - Raise the parameters window on MacOS
