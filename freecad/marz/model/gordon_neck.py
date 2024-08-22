@@ -191,7 +191,8 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     edges.insert(1, profile_edge(0, transition_offset, points[0] + direction * transition_offset))
 
     # Edges before nut to force the guides pass for nut point
-    edges.insert(0, profile_edge(0, -transition_offset*space, points[0] + direction * -transition_offset*space))
+    control = -1.2  # Issue #40
+    edges.insert(0, profile_edge(0, control, points[0] + direction * control))
     
     return NeckProfiles(edges, nut_profile)
 
