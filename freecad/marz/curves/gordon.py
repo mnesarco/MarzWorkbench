@@ -18,6 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+# !---------------------------------------------------------------------------+
 # !NOTICE
 #
 #  This file is a modified version of files:
@@ -33,6 +34,7 @@
 #
 #  Original code in C++ comes from: https://github.com/DLR-SC/tigl
 #  under Apache-2 license
+# !---------------------------------------------------------------------------+
 
 from __future__ import annotations
 
@@ -53,6 +55,10 @@ Vector2d = Base.Vector2d
 
 
 class GordonSurfaceBuilderError(Exception):
+    pass
+
+
+class ParameterRangeError(Exception):
     pass
 
 
@@ -81,7 +87,17 @@ def range_product(n: int, m: int, offset: int = 0):
 
 
 class GordonSurfaceBuilder:
-    """Build a Gordon surface from a network of curves"""
+    """
+    Build a Gordon surface from a network of curves
+       p0    p1   ...    pn
+    g0 +-----+-----+-----+
+       |     |     |     |
+    g1 +-----+-----+-----+
+       |     |     |     |
+    ...+-----+-----+-----+
+       |     |     |     |
+    gn +-----+-----+-----+
+    """
 
     tensorProdSurf: Part.BSplineSurface
     skinningSurfProfiles: Part.BSplineSurface
@@ -185,18 +201,16 @@ class GordonSurfaceBuilder:
 
         #  check, whether to build a closed continuous surface
         bsa = BSplineAlgorithms(self.par_tol)
+
         # curve_u_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(self.guides)
         # curve_v_tolerance = bsa.REL_TOL_CLOSED * bsa.scale(self.profiles)
         tp_tolerance = bsa.REL_TOL_CLOSED * bsa.scale_pt_array(intersection_points)
-        #  TODO No IsEqual in FreeCAD
+
         makeUClosed = bsa.isUDirClosed(intersection_points, tp_tolerance)
-        #  and self.guides[0].toShape().isPartner(self.guides[-1].toShape()) # .isEqual(self.guides[-1], curve_u_tolerance);
         makeVClosed = bsa.isVDirClosed(intersection_points, tp_tolerance)
-        #  and self.profiles[0].toShape().IsPartner(self.profiles[-1].toShape())
 
         #  Skinning in v-direction with u directional B-Splines
         surfProfiles = bsa.curvesToSurface(self.profiles, self.intersectionParamsV, makeVClosed)
-        #  therefore re-parametrization before this method
 
         #  Skinning in u-direction with v directional B-Splines
         surfGuides = bsa.curvesToSurface(self.guides, self.intersectionParamsU, makeUClosed)
@@ -206,7 +220,6 @@ class GordonSurfaceBuilder:
 
         # if there are too little points for UDegree = 3 and VDegree = 3
         # creating an interpolation B-spline surface isn't possible in OCC
-
         # Open CASCADE doesn't have a B-spline surface interpolation method
         # where one can give the u- and v-directional parameters as arguments
         tensorProdSurf = bsa.pointsToSurface(
@@ -256,17 +269,25 @@ class GordonSurfaceBuilder:
             self.gordonSurf.setPole(cp_u_idx, cp_v_idx, cp_surf_u + cp_surf_v - cp_tensor)
 
     def check_curve_network_compatibility(self) -> None:
-        # find out the 'average' scale of the B-splines in order to being able to handle a more
-        # approximate dataset and find its intersections
+        """
+        Find out the 'average' scale of the B-splines in order to being able to handle a more
+        approximate dataset and find its intersections
+        """
         bsa = BSplineAlgorithms(self.par_tol)
         splines_scale = 0.5 * (bsa.scale(self.profiles) + bsa.scale(self.guides))
         scale_tol = splines_scale * self.tolerance
 
         if abs(self.intersectionParamsU[0]) > scale_tol or abs(self.intersectionParamsU[-1] - 1.0) > scale_tol:
-            warn("B-splines in u-direction must not stick out, spline network must be 'closed'!")
+            raise GordonSurfaceBuilderError(
+                "B-splines in u-direction must not stick out, \
+                 spline network must be 'closed'!"
+            )
 
         if abs(self.intersectionParamsV[0]) > scale_tol or abs(self.intersectionParamsV[-1] - 1.0) > scale_tol:
-            warn("B-splines in v-direction mustn't stick out, spline network must be 'closed'!")
+            raise GordonSurfaceBuilderError(
+                "B-splines in v-direction mustn't stick out, \
+                 spline network must be 'closed'!"
+            )
 
         #  check compatibility of network
         num_intersectionParamsV = len(self.intersectionParamsV)
@@ -292,7 +313,9 @@ class InterpolateCurveNetworkError(Exception):
 
 
 class InterpolateCurveNetwork(object):
-    """Bspline surface interpolating a network of curves"""
+    """
+    Bspline surface interpolating a network of curves
+    """
 
     profiles: list[Part.BSplineCurve]
     guides: list[Part.BSplineCurve]
@@ -307,6 +330,7 @@ class InterpolateCurveNetwork(object):
         guides: Sequence[Part.BSplineCurve],
         tol: float = 1e-5,
         par_tolerance: float = 1e-10,
+        max_ctrl_pts: int = 80,
     ):
         if len(profiles) < 2:
             raise InterpolateCurveNetworkError("Not enough profiles")
@@ -315,15 +339,15 @@ class InterpolateCurveNetwork(object):
             raise InterpolateCurveNetworkError("Not enough guides")
 
         if tol <= 0:
-            raise InterpolateCurveNetworkError("tolerance (tol) must be a positive number")
+            raise InterpolateCurveNetworkError("tolerance (tol) must be a small positive number")
 
         if par_tolerance <= 0:
-            raise InterpolateCurveNetworkError("tolerance (par_tol) must be a positive number")
+            raise InterpolateCurveNetworkError("tolerance (par_tol) must be a small positive number")
 
+        self.has_performed = False
         self.tolerance = tol
         self.par_tolerance = par_tolerance
-        self.max_ctrl_pts = 80
-        self.has_performed = False
+        self.max_ctrl_pts = max_ctrl_pts
         self.profiles = [p.copy() for p in profiles]
         self.guides = [g.copy() for g in guides]
 
@@ -414,7 +438,8 @@ class InterpolateCurveNetwork(object):
                     intersection_params_u[spline_u_idx][spline_v_idx] = currentIntersections[0][0]
             else:
                 raise InterpolateCurveNetworkError(
-                    "U-directional B-spline and v-directional B-spline have more than two intersections with each other!"
+                    "U-directional B-spline and v-directional B-spline have more \
+                     than two intersections with each other!"
                 )
 
     def sort_curves(
@@ -439,7 +464,8 @@ class InterpolateCurveNetwork(object):
         return intersection_params_u, intersection_params_v
 
     def make_curves_compatible(self):
-        # re-parametrize into [0,1]
+        """re-parametrize all curves into [0,1]"""
+
         bsa = BSplineAlgorithms()
         for c in chain(self.profiles, self.guides):
             bsa.reparametrizeBSpline(c, 0.0, 1.0, self.par_tolerance)
@@ -450,11 +476,12 @@ class InterpolateCurveNetwork(object):
         nProfiles = len(self.profiles)
 
         #  now find all intersections of all B-splines with each other
-        intersection_params_u = [[0] * nGuides for k in range(nProfiles)]  # (0, nProfiles - 1, 0, nGuides - 1);
-        intersection_params_v = [[0] * nGuides for k in range(nProfiles)]  # (0, nProfiles - 1, 0, nGuides - 1);
+        intersection_params_u = [[0] * nGuides for k in range(nProfiles)]
+        intersection_params_v = [[0] * nGuides for k in range(nProfiles)]
         self.compute_intersections(intersection_params_u, intersection_params_v)
 
-        #  sort intersection_params_u and intersection_params_v and u-directional and v-directional B-spline curves
+        # sort intersection_params_u and intersection_params_v and u-directional
+        # and v-directional B-spline curves
         intersection_params_u, intersection_params_v = self.sort_curves(intersection_params_u, intersection_params_v)
 
         # eliminate small inaccuracies of the intersection parameters:
@@ -570,8 +597,6 @@ class InterpolateCurveNetwork(object):
     ):
         nProfiles = len(sortedProfiles)
         nGuides = len(sortedGuides)
-        # tol = 0.001
-        #  eliminate small inaccuracies of the intersection parameters:
 
         #  first intersection
         for spline_u_idx in range(nProfiles):
@@ -605,7 +630,7 @@ class InterpolateCurveNetwork(object):
 # -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
 
 
-def square_distance(v1: float, v2: float) -> float:
+def square_distance_xy(v1: Vector, v2: Vector) -> float:
     return pow(v2.x - v1.x, 2) + pow(v2.y - v1.y, 2)
 
 
@@ -715,7 +740,7 @@ class BSplineApproxInterp:
 
         return result, error
 
-    def computeParameters(self, alpha: float):
+    def computeParameters(self, alpha: float) -> list[float]:
         """Computes parameters for the points self.pnts
         alpha is a parametrization factor
         alpha = 0.0 -> Uniform
@@ -724,15 +749,18 @@ class BSplineApproxInterp:
         sum = 0.0
         nPoints = len(self.pnts)
         t = [0.0]
+
         #  calc total arc length: dt^2 = dx^2 + dy^2
         for i in range(1, nPoints):
-            len2 = square_distance(self.pnts[i - 1], self.pnts[i])
+            len2 = square_distance_xy(self.pnts[i - 1], self.pnts[i])
             sum += pow(len2, alpha)  # / 2.)
             t.append(sum)
+
         #  normalize parameter with maximum
         tmax = t[-1]
         for i in range(1, nPoints):
             t[i] /= tmax
+
         #  reset end value to achieve a better accuracy
         t[-1] = 1.0
         return t
@@ -769,14 +797,12 @@ class BSplineApproxInterp:
 
         return knots, mults
 
-    def maxDistanceOfBoundingBox(self, points: list[Vector]):
+    def maxDistanceOfBoundingBox(self, points: list[Vector]) -> float:
         """return maximum distance of a group of points"""
-        maxDistance = 0.0
-        for i, j in combinations(range(len(points)), 2):
-            distance = points[i].distanceToPoint(points[j])
-            if maxDistance < distance:
-                maxDistance = distance
-        return maxDistance
+        if not points:
+            return 0.0
+        i_to_j = combinations(range(len(points)), 2)
+        return max(points[i].distanceToPoint(points[j]) for i, j in i_to_j)
 
     def isClosed(self) -> bool:
         """Returns True if first and last points are close enough"""
@@ -824,24 +850,16 @@ class BSplineApproxInterp:
         return continuity_entries
 
     def python_solve(self, params, knots, mults):
-        """Compute the BSpline curve that fits the points
-        Returns the curve, and the max error between points and curve
-        This method is used by iterative function FitCurveOptimal"""
+        """
+        Compute the BSpline curve that fits the points.
+        Returns the curve, and the max error between points and curve,
+        this method is used by iterative function FitCurveOptimal
+        """
 
-        #  TODO knots and mults are OCC arrays (1-based)
-        #  TODO I replaced the following OCC objects with numpy arrays:
-        # math_Matrix (Init, Set, Transposed, Multiplied, )
-        # math_Gauss (Solve, IsDone)
-        # math_Vector (Set)
-        #  compute flat knots to solve system
-
-        #  TODO check code below !!!
-        # nFlatKnots = BSplCLib::KnotSequenceLength(mults, self.degree, False)
-        # TColStd_Array1OfReal flatKnots(1, nFlatKnots)
-        # BSplCLib::KnotSequence(knots, mults, flatKnots)
+        # Compute flat knots to solve system
         flatKnots = []
-        for i in range(len(knots)):
-            flatKnots += [knots[i]] * mults[i]
+        for i, k in enumerate(knots):
+            flatKnots += [k] * mults[i]
 
         n_apprxmated = len(self.indexOfApproximated)
         n_intpolated = len(self.indexOfInterpolated)
@@ -852,6 +870,7 @@ class BSplineApproxInterp:
             if self.firstAndLastInterpolated():
                 #  Remove C0 as they are already equal by design
                 n_continuityConditions -= 1
+
         #  Number of control points required
         nCtrPnts = len(flatKnots) - self.degree - 1
 
@@ -903,16 +922,14 @@ class BSplineApproxInterp:
             rhsz[0:le] = np.matmul(At, bz)
 
         if n_intpolated + n_continuityConditions > 0:
-            # Write d vector. These are the points that should be interpolated as well as
-            # the continuity constraints for closed curve
+            # Write d vector. These are the points that should be
+            # interpolated as well as the continuity constraints
+            # for closed curve
             dx = np.zeros(n_intpolated + n_continuityConditions)
             dy = np.zeros(n_intpolated + n_continuityConditions)
             dz = np.zeros(n_intpolated + n_continuityConditions)
             if n_intpolated > 0:
                 interpParams = [0] * n_intpolated
-                # intpIndex = 0
-                # for (std::vector<size_t>::const_iterator it_idx = m_indexOfInterpolated.begin() it_idx != m_indexOfInterpolated.end() ++it_idx) {
-                # Standard_Integer ipnt = static_cast<Standard_Integer>(*it_idx + 1)
                 for idx in range(len(self.indexOfInterpolated)):
                     ioi = self.indexOfInterpolated[idx]  # + 1
                     p = self.pnts[ioi]
@@ -923,7 +940,6 @@ class BSplineApproxInterp:
                         interpParams[idx] = params[ioi]
                     except IndexError:
                         warn(f"IndexError: {ioi}")
-                    # intpIndex += 1
 
                 C = bsplineBasisMat(self.degree, flatKnots, interpParams, 0)
                 Ct = C.T
@@ -931,13 +947,19 @@ class BSplineApproxInterp:
                     lhs[i][j + nCtrPnts] = Ct[i][j]
                     lhs[j + nCtrPnts][i] = C[j][i]
 
-            #  sets the C2 continuity constraints for closed curves on the left hand side if requested
+            # Sets the C2 continuity constraints for closed curves
+            # on the left hand side if requested
             if self.isClosed():
-                continuity_entries = self.getContinuityMatrix(nCtrPnts, n_continuityConditions, params, flatKnots)
-                continuity_entriest = continuity_entries.T
+                continuity_entries = self.getContinuityMatrix(
+                    nCtrPnts,
+                    n_continuityConditions,
+                    params,
+                    flatKnots,
+                )
+                continuity_entries_t = continuity_entries.T
                 for i, j in range_product(n_continuityConditions, nCtrPnts):
                     lhs[nCtrPnts + n_intpolated + i][j] = continuity_entries[i][j]
-                    lhs[j][nCtrPnts + n_intpolated + i] = continuity_entriest[j][i]
+                    lhs[j][nCtrPnts + n_intpolated + i] = continuity_entries_t[j][i]
 
             rhsx[nCtrPnts : n_vars + 1] = dx
             rhsy[nCtrPnts : n_vars + 1] = dy
@@ -957,8 +979,7 @@ class BSplineApproxInterp:
 
         #  compute error
         max_error = 0.0
-        for idx in range(len(self.indexOfApproximated)):
-            ioa = self.indexOfApproximated[idx]
+        for ioa in self.indexOfApproximated:
             p = self.pnts[ioa]
             par = params[ioa]
             error = result.value(par).distanceToPoint(p)
@@ -1250,19 +1271,19 @@ class CurveNetworkSorter(object):
         self.n_guides = len(guides)
         self.parmsIntersProfiles = parmsIntersProfiles
         self.parmsIntersGuides = parmsIntersGuides
-        if not self.n_profiles == len(self.parmsIntersProfiles):
+
+        if self.n_profiles != len(self.parmsIntersProfiles):
             raise ValueError("Invalid row size of parmsIntersProfiles matrix.")
-        if not self.n_profiles == len(self.parmsIntersGuides):
+
+        if self.n_profiles != len(self.parmsIntersGuides):
             raise ValueError("Invalid row size of parmsIntersGuides matrix.")
-        if not self.n_guides == len(self.parmsIntersProfiles[0]):
+
+        if self.n_guides != len(self.parmsIntersProfiles[0]):
             raise ValueError("Invalid col size of parmsIntersProfiles matrix.")
-        if not self.n_guides == len(self.parmsIntersGuides[0]):
+
+        if self.n_guides != len(self.parmsIntersGuides[0]):
             raise ValueError("Invalid col size of parmsIntersGuides matrix.")
-        # ????
-        # assert(m_parmsIntersGuides.UpperRow() == n_profiles - 1);
-        # assert(m_parmsIntersProfiles.UpperRow() == n_profiles - 1);
-        # assert(m_parmsIntersGuides.UpperCol() == n_guides - 1);
-        # assert(m_parmsIntersProfiles.UpperCol() == n_guides - 1);
+
         self.profIdx = [str(i) for i in range(self.n_profiles)]
         self.guidIdx = [str(i) for i in range(self.n_guides)]
 
@@ -1282,7 +1303,7 @@ class CurveNetworkSorter(object):
         swap_col(self.parmsIntersGuides, idx1, idx2)
         swap_col(self.parmsIntersProfiles, idx1, idx2)
 
-    def GetStartCurveIndices(self):  # prof_idx, guid_idx, guideMustBeReversed):
+    def GetStartCurveIndices(self):
         """find curves, that begin at the same point (have the smallest parameter at their intersection)"""
         for irow in range(len(self.profiles)):
             jmin = minRowIndex(self.parmsIntersProfiles, irow)
@@ -1330,61 +1351,72 @@ class CurveNetworkSorter(object):
         # such that the guides intersection of the first profile are ascending
         r = list(range(2, nGuid + 1))
         r.reverse()
-        for n in r:  # (int n = nGuid; n > 1; n = n - 1) {
-            for j in range(1, n - 1):  # (int j = 1; j < n - 1; ++j) {
+        for n in r:
+            for j in range(1, n - 1):
                 if self.parmsIntersProfiles[0][j] > self.parmsIntersProfiles[0][j + 1]:
                     self.swapGuides(j, j + 1)
+
         # perform a bubble sort of the profiles,
         # such that the profiles are in ascending order of the first guide
         r = list(range(2, nProf + 1))
         r.reverse()
-        for n in r:  # (int n = nProf; n > 1; n = n - 1) {
-            for i in range(1, n - 1):  # (int i = 1; i < n - 1; ++i) {
+        for n in r:
+            for i in range(1, n - 1):
                 if self.parmsIntersGuides[i][0] > self.parmsIntersGuides[i + 1][0]:
                     self.swapProfiles(i, i + 1)
 
         # reverse profiles, if necessary
-        for iProf in range(1, nProf):  # (Standard_Integer iProf = 1; iProf < nProf; ++iProf) {
+        for iProf in range(1, nProf):
             if self.parmsIntersProfiles[iProf][0] > self.parmsIntersProfiles[iProf][nGuid - 1]:
                 self.reverseProfile(iProf)
+
         # reverse guide, if necessary
-        for iGuid in range(1, nGuid):  # (Standard_Integer iGuid = 1; iGuid < nGuid; ++iGuid) {
+        for iGuid in range(1, nGuid):
             if self.parmsIntersGuides[0][iGuid] > self.parmsIntersGuides[nProf - 1][iGuid]:
                 self.reverseGuide(iGuid)
+
         self.has_performed = True
 
     def reverseProfile(self, profileIdx):
         pIdx = int(profileIdx)
         profile = self.profiles[profileIdx]
-        if profile is not None:  # .IsNull()
+
+        if profile is not None:
             firstParm = profile.FirstParameter
             lastParm = profile.LastParameter
         else:
             firstParm = self.parmsIntersProfiles[pIdx][int(minRowIndex(self.parmsIntersProfiles, pIdx))]
             lastParm = self.parmsIntersProfiles[pIdx][int(maxRowIndex(self.parmsIntersProfiles, pIdx))]
+
         # compute new parameters
-        for icol in range(len(self.guides)):  # (int icol = 0; icol < static_cast<int>(NGuides()); ++icol) {
+        for icol in range(len(self.guides)):
             self.parmsIntersProfiles[pIdx][icol] = -self.parmsIntersProfiles[pIdx][icol] + firstParm + lastParm
-        if profile is not None:  # .IsNull()
+
+        if profile is not None:
             profile = bspline_copy(profile, reverse=True, scale=1.0)
             self.profiles[profileIdx] = profile
+
         self.profIdx[profileIdx] = "-" + self.profIdx[profileIdx]
 
     def reverseGuide(self, guideIdx):
         gIdx = int(guideIdx)
         guide = self.guides[guideIdx]
-        if guide is not None:  # .IsNull()
+
+        if guide is not None:
             firstParm = guide.FirstParameter
             lastParm = guide.LastParameter
         else:
             firstParm = self.parmsIntersGuides[int(minColIndex(self.parmsIntersGuides, gIdx))][gIdx]
             lastParm = self.parmsIntersGuides[int(maxColIndex(self.parmsIntersGuides, gIdx))][gIdx]
+
         # compute new parameters
         for irow in range(len(self.profiles)):
             self.parmsIntersGuides[irow][gIdx] = -self.parmsIntersGuides[irow][gIdx] + firstParm + lastParm
-        if guide is not None:  # .IsNull()
+
+        if guide is not None:
             guide = bspline_copy(guide, reverse=True, scale=1.0)
             self.guides[guideIdx] = guide
+
         self.guidIdx[guideIdx] = "-" + self.guidIdx[guideIdx]
 
 
@@ -1393,16 +1425,15 @@ class CurveNetworkSorter(object):
 # -/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/
 
 
-def LinspaceWithBreaks(umin, umax, n_values, breaks):
+def LinspaceWithBreaks(umin: float, umax: float, n_values: int, breaks: list[float]) -> list[float]:
     """Returns a knot sequence of n_values between umin and umax
     that will also contain the breaks"""
     du = float(umax - umin) / (n_values - 1)
-    result = list()  # size = n_values
-    for i in range(n_values):
-        result.append(i * du + umin)
-    # now insert the break
+    result = [i * du + umin for i in range(n_values)]
 
+    # now insert the break
     eps = 0.3
+
     # remove points, that are closer to each break point than du*eps
     for break_point in breaks:
         pos = find_inside_tolerance(result, break_point, du * eps)
@@ -1424,6 +1455,10 @@ class SurfAdapterViewError(Exception):
 
 
 class SurfAdapterView:
+
+    s: Part.BSplineSurface
+    d: int
+
     def __init__(self, surf: Part.BSplineSurface, direc: int):
         self.s = surf
         self.d = direc
@@ -1523,12 +1558,10 @@ class BSplineAlgorithms(object):
         """Returns the max size of a curve (or list of curves) poles"""
         res = 0
         if isinstance(c, (tuple, list)):
-            for cu in c:
-                res = max(res, self.scale(cu))
+            res = max(self.scale(cu) for cu in c)
         elif isinstance(c, (Part.BSplineCurve, Part.BezierCurve)):
-            pts = c.getPoles()
-            for p in pts[1:]:
-                res = max(res, p.distanceToPoint(pts[0]))
+            first_p, *rest = c.getPoles()
+            res = max(p.distanceToPoint(first_p) for p in rest)
         return res
 
     def scale_pt_array(self, points: list[list[Vector]]):
@@ -1543,17 +1576,11 @@ class BSplineAlgorithms(object):
 
     def isUDirClosed(self, points: list[list[Vector]], tolerance: float) -> bool:
         """check that first row and last row of a 2D array of points are the same"""
-        uDirClosed = True
-        for v_idx in range(len(points[0])):
-            uDirClosed = uDirClosed and (points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance)
-        return uDirClosed
+        return all(points[0][v_idx].distanceToPoint(points[-1][v_idx]) < tolerance for v_idx in range(len(points[0])))
 
     def isVDirClosed(self, points: list[list[Vector]], tolerance: float) -> bool:
         """check that first column and last column of a 2D array of points are the same"""
-        vDirClosed = True
-        for u_idx in range(len(points)):
-            vDirClosed = vDirClosed and (points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance)
-        return vDirClosed
+        return all(points[u_idx][0].distanceToPoint(points[u_idx][-1]) < tolerance for u_idx in range(len(points)))
 
     def matchDegree(self, curves: list[Part.BSplineCurve]):
         """Match degree of all curves by increasing degree where needed"""
@@ -1571,8 +1598,7 @@ class BSplineAlgorithms(object):
         """Check that all curves have the same parameter range"""
         begin_param_dir = splines_vector[0].getKnot(1)
         end_param_dir = splines_vector[0].getKnot(splines_vector[0].NbKnots)
-        for spline_idx in range(1, len(splines_vector)):
-            curSpline = splines_vector[spline_idx]
+        for curSpline in splines_vector[1:]:
             begin_param_dir_surface = curSpline.getKnot(1)
             end_param_dir_surface = curSpline.getKnot(curSpline.NbKnots)
             if (
@@ -1585,10 +1611,7 @@ class BSplineAlgorithms(object):
     def haveSameDegree(self, splines: list[Part.BSplineCurve]):
         """Check that all curves have the same degree"""
         degree = splines[0].Degree
-        for splineIdx in range(1, len(splines)):
-            if not splines[splineIdx].Degree == degree:
-                return False
-        return True
+        return all(spl.Degree == degree for spl in splines[1:])
 
     def findKnot(self, spline: Part.BSplineCurve, knot: int, tolerance: float = 1e-15):
         """Return index of knot in spline, within given tolerance
@@ -1604,37 +1627,37 @@ class BSplineAlgorithms(object):
             return
         curve.trim(curve.FirstParameter, curve.LastParameter)
 
-    def makeGeometryCompatibleImpl(self, splines_vector: Sequence[Part.BSplineSurface], par_tolerance: float):
+    def makeGeometryCompatibleImpl(self, splines_vector: Sequence[Part.BSplineCurve], par_tolerance: float):
         """
         Modify all the splines, so that they have the same knots / mults
         """
 
         # all B-spline splines must have the same parameter range in the chosen direction
         if not self.haveSameRange(splines_vector, par_tolerance):
-            self.error(
-                "B-splines don't have the same parameter range at least in one direction (u / v) in method createCommonKnotsVectorImpl!"
+            raise ParameterRangeError(
+                "B-splines don't have the same parameter range at least in \
+                 one direction (u / v) in method createCommonKnotsVectorImpl!"
             )
 
         # all B-spline splines must have the same degree in the chosen direction
         if not self.haveSameDegree(splines_vector):
-            self.error(
-                "B-splines don't have the same degree at least in one direction (u / v) in method createCommonKnotsVectorImpl!"
+            raise ParameterRangeError(
+                "B-splines don't have the same degree at least in one direction (u / v) \
+                 in method createCommonKnotsVectorImpl!"
             )
 
         # create a vector of all knots in chosen direction (u or v) of all splines
-        resultKnots = list()
-        for spline in splines_vector:
-            for k in spline.getKnots():
-                resultKnots.append(k)
+        resultKnots = list(chain.from_iterable(spline.getKnots() for spline in splines_vector))
 
         # sort vector of all knots in given direction of all splines
+        # and remove duplicates
         resultKnots.sort()
         prev = resultKnots[0]
         unique = [prev]
-        for i in range(1, len(resultKnots)):
-            if abs(resultKnots[i] - prev) > par_tolerance:
-                unique.append(resultKnots[i])
-            prev = resultKnots[i]
+        for k in resultKnots[1:]:
+            if abs(k - prev) > par_tolerance:
+                unique.append(k)
+            prev = k
         resultKnots = unique
 
         # find highest multiplicities
@@ -1654,7 +1677,7 @@ class BSplineAlgorithms(object):
             else:
                 spline.insertKnot(resultKnots[knotIdx], resultMults[knotIdx], par_tolerance)
 
-    def createCommonKnotsVectorCurve(self, curves, tol):
+    def createCommonKnotsVectorCurve(self, curves: Sequence[Part.BSplineCurve], tol: float):
         """Modify all the splines, so that they have the same knots / mults"""
         # TODO: Match parameter range
         # Create a copy that we can modify
@@ -1671,19 +1694,16 @@ class BSplineAlgorithms(object):
         Make all the surfaces have the same knots / mults.
         All B-spline surfaces must have the same parameter range in u- and v-direction
         """
-        # TODO: Match parameter range
 
         # Create a copy that we can modify
-        adapterSplines = list()
-        for i in range(len(old_surfaces_vector)):
-            adapterSplines.append(SurfAdapterView(old_surfaces_vector[i].copy(), 0))
+        adapterSplines = [SurfAdapterView(s.copy(), 0) for s in old_surfaces_vector]
 
         # first in u direction
         self.makeGeometryCompatibleImpl(adapterSplines, tol)
 
         # now in v direction
-        for i in range(len(old_surfaces_vector)):
-            adapterSplines[i].d = 1
+        for ads in adapterSplines:
+            ads.d = 1
         self.makeGeometryCompatibleImpl(adapterSplines, tol)
 
         return [ads.s for ads in adapterSplines]
@@ -2007,8 +2027,8 @@ class BSplineAlgorithms(object):
 
         breaks.insert(0, new_parameters[0])
         breaks.append(new_parameters[-1])
+
         # # Interpolate points at breaking parameters (required for gordon surface)
-        # for (size_t ibreak = 0; ibreak < breaks.size(); ++ibreak) {
         for thebreak in breaks:
             pos = find_inside_tolerance(parameters, thebreak, par_tol)
             if pos >= 0:
@@ -2022,4 +2042,5 @@ class BSplineAlgorithms(object):
         result, *_ = approximationObj.FitCurveOptimal(parameters, 10)
         if not isinstance(result, Part.BSplineCurve):
             raise ValueError("FitCurveOptimal failed to compute a valid curve")
+
         return result
