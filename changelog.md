@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.9 (Nov 1st 2024)
+
+- Removed CurvesWB dependency
+
 ## 0.1.8 (Aug 22th 2024)
 
 - Improve neck-headstock transition geometry (Issue #40)
@@ -59,7 +63,7 @@
 
 - GUI
   - FreeCAD's Property editor is now in readonly mode
-  - New custom Property editor 
+  - New custom Property editor
   - New import svg ui with preview and validation
   - Imported files are now embedded into the document to keep everything together and can be exported back
   - Grouping all parts in the three

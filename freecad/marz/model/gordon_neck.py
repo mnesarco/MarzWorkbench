@@ -17,6 +17,7 @@
 # |  You should have received a copy of the GNU General Public License        |
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
+from __future__ import annotations
 
 from freecad.marz.model.instrument import Instrument
 from freecad.marz.model.neck_data import NeckData
@@ -26,21 +27,22 @@ from freecad.marz.model.headstock_builder import getTop, BoundProfile
 from freecad.marz.utils import traced, geom, traceTime
 from freecad.marz.extension.threading import Task, task
 from freecad.marz.extension.fc import App, Vector, Rotation, Placement
+import freecad.marz.curves.gordon as tigl
 
 from typing import List, Optional
 import math
-import contextlib
+
 from dataclasses import dataclass
 
 import Part  # type: ignore
 from Part import (  # type: ignore
-    Edge, 
-    Face, 
-    Wire, 
-    Solid, 
-    Shell, 
-    Vertex, 
-    BSplineCurve, 
+    Edge,
+    Face,
+    Wire,
+    Solid,
+    Shell,
+    Vertex,
+    BSplineCurve,
     LineSegment)
 
 import BOPTools.SplitAPI as split_api # type: ignore
@@ -123,7 +125,7 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
     """
 
     height = min(max(20, inst.neck.transitionTension), 50)
-    
+
     bridge = fbd.neckFrame.bridge.edge()
     mid = edge_mid_point(bridge)
 
@@ -131,7 +133,7 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
     joint_fret_x = neckd.lineToFret(inst.neck.jointFret).end.x
     delta = abs(mid.x - joint_fret_x) / 5
     rot = Rotation(Vector(0,0,1), 0)
-    
+
     edge1 = heel_profile(bridge, inst, height)
     edges = [edge1]
     p1 = edge1.Placement.Base
@@ -149,7 +151,7 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
 def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> NeckProfiles:
     """
     Generate neck profiles except Heel profiles and Headstock profile
-    """    
+    """
     steps = 9
     edge = neckd.lineToFret(inst.neck.jointFret).edge()
     curve = edge.Curve
@@ -171,7 +173,8 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
             point = Vector(points[i].x, points[i].y, points[i].z)
         w = widthAt(l)
         p = profile(w, h, wire=False)
-        if p: p.Placement = Placement(point, rot)
+        if p:
+            p.Placement = Placement(point, rot)
         return p
 
     # Edges between nut and transition start
@@ -185,7 +188,7 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     control_edge = profile_edge(0, offset, points[0] + direction * offset)
     edges.append(control_edge)
 
-    space = 1.5
+    # space = 1.5
     # Edge for headstock transition start
     # edges.insert(1, profile_edge(0, transition_offset*space, points[0] + direction * transition_offset*space))
     edges.insert(1, profile_edge(0, transition_offset, points[0] + direction * transition_offset))
@@ -193,7 +196,7 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     # Edges before nut to force the guides pass for nut point
     control = -1.2  # Issue #40
     edges.insert(0, profile_edge(0, control, points[0] + direction * control))
-    
+
     return NeckProfiles(edges, nut_profile)
 
 
@@ -264,7 +267,7 @@ def base_headstock_profile_bspline(support_edge: Wire, height: float) -> Edge:
                -
     i--h--g--f
     """
-    add = 5.0
+    # add = 5.0
     a = support_edge.Vertexes[0].Point
     b = a + Vector(0,0,height/2)
     c = b + Vector(0,0,height/2)
@@ -310,19 +313,20 @@ def gordon_neck(inst: Instrument, fbd: FretboardData, neckd: NeckData):
 
     with traceTime('Gordon Neck: Base + Headstock'):
         # High tolerance to avoid possible self intersecting artifacts
-        pre_assemble = t_blank().solid.fuse([t_headstock().solid], 1e-3) 
+        pre_assemble = t_blank().solid.fuse([t_headstock().solid], 1e-3)
 
     with traceTime('Gordon Neck: Collect Top, Volute, Pockets'):
         tools = [t_volute_cut(), t_top_cut()]
         tool_cut_pockets = t_pockets()
-        if tool_cut_pockets: tools.append(tool_cut_pockets)
+        if tool_cut_pockets:
+            tools.append(tool_cut_pockets)
 
     with traceTime('Gordon Neck: Assembly - Top - Bottom - Pockets'):
-        pre_assemble = pre_assemble.cut(tools, 1e-3)    
+        pre_assemble = pre_assemble.cut(tools, 1e-3)
 
     with traceTime('Gordon Neck: Refine'):
         assemble = pre_assemble.removeSplitter()
-    
+
     return assemble
 
 
@@ -382,7 +386,7 @@ def apply_headstock_angle(edge: Edge, angle_deg: float, fbd: FretboardData) -> E
 
     # Reconstruct a BSpline edge
     bspline = Wire(segments)
-    
+
     # Re-parameterize the curve to make it homogeneous
     points = bspline.discretize(Number=100)
     bspline = BSplineCurve(points).toShape()
@@ -420,28 +424,28 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
 
     # Exclude some redundant or invalid profiles from the surface
     exclude = 1, 2, 12, 13, 14
-    profiles_edges = [e for i,e in enumerate(all_profiles) if i not in exclude]
+    profiles_edges: list[Edge] = [e for i,e in enumerate(all_profiles) if i not in exclude]
 
     # Neck gordon surface
-    with traceTime("Gordon Neck (CurvesWB): InterpolateCurveNetwork"):
+    with traceTime("Gordon Neck: InterpolateCurveNetwork"):
         tol_3d = 1e-5
         tol_2d = 1e-5
         guide_curves = [e.Curve.toBSpline(e.FirstParameter, e.LastParameter) for e in guides]
         prof_curves = [e.Curve.toBSpline(e.FirstParameter, e.LastParameter) for e in profiles_edges]
-        with curves_wb(GORDON_DEBUG) as tigl:
-            gordon = tigl.InterpolateCurveNetwork(prof_curves, guide_curves, tol_3d, tol_2d)
-            gordon.max_ctrl_pts = 80
-            face_gordon = gordon.surface().toShape()
-            del(gordon)
+        gordon = tigl.InterpolateCurveNetwork(prof_curves, guide_curves, tol_3d, tol_2d)
+        gordon.max_ctrl_pts = 80
+        face_gordon = gordon.surface().toShape()
+        del(gordon)
+
 
     # Extract terminal edges to create faces for the shell
-    heel_edge, headstock_edge = geom.query(face_gordon.Edges, 
+    heel_edge, headstock_edge = geom.query(face_gordon.Edges,
                    where=lambda x: not geom.is_planar(x, normal=Vector(0,0,1)),
                    order_by=lambda f: f.CenterOfGravity.x,
                    limit=2)
 
     # Extract border edges to create faces for the shell
-    sides = geom.query(face_gordon.Edges, 
+    sides = geom.query(face_gordon.Edges,
                    where=lambda x: geom.is_planar(x, normal=Vector(0,0,1)),
                    limit=2)
 
@@ -529,26 +533,6 @@ def extrude_headstock_plate(contour: Wire, thickness: float, transition_edge: Wi
 
     # Extrude
     return HeadstockPlate(selected.extrude(normal * thickness), normal)
-
-
-@contextlib.contextmanager
-def curves_wb(debug: bool = False):   
-    from freecad.Curves import gordon as tigl, BSplineApproxInterp, BSplineAlgorithms
-    packages = (
-        tigl,
-        BSplineAlgorithms,
-        BSplineApproxInterp,
-        tigl.curve_network_sorter)
-    
-    saved = tuple(getattr(pkg, 'DEBUG', False) for pkg in packages)
-    
-    for pkg in packages:
-        pkg.DEBUG = debug
-
-    yield tigl
-
-    for i, pkg in enumerate(packages):
-        pkg.DEBUG = saved[i]
 
 
 @traced("Gordon Neck: Top Cut")

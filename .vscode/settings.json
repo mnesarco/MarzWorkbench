@@ -17,11 +17,13 @@
         "freecad",
         "fretboard",
         "Fretwire",
+        "gordon",
         "inkex",
         "inkscape",
         "ISVGDocumentElement",
         "linexy",
         "Luthiery",
+        "marz",
         "Marz",
         "marzguitars",
         "OCCT",
@@ -30,6 +32,7 @@
         "Pixmap",
         "Preselection",
         "qobject",
+        "reparametrize",
         "rgetattr",
         "rsetattr",
         "SETIN",
@@ -39,5 +42,10 @@
         "unpolish"
     ],
     "python.defaultInterpreterPath": "/usr/bin/python3",
-    "editor.fontLigatures": true
+    "editor.fontLigatures": true,
+    "licenser.license": "GPLv3",
+    "licenser.projectName": "Marz",
+    "licenser.author": "Frank David Martinez M (mnesarco)",
+    "ruff.format.args": ["--config", "line-length=120"]
+
 }

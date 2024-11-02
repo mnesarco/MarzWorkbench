@@ -69,12 +69,5 @@ class MarzWorkbench(Gui.Workbench):
 def import_dependencies():
     MarzLogger.info(tr("Preloading dependencies..."))
     import Part # type: ignore
-    try:
-        from freecad.Curves import ( # type: ignore
-            gordon as tigl, 
-            BSplineApproxInterp, 
-            BSplineAlgorithms)
-    except:
-        MarzLogger.error(tr("Error importing Curves Workbench"))
 
 Gui.addWorkbench(MarzWorkbench)

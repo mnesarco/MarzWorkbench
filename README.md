@@ -90,7 +90,6 @@ The Wiki contains some useful documents: [Wiki](https://github.com/mnesarco/Marz
 ## Requirements
 
 * FreeCAD v0.21+ ([releases](https://github.com/FreeCAD/FreeCAD/releases/))
-* Curves Workbench 0.6.31+ (Install using AddonManager)
 
 ## Install
 
