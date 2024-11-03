@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.10 (Nov 3rd 2024)
+
+- Fix dependencies
+
 ## 0.1.9 (Nov 1st 2024)
 
 - Removed CurvesWB dependency

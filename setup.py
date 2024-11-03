@@ -29,6 +29,7 @@ setup(
         'freecad',
         'freecad.marz',
         'freecad.marz.command',
+        'freecad.marz.curves',
         'freecad.marz.extension',
         'freecad.marz.feature',
         'freecad.marz.model',
@@ -37,5 +38,7 @@ setup(
     maintainer="mnesarco",
     maintainer_email="mnesarco@gmail.com",
     url="https://github.com/mnesarco/MarzWorkbench",
-    description="Guitar Design Workbench for FreeCAD"
+    description="Guitar Design Workbench for FreeCAD",
+    install_requires=['numpy'],
+    include_package_data=True,
 )
