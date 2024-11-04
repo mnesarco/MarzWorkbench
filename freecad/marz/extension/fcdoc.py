@@ -36,7 +36,7 @@ class Group:
             group = doc.addObject("App::DocumentObjectGroup", self.name)
             group.Label = self.label
         return group
-    
+
     def add(self, obj: App.DocumentObject, doc: App.Document = None) -> List[App.DocumentObject]:
         doc = doc or App.activeDocument() or App.newDocument()
         group = self.create(doc)
@@ -62,7 +62,7 @@ class Group:
 @dataclass
 class PartStyle:
     properties: Dict[str, Any]
-    
+
     def __init__(self, **kwargs):
         self.properties = kwargs
 
@@ -75,7 +75,7 @@ class PartStyle:
     def loads(value: str) -> 'PartStyle':
         json_obj = json.loads(value)
         return PartStyle(**json_obj)
-    
+
     @staticmethod
     def dumps(style: 'PartStyle') -> str:
         return json.dumps(style.properties)
@@ -101,7 +101,7 @@ class PartFeature:
             else:
                 self.remove(index=index, doc=doc)
                 return None
-        
+
         name, label = self.indexed(index)
         style = self.style
         obj = doc.getObject(name)
@@ -149,9 +149,6 @@ def transaction(name: str):
             yield
     except BaseException as e:
         exception = e
-        rollback = True
-    except:
-        exception = Exception(traceback.format_exc())
         rollback = True
     finally:
         if rollback:

@@ -47,5 +47,5 @@ class CmdShowParameters:
             Gui.Selection.clearSelection()
             Gui.Selection.addSelection(App.ActiveDocument.Name, MarzInstrument_Name)
             instrument.show_form()
-        except:
+        except Exception:
             MarzLogger.error(traceback.format_exc(), escape=True)

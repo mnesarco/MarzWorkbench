@@ -25,7 +25,7 @@ from freecad.marz.utils import text
 
 # This is a hack to obtain the text color depending on the current stylesheet
 # There is no way to get stylesheet info directly in Qt
-def get_base_colors() -> Tuple[ui.StyleColor, ui.StyleColor]:
+def get_base_colors() -> Tuple[ui.Color, ui.Color]:
     lb = ui.QLabel('L')
     lb.setStyleSheet('font-size: 50px; padding: 0px; margin: 0px; border: none;')
     lb.setGeometry(0,0,10,10)
@@ -36,10 +36,10 @@ def get_base_colors() -> Tuple[ui.StyleColor, ui.StyleColor]:
     color = image.pixelColor(9,5)
     if color == background:
         color = image.pixelColor(4,5)
-    return ui.StyleColor(color), ui.StyleColor(background)
+    return ui.Color(color), ui.Color(background)
 
 TEXT_COLOR, BG_COLOR = get_base_colors()
-ICON_COLOR = ui.StyleColor(TEXT_COLOR, 0.75)
+ICON_COLOR = ui.Color(TEXT_COLOR, alpha=0.75)
 
 
 STYLESHEET = """
@@ -53,11 +53,11 @@ STYLESHEET = """
     /* Message styles */
 
     QLabel[styleClass="error"] {
-        color: red; 
+        color: red;
     }
 
     QLabel[styleClass="warn"] {
-        color: orange; 
+        color: orange;
     }
 
     QLabel[styleClass="info"] {
@@ -74,8 +74,8 @@ def FlatIcon(path: str) -> ui.ColorIcon:
 
 def section_style(opacity: int) -> str:
     return f"""
-        background-color: rgba(0,0,0,{opacity}); 
-        padding: 5px 2px; 
+        background-color: rgba(0,0,0,{opacity});
+        padding: 5px 2px;
         font-weight: bold;
         border-bottom: 1px solid rgba(0,0,0,{opacity*1.5});
         """
@@ -92,15 +92,15 @@ def SectionHeader(title: str, level: int = 0, add: bool = False, line: bool = Fa
 def banner_style() -> str:
     backgroundImage = graphicsPath('banner.svg').replace('\\', '/') # Fix for windows paths
     return f"""
-        color: #eeeeee; 
-        font-size: 10pt; 
+        color: #eeeeee;
+        font-size: 10pt;
         background: url("{backgroundImage}") repeat-x left top fixed #000000;
         padding: 170px 7px 7px 7px;
     """
 
 def intro_style() -> str:
     return """
-        font-size: 14px; 
+        font-size: 14px;
         font-weight: normal;
         background-color: #ffffff;
         color: #222222;
