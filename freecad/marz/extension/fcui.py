@@ -35,7 +35,7 @@ __min_freecad__ = "0.21"
 ##! Warning note
 # ──────────────────────────────────────────────────────────────────────────────
 
-##: [SECTION] Common Builtin Imports
+##: [SECTION] Builtin Imports
 ##: ────────────────────────────────────────────────────────────────────────────
 
 import json
@@ -55,19 +55,6 @@ import FreeCADGui as Gui  # type: ignore
 from FreeCAD import Base  # type: ignore
 
 ##: [SECTION] Qt/PySide Imports
-##: ────────────────────────────────────────────────────────────────────────────
-
-##! Try PySide6 first then PySide2
-try:
-    import PySide6 as PySide  # type: ignore
-except ImportError:
-    import PySide2 as PySide  # type: ignore
-finally:
-    # Register alias to allow import from PySide
-    sys.modules["PySide"] = PySide
-
-
-##: [SECTION] Qt Imports
 ##: ────────────────────────────────────────────────────────────────────────────
 
 from PySide.QtCore import (  # type: ignore

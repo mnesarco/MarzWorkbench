@@ -46,7 +46,6 @@ import FreeCAD  # type: ignore
 import numpy as np
 import Part  # type: ignore
 from FreeCAD import Vector, Base  # type: ignore
-from numpy.typing import NDArray
 
 from freecad.marz.extension.fcui import ProgressIndicator
 
@@ -662,7 +661,7 @@ def bsplineBasisMat(
     knots: list[float],
     params: list[float],
     derivOrder: int,
-) -> NDArray:
+):
     """Return a matrix of values of BSpline Basis functions(or derivatives)"""
     ncp = len(knots) - degree - 1
     mx = np.array([[0.0] * ncp for i in range(len(params))])
