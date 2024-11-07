@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.11 (Nov 7th 2024)
+
+- Fix Issue 42: numpy.typing
+
 ## 0.1.10 (Nov 3rd 2024)
 
 - Fix dependencies
