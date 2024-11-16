@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.12 (Nov 15th 2024)
+
+- Fix #45: Invalid count of widgets
+
 ## 0.1.11 (Nov 7th 2024)
 
 - Fix Issue 42: numpy.typing

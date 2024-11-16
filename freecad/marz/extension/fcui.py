@@ -1102,10 +1102,10 @@ class InputFloatListWidget(QWidget):
         return tuple(i.value() for i in self.inputs)
 
     def setValue(self, value):
-        if len(value) != len(self.inputs):
-            raise ValueError(
-                f"value must contains exactly {len(self.inputs)} elements"
-            )
+        while len(value) > len(self.inputs):
+            self.addValue()
+        while len(value) < len(self.inputs):
+            self.removeLast()
         for i, input in enumerate(self.inputs):
             input.setValue(value[i])
 
