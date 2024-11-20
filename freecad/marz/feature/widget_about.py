@@ -33,9 +33,12 @@ class MarzAboutWindow(QtGui.QDialog):
         self.initUI()
 
     def initUI(self):
-        
+
         # Window
-        sg = QtGui.QDesktopWidget().screenGeometry()
+        try:
+            sg = QtGui.QDesktopWidget().screenGeometry()
+        except Exception:
+            sg = QtGui.QGuiApplication.primaryScreen().availableGeometry()
         screenWidth = sg.width()
         screenHeight = sg.height()
         height = 350
@@ -45,7 +48,7 @@ class MarzAboutWindow(QtGui.QDialog):
         if not self.frame:
             self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.setFixedSize(self.size())
-        
+
         # Layout
         layout = QtGui.QStackedLayout(self)
         layout.setAlignment(QtCore.Qt.AlignBottom)
@@ -66,20 +69,20 @@ class MarzAboutWindow(QtGui.QDialog):
         content.setAlignment(QtCore.Qt.AlignBottom | QtCore.Qt.AlignCenter)
         backgroundImage = paths.graphicsPath('logo.svg').replace('\\', '/') # Fix for windows paths
         content.setStyleSheet(f"""
-            color: #eeeeee; 
-            font-size: 12px; 
+            color: #eeeeee;
+            font-size: 12px;
             background-color: #101010;
             background: url("{backgroundImage}") no-repeat center top fixed;
             padding: 260px 10px 10px 10px;
         """)
         layout.addWidget(content)
-        
+
         # Timer
         if self.timeout:
             QtCore.QTimer.singleShot(self.timeout, self.close)
 
         self.show()
-       
+
     def mousePressEvent(self, event):
         if event.button() == QtCore.Qt.LeftButton:
             self.close()
