@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.13 (Nov 20th 2024)
+
+- Add PySide6 ThreadPool support
+
 ## 0.1.12 (Nov 15th 2024)
 
 - Fix #45: Invalid count of widgets
