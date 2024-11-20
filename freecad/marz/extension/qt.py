@@ -37,8 +37,8 @@ from PySide import QtCore, QtGui # type: ignore
 Qt = QtCore.Qt
 
 from PySide.QtCore import (  # type: ignore
-    QRect, 
-    QRectF, 
+    QRect,
+    QRectF,
     QPointF,
     QObject,
     Signal,
@@ -48,8 +48,9 @@ from PySide.QtGui import (  # type: ignore
     QSizePolicy,
     QApplication,
     QAction,
-    QPainter, 
-    QColor, 
+    QPainter,
+    QColor,
     QIcon,
 )
 
+PySideMajorVersion = PySide.__version_info__[0]

@@ -21,14 +21,14 @@
 import traceback
 
 from freecad.marz.extension.fc import App
-from freecad.marz.extension.qt import QtCore
+from freecad.marz.extension.qt import QtCore, PySideMajorVersion
 from functools import wraps
 from typing import TypeVar, Generic
 
 class TaskSignals(QtCore.QObject):
     """
     Task lifecycle events.
-    """    
+    """
     onComplete = QtCore.Signal(tuple)
 
     def __init__(self):
@@ -72,7 +72,7 @@ class Task(Generic[T], QtCore.QRunnable):
         Wait until completion and return result
         """
         while True:
-            if self._isTerminated: 
+            if self._isTerminated:
                 if self.error:
                     raise self.error
                 else:
@@ -87,13 +87,16 @@ class Task(Generic[T], QtCore.QRunnable):
     @staticmethod
     def execute(fn, *args, **kwargs) -> 'Task[T]':
         t = Task(fn, *args, **kwargs)
-        Task.defaultThreadPool.start(t, QtCore.QThread.HighestPriority)
+        if PySideMajorVersion > 5:
+            Task.defaultThreadPool.start(t, 5)
+        else:
+            Task.defaultThreadPool.start(t, QtCore.QThread.HighestPriority)
         return t
 
     @staticmethod
     def join(jobs):
         """
-        Wait for all jobs to complete. 
+        Wait for all jobs to complete.
         Throws: First exception encountered after all jobs are completed.
         """
         # Return all results
@@ -106,7 +109,7 @@ def task(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        return Task.execute(fn, *args, **kwargs)    
+        return Task.execute(fn, *args, **kwargs)
     return wrapper
 
 
