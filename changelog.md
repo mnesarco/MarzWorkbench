@@ -1,5 +1,13 @@
 # Marz Workbench Changelog
 
+## 0.1.15 (Nov 21th 2024)
+
+- Fix tinted icon colors based on theme
+
+## 0.1.14 (Nov 20th 2024)
+
+- Fix PySide6 issues
+
 ## 0.1.13 (Nov 20th 2024)
 
 - Add PySide6 ThreadPool support

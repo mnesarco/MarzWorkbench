@@ -23,19 +23,23 @@ from freecad.marz.extension import fcui as ui
 from freecad.marz.extension.paths import iconPath, graphicsPath
 from freecad.marz.utils import text
 
+class ThemeColorsHack(ui.QLabel):
+    def paintEvent(self, e: ui.QPaintEvent):
+        qp = ui.QPainter()
+        qp.begin(self)
+        qp.fillRect(0, 0, 5, 10, qp.pen().color())
+        qp.end()
+
 # This is a hack to obtain the text color depending on the current stylesheet
 # There is no way to get stylesheet info directly in Qt
 def get_base_colors() -> Tuple[ui.Color, ui.Color]:
-    lb = ui.QLabel('L')
-    lb.setStyleSheet('font-size: 50px; padding: 0px; margin: 0px; border: none;')
+    lb = ThemeColorsHack()
     lb.setGeometry(0,0,10,10)
     pixmap = ui.QPixmap(10,10)
     lb.render(pixmap)
     image = pixmap.toImage()
-    background = image.pixelColor(0,5)
-    color = image.pixelColor(9,5)
-    if color == background:
-        color = image.pixelColor(4,5)
+    background = image.pixelColor(9,5)
+    color = image.pixelColor(1,5)
     return ui.Color(color), ui.Color(background)
 
 TEXT_COLOR, BG_COLOR = get_base_colors()
