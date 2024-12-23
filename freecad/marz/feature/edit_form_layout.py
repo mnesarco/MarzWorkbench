@@ -81,7 +81,7 @@ def tab_general(form):
 
     with ui.Tab(tr('About')):
         with ui.Col(contentsMargins=(0,0,0,0), spacing=0):
-            content = ui.TextLabel(f"{__copyright__}, License {__license__}", styleSheet=banner_style())
+            _content = ui.TextLabel(f"{__copyright__}, License {__license__}", styleSheet=banner_style())
             with ui.Scroll(widgetResizable=True):
                 intro = ui.Html(file=resourcePath('intro.html'),
                                 variables=variables,
@@ -106,15 +106,15 @@ def form_nut(form):
         (tr('Parallel to fret zero'), NutPosition.PARALLEL),
         (tr('Perpendicular to mid-line'), NutPosition.PERPENDICULAR)))
 
-    spacing_preview = {
-        NutSpacing.EQ_CENTER: graphicsPath('nut_eq_center.svg'),
-        NutSpacing.EQ_GAP: graphicsPath('nut_eq_gap.svg'),
-    }
+    # spacing_preview = {
+    #     NutSpacing.EQ_CENTER: graphicsPath('nut_eq_center.svg'),
+    #     NutSpacing.EQ_GAP: graphicsPath('nut_eq_gap.svg'),
+    # }
 
-    placement_preview = {
-        NutPosition.PARALLEL: graphicsPath('nut_parallel.svg'),
-        NutPosition.PERPENDICULAR: graphicsPath('nut_perpendicular.svg')
-    }
+    # placement_preview = {
+    #     NutPosition.PARALLEL: graphicsPath('nut_parallel.svg'),
+    #     NutPosition.PERPENDICULAR: graphicsPath('nut_perpendicular.svg')
+    # }
 
     with ui.Section(SectionHeader(tr("Nut"))):
         with ui.Section(SectionHeader(tr("Size"), level=1)):
