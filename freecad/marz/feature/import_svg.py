@@ -40,11 +40,11 @@ from freecad.marz.utils import geom
 import Part                     # type: ignore
 from BOPTools import SplitAPI   # type: ignore
 
-NAME_ID_PATTERN = re.compile(r'^(.+)(?:_w\d*)$')
-POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)(?:_w\d*)$', re.IGNORECASE)
-FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*(?:_w\d*)$', re.IGNORECASE)
-ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)(?:_w\d*)$', re.IGNORECASE)
-ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)(?:_w\d*)$', re.IGNORECASE)
+NAME_ID_PATTERN = re.compile(r'^(.+?)(?:_w\d*)?$')
+POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
+FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*?(?:(_\d+)_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
 
 def ImportValidationItem(kind: str, reference: str, message: str, start: float = None, depth: float = None):
     return dict(kind=kind, reference=reference, message=message, start=start, depth=depth)
