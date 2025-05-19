@@ -40,10 +40,11 @@ from freecad.marz.utils import geom
 import Part                     # type: ignore
 from BOPTools import SplitAPI   # type: ignore
 
-POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)$', re.IGNORECASE)
-FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*$', re.IGNORECASE)
-ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)$', re.IGNORECASE)
-ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)$', re.IGNORECASE)
+NAME_ID_PATTERN = re.compile(r'^(.+?)(?:_w\d*)?$')
+POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
+FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*?(?:(_\d+)_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
 
 def ImportValidationItem(kind: str, reference: str, message: str, start: float = None, depth: float = None):
     return dict(kind=kind, reference=reference, message=message, start=start, depth=depth)
@@ -198,17 +199,22 @@ def import_custom_shapes(
     for obj in tmp_doc.Objects:
         if match_ergo_cut(obj, ergo_cuts):
             continue
-        elif obj.Name == 'contour':
-            validation.append(ImportValidationItem('Contour', obj.Name, 'Found'))
+
+        m = NAME_ID_PATTERN.match(obj.Name)
+        if not m:
+            continue
+        name = m.group(1)
+        if name == 'contour':
+            validation.append(ImportValidationItem('Contour', name, 'Found'))
             contour = obj
-        elif obj.Name == 'midline':
-            validation.append(ImportValidationItem('MidLine', obj.Name, 'Found'))
+        elif name == 'midline':
+            validation.append(ImportValidationItem('MidLine', name, 'Found'))
             midline = obj
-        elif obj.Name == 'transition':
-            validation.append(ImportValidationItem('Transition', obj.Name, 'Found'))
+        elif name == 'transition':
+            validation.append(ImportValidationItem('Transition', name, 'Found'))
             transition = obj
-        elif obj.Name == 'bridge':
-            validation.append(ImportValidationItem('Bridge', obj.Name, 'Found'))
+        elif name == 'bridge':
+            validation.append(ImportValidationItem('Bridge', name, 'Found'))
             bridge = obj
         else:
             extract_pocket(obj, pockets)
