@@ -207,14 +207,14 @@ def import_custom_shapes(
         if name == 'contour':
             validation.append(ImportValidationItem('Contour', name, 'Found'))
             contour = obj
-        elif obj.Name == 'midline':
-            validation.append(ImportValidationItem('MidLine', obj.Name, 'Found'))
+        elif name == 'midline':
+            validation.append(ImportValidationItem('MidLine', name, 'Found'))
             midline = obj
-        elif obj.Name == 'transition':
-            validation.append(ImportValidationItem('Transition', obj.Name, 'Found'))
+        elif name == 'transition':
+            validation.append(ImportValidationItem('Transition', name, 'Found'))
             transition = obj
-        elif obj.Name == 'bridge':
-            validation.append(ImportValidationItem('Bridge', obj.Name, 'Found'))
+        elif name == 'bridge':
+            validation.append(ImportValidationItem('Bridge', name, 'Found'))
             bridge = obj
         else:
             extract_pocket(obj, pockets)
