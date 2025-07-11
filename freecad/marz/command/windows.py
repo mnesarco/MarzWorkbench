@@ -20,7 +20,6 @@
 
 from freecad.marz.extension.lang import tr
 from freecad.marz.extension.paths import iconPath
-from freecad.marz.feature.widget_about import MarzAboutWindow
 
 class ShowAboutWindow:
     """Show splash window"""
@@ -36,6 +35,7 @@ class ShowAboutWindow:
         return True
 
     def Activated(self):
+        from freecad.marz.feature.widget_about import MarzAboutWindow
         MarzAboutWindow.execute(True)
 
 
