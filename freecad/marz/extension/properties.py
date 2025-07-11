@@ -43,28 +43,30 @@ class FreecadPropertyHelper:
         name = section + "_" + "".join([capitalize_first(p) for p in parts[1:]])
         description = " ".join(parts[1:]) if len(parts) > 1 else ""
         return section, name, description
-    
+
     # compat: Compatibility with old versions (before 0.28)
     @staticmethod
     def get_compat_default_name(path: str) -> str:
         """Converts path to Name: obj.attrX.attrY => Obj_AttrX_AttrY"""
         def replacer(match):
             (first, g) = match.groups()
-            if first: return first.upper()
-            else: return f'_{g.upper()}'
+            if first:
+                return first.upper()
+            else:
+                return f'_{g.upper()}'
         return FreecadPropertyHelper.COMPAT_DEFAULT_NAME_PATTERN.sub(replacer, path)
     # /compat
 
-    def __init__(self, 
-                 path: str, 
-                 default: Any = None, 
-                 description: str = None, 
-                 name: str = None, 
-                 section: str = None, 
-                 ui: str = "App::PropertyLength", 
-                 enum: Enum = None, 
-                 options: Callable[[], List[str]] = None, 
-                 mode: int = 0, 
+    def __init__(self,
+                 path: str,
+                 default: Any = None,
+                 description: str = None,
+                 name: str = None,
+                 section: str = None,
+                 ui: str = "App::PropertyLength",
+                 enum: Enum = None,
+                 options: Callable[[], List[str]] = None,
+                 mode: int = 0,
                  compat: Dict[str, str] = None):
         self.path = path
         self.form_input_name = path.replace('.', '_')
@@ -76,10 +78,10 @@ class FreecadPropertyHelper:
             self._compat_name = compat.get(self.name, self.name)
         else:
             self._compat_name = self.name
-        
+
         if (self.name != self._compat_name):
             MarzLogger.debug(f"Renamed property '{self._compat_name}' to '{self.name}'")
-        
+
         if enum or options:
             self.ui = 'App::PropertyEnumeration'
         else:
@@ -94,7 +96,7 @@ class FreecadPropertyHelper:
     def init(self, obj: App.DocumentObject):
         try:
             obj.removeProperty(self.name)
-        except:
+        except Exception:
             pass
         f = obj.addProperty(self.ui, self.name, self.section, self.description, self.mode)
         if self.ui == 'App::PropertyEnumeration':
@@ -107,7 +109,7 @@ class FreecadPropertyHelper:
     def migrate(self, obj: App.DocumentObject):
         if self.name in obj.PropertiesList:
             return
-        
+
         f = obj.addProperty(self.ui, self.name, self.section, self.description, self.mode)
         MarzLogger.info(f"Added new property '{self.name}'")
         if self.ui == 'App::PropertyEnumeration':
@@ -116,7 +118,7 @@ class FreecadPropertyHelper:
             elif self.enum:
                 setattr(f, self.name, [x.value for x in list(self.enum)])
         self.reset(obj)
-        
+
         if self._compat_name in obj.PropertiesList:
             self.set_value(obj, getattr(obj, self._compat_name))
             obj.removeProperty(self._compat_name)
@@ -155,14 +157,14 @@ class FreecadPropertyHelper:
     def deserialize_compat(self, obj: App.DocumentObject, state: Dict[str, Any]):
         self.init(obj)
         deserialized_value = state.get(self._compat_name, self.default)
-        if deserialized_value is None: 
+        if deserialized_value is None:
             MarzLogger.debug(f"Loading new property '{self.name}' with default value: {self.default}")
             deserialized_value = self.default
         else:
-            MarzLogger.debug(f"Reading legacy property '{self._compat_name}' value {deserialized_value} into '{self.name}'")        
+            MarzLogger.debug(f"Reading legacy property '{self._compat_name}' value {deserialized_value} into '{self.name}'")
 
         if self.enum:
-            self.set_value(obj, self.enum(deserialized_value))    
+            self.set_value(obj, self.enum(deserialized_value))
         else:
             self.set_value(obj, deserialized_value)
 
@@ -171,7 +173,7 @@ class FreecadPropertyHelper:
     #         removed = obj.removeProperty(self._compat_name)
     #         if removed:
     #             MarzLogger.info(f"Removing legacy property '{self._compat_name}'. Replaced by '{self.name}'")
-            
+
 
     def deserialize(self, obj: App.DocumentObject, state: Dict[str, Any]):
         MarzLogger.info(f"Reading property: {self.name}")
@@ -180,7 +182,7 @@ class FreecadPropertyHelper:
             self.deserialize_compat(obj, state)
         else:
             if self.enum:
-                self.set_value(obj, self.enum(deserialized_value))    
+                self.set_value(obj, self.enum(deserialized_value))
             else:
                 self.set_value(obj, deserialized_value)
 
@@ -192,7 +194,7 @@ class FreecadPropertyHelper:
             if new_val != old_val:
                 rsetattr(model, self.path, new_val)
                 changed = True
-        return changed        
+        return changed
 
     def load_model_to_form(self, obj: App.DocumentObject, form: Any):
         value = self.get_value(obj)
@@ -223,7 +225,7 @@ class FreecadPropertiesHelper:
             obj.setEditorMode(prop, 1)
 
     def save_object_to_model(self, model, obj: App.DocumentObject):
-        return reduce(lambda a,b: a or b, 
+        return reduce(lambda a,b: a or b,
                       [p.save_object_to_model(obj, model) for p in self.properties])
 
     def get_state(self, obj: App.DocumentObject):
@@ -232,7 +234,7 @@ class FreecadPropertiesHelper:
 
     def set_state(self, obj: App.DocumentObject, state: Dict[str, Any]):
         pass
-    
+
     def reset(self, obj):
         for prop in self.properties:
             prop.reset(obj)
@@ -243,10 +245,10 @@ class FreecadPropertiesHelper:
         print('class InstrumentFormBase:')
         for p in self.properties:
             print(f"    {p.path.replace('.', '_')}: QtGui.QWidget = None  # {type(p.default).__name__} ({p.default})")
-            
+
     # Development utility
     def print_markdown(self):
-        
+
         # Group
         sections = {}
         for p in self.properties:
@@ -255,7 +257,7 @@ class FreecadPropertiesHelper:
                 sec = []
                 sections[p.section] = sec
             sec.append(p)
-        
+
         # Print
         for sec, props in sections.items():
             units = {'App::PropertyLength': 'mm', 'App::PropertyDistance': 'mm', 'App::PropertyAngle': 'degrees'}
@@ -277,6 +279,6 @@ class FreecadPropertiesHelper:
     @ui_thread()
     def migrate(self, obj: App.DocumentObject):
         for prop in self.properties:
-            prop.migrate(obj) 
+            prop.migrate(obj)
         for prop in obj.PropertiesList:
             obj.setEditorMode(prop, 1)

@@ -36,12 +36,12 @@ from freecad.marz.extension.threading import Task
 from freecad.marz.utils.collections import group_by
 from freecad.marz.feature.document import (
     FretboardPart,
-    RefBridgePos, 
-    RefFretboardFrame, 
-    RefFrets, 
-    RefMidLine, 
-    RefNeckFrame, 
-    RefProjFrame, 
+    RefBridgePos,
+    RefFretboardFrame,
+    RefFrets,
+    RefMidLine,
+    RefNeckFrame,
+    RefProjFrame,
     RefScaleFrame)
 from freecad.marz.feature.logging import MarzLogger
 
@@ -62,20 +62,20 @@ def makeInlays(fbd, thickness=-1, inlayDepth=0):
         for i in range(len(fbd.frets)):
             inlay = App.ActiveDocument.getObject(f"Marz_FInlay_Fret{i}")
             if inlay:
-                ishape = inlay.Shape.copy()
-                ishape.translate(fretPos(i, line, thickness))
-                shapes.append(ishape)
-    
+                i_shape = inlay.Shape.copy()
+                i_shape.translate(fretPos(i, line, thickness))
+                shapes.append(i_shape)
+
     if shapes:
         if thickness <= 0:
             return Part.makeCompound(shapes)
-    
+
         with traceTime("Build inlay pockets subtractive solid"):
             return Part.makeCompound(shapes).extrude(Vector(0, 0, -inlayDepth-1))
 
 
 @PureFunctionCache
-def fretboardSection(c, r, w, t, v):
+def fretboardSection(c: Vector, r: float, w: float, t: float, v: Vector) -> Part.Wire:
     """
     Creates a Wire for a Fretboard Loft
     c: center Vector
@@ -88,7 +88,7 @@ def fretboardSection(c, r, w, t, v):
     # Half angle of the top Arc
     alpha = math.asin(w/(2*r))
     alpha_deg = rad_to_deg(alpha)
-    
+
     # Guess top Arc
     arc = Part.makeCircle(r, c, v, -alpha_deg, alpha_deg)
 
@@ -126,9 +126,9 @@ def fretboardSection(c, r, w, t, v):
 
     # Finally, the wire: arc(ba) -> seg(ax) -> seg(xd) -> seg(db)
     return Part.Wire(Part.Shape([
-        Part.Arc(a,p,b), 
-        Part.LineSegment(a,x), 
-        Part.LineSegment(x,d), 
+        Part.Arc(a,p,b),
+        Part.LineSegment(a,x),
+        Part.LineSegment(x,d),
         Part.LineSegment(d,b)]).Edges)
 
 
@@ -138,8 +138,8 @@ def fretboard_fillet(fb, radius):
     N_INF = Vector(-10000, 0, 0)
     selected = []
 
-    face = geom.query_one(fb.Faces, 
-                      where=lambda f: geom.is_planar(f, coplanar=Y), 
+    face = geom.query_one(fb.Faces,
+                      where=lambda f: geom.is_planar(f, coplanar=Y),
                       order_by=lambda f: f.CenterOfGravity.distanceToPoint(N_INF))
 
     if face is None:
@@ -151,7 +151,7 @@ def fretboard_fillet(fb, radius):
 
     selected = geom.query(face.Edges, where=is_vert, limit=2)
     if len(selected) == 2:
-        fb = fb.makeFillet(radius, selected) 
+        fb = fb.makeFillet(radius, selected)
     else:
         MarzLogger.warn("[Info] fretboard fillet was not possible due to missing edges")
 
@@ -163,40 +163,40 @@ def fretboardCone(startRadius, endRadius, thickness, fbd, top):
     Create a Compound radius solid, result is oriented along `fbd.neckFrame.midLine` with top edge horizontal at z=`top`
     Args:
         inst : Instrument Data
-        fbd  : FraneboardData
+        fbd  : FretboardData
         top  : Top reference position
     """
 
     # Cone direction
     line = fbd.frame.midLineExtendedWith(10,10)
-    
+
     # Slope calculated with radiuses at fret0 and fret12
     radiusSlope = (endRadius - startRadius) / (fbd.scaleFrame.midLine.length/2)
 
     # b = Distance from fret0 to neck start
     b = linexy(lineIntersection(line, fbd.frets[0]).point, line.start).length
 
-    # Radius at l
-    def radiusFn(l):
-        return radiusSlope * (l + b) + startRadius
+    # Radius at x
+    def radiusFn(x: float) -> float:
+        return radiusSlope * (x + b) + startRadius
 
-    # Center at l
-    def centerFn(l, r):
-        p = line.lerpPointAt(l)
+    # Center at x
+    def centerFn(x: float, r: float) -> Vector:
+        p = line.lerpPointAt(x)
         return Vector(p.x, p.y, top - r)
 
     # Wires for the Loft
-    with traceTime("Prepare fretboad conic geometry"):
+    with traceTime("Prepare fretboard conic geometry"):
         wires = []
         vdir = geom.vec(line.vector)
-        for (l, width) in [(0, fbd.neckFrame.nut.length), (line.length, fbd.neckFrame.bridge.length)]:
-            radius = radiusFn(l)
-            center = centerFn(l, radius)
+        for (x, width) in [(0, fbd.neckFrame.nut.length), (line.length, fbd.neckFrame.bridge.length)]:
+            radius = radiusFn(x)
+            center = centerFn(x, radius)
             wire = fretboardSection(center, radius, width, thickness, vdir)
             wires.append(wire)
 
     # Solid
-    with traceTime("Make fretboad conic solid"):
+    with traceTime("Make fretboard conic solid"):
         solid = Part.makeLoft(wires, True, True).removeSplitter()
 
     return solid
@@ -220,15 +220,14 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
     """
     Create a Solid with all frets to be cut from board
     """
-    jobs = []
     bladeHeight = thickness*4
 
     # Generate Cone
     trim = fretboardCone(
-        startRadius, 
-        endRadius, 
-        thickness, 
-        fbd, 
+        startRadius,
+        endRadius,
+        thickness,
+        fbd,
         thickness - tangDepth
     )
 
@@ -248,22 +247,22 @@ def fretsCutPure(startRadius, endRadius, thickness, tangDepth, tangWidth, nippin
         return frets
 
 
-def base(inst, fbd): 
+def base(inst, fbd):
     """
     Create Fretboard base board
     """
-    (board, cache) = getCachedObject('fretboard_base', 
-                                     fbd, 
-                                     inst.fretboard.startRadius, 
-                                     inst.fretboard.endRadius, 
+    (board, cache) = getCachedObject('fretboard_base',
+                                     fbd,
+                                     inst.fretboard.startRadius,
+                                     inst.fretboard.endRadius,
                                      inst.fretboard.thickness)
     if not board:
         with traceTime("Build fretboard base"):
             cone = fretboardCone(
-                inst.fretboard.startRadius, 
-                inst.fretboard.endRadius, 
-                inst.fretboard.thickness, 
-                fbd, 
+                inst.fretboard.startRadius,
+                inst.fretboard.endRadius,
+                inst.fretboard.thickness,
+                fbd,
                 inst.fretboard.thickness
             )
             f = fbd.frame
@@ -283,20 +282,20 @@ def base(inst, fbd):
                     fillet = fretboard_fillet(board, fillet_radius)
                     if fillet and fillet.isValid():
                         board = fillet
-                except:
-                    MarzLogger.warn("It was not possible to fillet the fretboard with radius: {}", 
+                except Exception:
+                    MarzLogger.warn("It was not possible to fillet the fretboard with radius: {}",
                                     fillet_radius)
 
         cache(board)
     return board
 
 
-def nutSlot(inst, fbd): 
+def nutSlot(inst, fbd):
     return nutSlotPure(inst.fretboard.thickness, inst.nut.depth, fbd)
 
 
 @PureFunctionCache
-def nutSlotPure(thickness, depth, fbd): 
+def nutSlotPure(thickness, depth, fbd):
     """
     Create a Nut Solid to be cut from board
     """
@@ -304,7 +303,7 @@ def nutSlotPure(thickness, depth, fbd):
     with traceTime("Nut slot solid"):
         nut = fbd.nutFrame.nut.clone().extendSym(5)
         bridge = fbd.nutFrame.bridge.clone().extendSym(5)
-        polygon = [bridge.end, bridge.start, nut.end, nut.start, bridge.end] 
+        polygon = [bridge.end, bridge.start, nut.end, nut.start, bridge.end]
         return geom.extrusion(polygon, thickness - depth, [0,0,thickness*4])
 
 
@@ -319,7 +318,7 @@ class FretboardFeature:
     def __init__(self, instrument):
         self.instrument = instrument
 
-    def createFretboardShape(self, progress_listener: ProgressListener):        
+    def createFretboardShape(self, progress_listener: ProgressListener):
         """Create a Fretboard."""
 
         progress_listener.add("Updating Fretboard...")
@@ -328,21 +327,21 @@ class FretboardFeature:
         with traceTime('Building Fretboard models...', progress_listener):
             inst = self.instrument
             fbd = builder.buildFretboardData(self.instrument)
-        
+
         # Build Inlays in background
         inlaysTask = Task.execute(makeInlays, fbd, inst.fretboard.thickness, inst.fretboard.inlayDepth)
 
-        (fretboard, cache) = getCachedObject('FretboardFeature', 
-            fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth, 
+        (fretboard, cache) = getCachedObject('FretboardFeature',
+            fbd, inst.fretWire.tangWidth, inst.fretWire.tangDepth,
             inst.nut.depth, inst.fretboard.thickness, inst.fretboard.startRadius,
             inst.fretboard.endRadius, inst.fretboard.fretNipping, inst.fretboard.filletRadius)
-            
+
         if not fretboard:
 
             # Generate primitives in parallel. (They are independent)
             with traceTime('Generating Fretboard components...', progress_listener):
                 (board, nut, fretSlots) = Task.join([
-                    Task.execute(t, self.instrument, fbd) 
+                    Task.execute(t, self.instrument, fbd)
                     for t in [base, nutSlot, fretsCut]
                 ])
 
@@ -359,7 +358,7 @@ class FretboardFeature:
             inlays = inlaysTask.get()
             if inlays:
                 fretboard = fretboard.cut(inlays)
-        
+
         progress_listener.add('Fretboard done.')
         return fretboard
 

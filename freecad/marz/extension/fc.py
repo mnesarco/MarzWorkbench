@@ -18,6 +18,9 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-import FreeCAD as App                                     # type: ignore
-import FreeCADGui as Gui                                  # type: ignore
-from FreeCAD import Base, Placement, Rotation, Vector     # type: ignore
+# ruff: noqa: F401
+# type: ignore
+
+import FreeCAD as App
+import FreeCADGui as Gui
+from FreeCAD import Base, Placement, Rotation, Vector

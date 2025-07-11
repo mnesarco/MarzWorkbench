@@ -19,7 +19,7 @@
 # +---------------------------------------------------------------------------+
 
 from contextlib import contextmanager
-import traceback, json
+import json
 from typing import Any, Dict, List
 from dataclasses import dataclass
 from freecad.marz.utils import traceTime

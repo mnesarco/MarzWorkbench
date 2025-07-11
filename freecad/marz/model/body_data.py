@@ -21,7 +21,7 @@
 
 import math
 from freecad.marz.model.instrument import deg_to_rad
-from freecad.marz.extension.fc import App, Placement, Rotation, Vector
+from freecad.marz.extension.fc import Placement, Rotation, Vector
 import Part # type: ignore
 
 def find_x_on_midline(shape):
@@ -41,7 +41,7 @@ class BodyData(object):
     # ! so two instances created with same data will hit the same
     # ! cache entry.
     __slots__ = ['neckd', 'length', 'width', 'backThickness', 'topOffset',
-                 'topThickness', 'neckPocketDepth', 'neckAngle', 'neckPocketLength', 
+                 'topThickness', 'neckPocketDepth', 'neckAngle', 'neckPocketLength',
                  'joint', '_ihash', 'neckPocketCarve']
 
     def __init__(self, inst, neckd):
@@ -68,7 +68,7 @@ class BodyData(object):
             inst.body.neckPocketLength,
             inst.body.neckPocketCarve,
             inst.neck.angle,
-            inst.neck.joint,            
+            inst.neck.joint,
             neckd
         ))
         super().__setattr__('_ihash', ihash)

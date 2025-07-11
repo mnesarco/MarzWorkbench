@@ -18,7 +18,7 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
-from typing import Any, Callable, Dict, Iterable, TypeVar
+from typing import Callable, Dict, Iterable, TypeVar
 
 T = TypeVar('T')
 K = TypeVar('K')

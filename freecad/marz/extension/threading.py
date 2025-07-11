@@ -61,7 +61,7 @@ class Task(Generic[T], QtCore.QRunnable):
             self.result = self.fn(*self.args, **self.kwargs)
         except BaseException as ex:
             self.error = ex
-        except:
+        except Exception:
             self.error = BaseException(traceback.format_exc())
         finally:
             self._isTerminated = True

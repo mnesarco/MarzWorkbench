@@ -49,7 +49,7 @@ class CmdExportSvg:
         return bool(
             App.ActiveDocument
             and Group_Parts.children()
-            and can_project_to_svg()) 
+            and can_project_to_svg())
 
     def Activated(self):
         try:
@@ -63,7 +63,7 @@ class CmdExportSvg:
                         if hasattr(p, 'Shape'):
                             svg.add_shape(p.Shape, v_style=v_style, h_style=h_style)
                     svg.save(filename)
-        except:
+        except Exception:
             MarzLogger.error(traceback.format_exc(), escape=True)
 
 

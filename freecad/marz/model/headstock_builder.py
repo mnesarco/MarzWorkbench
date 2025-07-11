@@ -84,13 +84,15 @@ def place(shape, pos, angle):
 def getContour():
     """Get the custom contour reference wire"""
     c = App.ActiveDocument.getObject('Marz_Headstock_Contour')
-    if c: return c.Shape.copy()
+    if c:
+        return c.Shape.copy()
 
 
 def getTransition():
     """Get the custom transition reference wire"""
     t = App.ActiveDocument.getObject('Marz_Headstock_Transition')
-    if t: return t.Shape.Edges[0].copy()
+    if t:
+        return t.Shape.Edges[0].copy()
 
 
 def getDefaultTopTransition(contour, pos, defaultTransitionLength):

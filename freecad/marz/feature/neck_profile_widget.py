@@ -24,12 +24,11 @@ import freecad.marz.extension.fcui as ui
 from freecad.marz.model.neck_profile import getNeckProfile
 
 from freecad.marz.extension.qt import (
-    Qt, 
-    QtGui, 
-    QRect, 
-    QRectF, 
-    QPointF, 
-    QPainter, 
+    Qt,
+    QtGui,
+    QRectF,
+    QPointF,
+    QPainter,
     QColor)
 
 
@@ -46,15 +45,15 @@ class NeckProfilePreview:
 
 @lru_cache(maxsize=None)
 def get_neck_profile_preview(
-        name: str, 
-        width: float, 
-        height: float, 
-        channel_depth: float, 
+        name: str,
+        width: float,
+        height: float,
+        channel_depth: float,
         channel_width: float,
-        head_channel_depth: float, 
+        head_channel_depth: float,
         head_channel_width: float,
         scale: float) -> NeckProfilePreview:
-    
+
     """
     Convert OCCT Neck profile geometry to Qt 2D geometry
     """
@@ -90,15 +89,15 @@ def paint_neck_profile(form, painter: QPainter, ch: ui.CanvasHelper):
     height = form.neck_startThickness.value()
     scale = (ch.event.rect().width() - 20) / width
     preview = get_neck_profile_preview(
-        form.neck_profile.value(), 
-        width, 
-        height, 
+        form.neck_profile.value(),
+        width,
+        height,
         form.trussRod_depth.value(),
         form.trussRod_width.value(),
         form.trussRod_headDepth.value(),
         form.trussRod_headWidth.value(),
         scale)
-    
+
     painter.scale(scale, scale)
     painter.translate(preview.translate)
     painter.rotate(90)

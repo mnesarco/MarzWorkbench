@@ -98,9 +98,9 @@ def make_neck_pocket(inst: Instrument, fbd: FretboardData):
     solid = face.extrude(Vector(0,0, -10 -inst.body.neckPocketDepth -inst.neck.topOffset))
     try:
         solid = heel_fillet(
-            solid, 
+            solid,
             inst.neck.heelFillet)
-    except:
+    except Exception:
         MarzLogger.error("Error filleting the heel with radius: {}", inst.neck.heelFillet)
     return solid.removeSplitter()
 
@@ -108,20 +108,20 @@ def make_neck_pocket(inst: Instrument, fbd: FretboardData):
 def heel_fillet(heel, radius):
     if radius <= 0.5:
         return heel
-    
+
     Z = Vector(0,0,1)
-    
+
     # Last face coplanar with Z
-    face = query_one(heel.Faces, 
-                     where=lambda e: is_planar(e, coplanar=Z), 
+    face = query_one(heel.Faces,
+                     where=lambda e: is_planar(e, coplanar=Z),
                      order_by=lambda e: e.CenterOfMass.x)
 
     # Two side edges
-    selected = query(face.Edges, 
+    selected = query(face.Edges,
                      order_by=lambda e: -abs(e.CenterOfMass.y), limit=2)
-    
+
     if len(selected) == 2:
-        heel = heel.makeFillet(radius, selected) 
+        heel = heel.makeFillet(radius, selected)
 
     return heel
 
@@ -152,7 +152,7 @@ class NeckFeature:
         trc = inst.trussRod
         trussRodJob = trussRodChannel(
             line, trc.start, trc.length, trc.width,
-            trc.depth, trc.headLength, trc.headWidth, trc.headDepth, 
+            trc.depth, trc.headLength, trc.headWidth, trc.headDepth,
             trc.tailLength, trc.tailWidth, trc.tailDepth)
 
         with traceTime('Building Neck parts...', progress_listener):
@@ -163,11 +163,11 @@ class NeckFeature:
         with traceTime('Filleting the Heel...', progress_listener):
             try:
                 neck = heel_fillet(
-                    neck, 
+                    neck,
                     self.instrument.neck.heelFillet)
-            except:
+            except Exception:
                 MarzLogger.error("Error filleting the heel with radius: {}", self.instrument.neck.heelFillet)
-        
+
         QApplication.processEvents()
 
         with traceTime("Carving truss rod channel...", progress_listener):
@@ -180,12 +180,12 @@ class NeckFeature:
         neck.fix(0.1, 0, 1)
 
         progress_listener.add("Neck done.")
-        return neck.removeSplitter()   
+        return neck.removeSplitter()
 
     def createPart(self, progress_listener: ProgressListener):
         """
         Create Part from shape
         """
         NeckPart.set(self.createShape(progress_listener))
-            
+
 

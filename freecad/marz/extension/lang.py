@@ -29,5 +29,5 @@ def tr(text: str, *args, **kwargs) -> str:
     """
     try:
         return text.format(*args, **kwargs)
-    except:
+    except Exception:
         return text

@@ -72,7 +72,8 @@ class CmdToggleVisibility:
 
     def IsActive(self):
         active = App.ActiveDocument and App.ActiveDocument.getObject(MarzInstrument_Name)
-        if not active: return False
+        if not active:
+            return False
         objs, _visibility = get_view_objects(self.predicate)
         return bool(objs)
 
@@ -89,8 +90,8 @@ CmdToggle2D = CmdToggleVisibility(
     'MarzCmdToggle2D',
     tr('Toggle draft objects'),
     tr('Toggle draft objects'),
-    'view_2d.svg', 
-    'W,D', 
+    'view_2d.svg',
+    'W,D',
     is_2d_object)
 
 
@@ -98,6 +99,6 @@ CmdToggle3D = CmdToggleVisibility(
     'MarzCmdToggle3D',
     tr('Toggle 3D parts'),
     tr('Toggle 3D parts'),
-    'view_3d.svg', 
-    'W,X', 
+    'view_3d.svg',
+    'W,X',
     is_3d_object)

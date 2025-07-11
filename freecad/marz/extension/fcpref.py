@@ -19,7 +19,7 @@
 # +---------------------------------------------------------------------------+
 
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, TypeVar
+from typing import Callable, Generic, TypeVar
 import traceback
 
 from freecad.marz.extension.fc import App
@@ -41,31 +41,31 @@ class Preference(Generic[T]):
         if self.value_type is None:
             self.value_type = type(self.default) if self.default is not None else str
         if not hasattr(self.serializer, 'dumps'):
-            raise TypeError(f"serializer does not provide a dumps method")
+            raise TypeError("serializer does not provide a dumps method")
         if not hasattr(self.serializer, 'loads'):
-            raise TypeError(f"serializer does not provide a loads method")
-        
+            raise TypeError("serializer does not provide a loads method")
+
     # ─────────
     @property
     def group_key(self) -> str:
         return f"User parameter:{self.root}/{self.group}"
-    
+
     # ─────────
     def read(self) -> T:
         group = App.ParamGet(self.group_key)
         try:
-            if self.value_type == bool:
+            if self.value_type is bool:
                 v = group.GetBool(self.name)
                 return self.default if v is None else v
-            elif self.value_type == int:
+            elif self.value_type is int:
                 return group.GetInt(self.name) or self.default
-            elif self.value_type == float:
+            elif self.value_type is float:
                 return group.GetFloat(self.name) or self.default
-            elif self.value_type == str:
+            elif self.value_type is str:
                 return group.GetString(self.name) or self.default
             else:
                 return self.read_object()
-        except:
+        except Exception:
             print(traceback.format_exc())
             print(f"Error reading preference: {self}")
         return self.default
@@ -79,27 +79,27 @@ class Preference(Generic[T]):
         if n > 1:
             raise ValueError("This function accepts only one argument")
         self.write(args[0])
-    
+
     # ─────────
     def write(self, value: T):
         group = App.ParamGet(self.group_key)
         try:
-            if self.value_type == bool:
+            if self.value_type is bool:
                 if value is None:
                     group.RemBool(self.name)
                 else:
                     group.SetBool(self.name, bool(value))
-            elif self.value_type == int:
+            elif self.value_type is int:
                 if value is None:
                     group.RemInt(self.name)
                 else:
                     group.SetInt(self.name, int(value))
-            elif self.value_type == float:
+            elif self.value_type is float:
                 if value is None:
                     group.RemFloat(self.name)
                 else:
                     group.SetFloat(self.name, float(value))
-            elif self.value_type == str:
+            elif self.value_type is str:
                 if value is None:
                     group.RemString(self.name)
                 else:
@@ -122,11 +122,13 @@ class Preference(Generic[T]):
     def read_object(self):
         group = App.ParamGet(self.group_key)
         str_value = group.GetString(self.name)
-        if not str_value: return self.default
+        if not str_value:
+            return self.default
         value = self.serializer.loads(str_value)
-        if not value: return self.default
+        if not value:
+            return self.default
         return value
-    
+
     #% ─────────
     class ParamObserver:
         listeners = dict()
@@ -145,7 +147,7 @@ class Preference(Generic[T]):
         def unsubscribe(self):
             try:
                 del Preference.ParamObserver.listeners[hash(self)]
-            except:
+            except Exception:
                 print(f"Invalid subscription or already removed: {self.callback.__name__}")
 
     # ─────────

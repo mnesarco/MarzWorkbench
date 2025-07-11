@@ -165,13 +165,13 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     widthAt = neckd.widthAt
     transition_offset = 20.0 # TODO: Bind a parameter
 
-    def profile_edge(i, l=None, point=None, h_delta=0.0):
-        if l is None:
-            l = i * step
-        h = thicknessAt(l) + h_delta
+    def profile_edge(i: int, x: float | None = None, point: Vector | None = None, h_delta: float = 0.0):
+        if x is None:
+            x = i * step
+        h = thicknessAt(x) + h_delta
         if point is None:
             point = Vector(points[i].x, points[i].y, points[i].z)
-        w = widthAt(l)
+        w = widthAt(x)
         p = profile(w, h, wire=False)
         if p:
             p.Placement = Placement(point, rot)

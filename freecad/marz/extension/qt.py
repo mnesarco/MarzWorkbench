@@ -18,6 +18,8 @@
 # |  along with Marz Workbench.  If not, see <https://www.gnu.org/licenses/>. |
 # +---------------------------------------------------------------------------+
 
+# ruff: noqa: F401
+
 import sys
 
 try:
@@ -33,8 +35,6 @@ except ImportError:
 from PySide import QtCore, QtGui # type: ignore
 
 # Most used in this project
-
-Qt = QtCore.Qt
 
 from PySide.QtCore import (  # type: ignore
     QRect,
@@ -52,5 +52,7 @@ from PySide.QtGui import (  # type: ignore
     QColor,
     QIcon,
 )
+
+Qt = QtCore.Qt
 
 PySideMajorVersion = PySide.__version_info__[0]

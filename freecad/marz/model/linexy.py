@@ -19,7 +19,7 @@
 # +---------------------------------------------------------------------------+
 
 #! TODO: Deprecate this file
-#! This file is very old, It was created because I ported my existing 
+#! This file is very old, It was created because I ported my existing
 #! Javascript code but all the code here can be replaced with Part.Edge
 #! class.
 
@@ -45,10 +45,6 @@ class linexy:
     @property
     def points(self):
         return self.v1, self.v2
-
-    @property
-    def vector(self):
-        return vxy().subVectors(self.v2, self.v1)
 
     @property
     def start(self):
@@ -148,7 +144,7 @@ class linexy:
             start.y = y
             end.y = y
         return linexy(start, end)
-    
+
     def edge(self) -> Part.Edge:
         return Part.Edge(Part.Vertex(self.start.x, self.start.y, 0), Part.Vertex(self.end.x, self.end.y, 0))
 
@@ -175,7 +171,7 @@ class Intersection:
 
 def lineIntersection(line1, line2):
     # ! Credits: justin_c_rounds https://stackoverflow.com/a/60368757/1524027
-    # if the lines intersect, the result contains the x and y of the intersection 
+    # if the lines intersect, the result contains the x and y of the intersection
     # (treating the lines as infinite) and booleans for whether line segment 1 or line segment 2 contain the point
     result = Intersection()
     denominator = ((line2.end.y - line2.start.y) * (line1.end.x - line1.start.x)) - (

@@ -19,7 +19,6 @@
 # +---------------------------------------------------------------------------+
 
 import re
-from pathlib import Path
 from functools import total_ordering
 from freecad.marz.extension.fc import App
 
@@ -45,14 +44,14 @@ class Version:
     def __lt__(self, other: object) -> bool:
         try:
             return self.value < other.value
-        except:
-            raise NotImplementedError()
+        except Exception as ex:
+            raise NotImplementedError() from ex
 
     def __eq__(self, other: object) -> bool:
         try:
             return self.value == other.value
-        except:
-            raise NotImplementedError()
+        except Exception as ex:
+            raise NotImplementedError() from ex
 
     def __bool__(self):
         return all(self.value)

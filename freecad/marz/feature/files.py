@@ -22,25 +22,25 @@
 Files
 =======
 
-Each file saved in the document uses two properties in the         
-{FILES_OBJ_NAME} object                                                
-                                                            
-App::PropertyFileIncluded {name}: 
-    - Stores the file content             
+Each file saved in the document uses two properties in the
+{FILES_OBJ_NAME} object
 
-App::PropertyString {name}Meta: 
+App::PropertyFileIncluded {name}:
+    - Stores the file content
+
+App::PropertyString {name}Meta:
     - Stores metadata associated to the file in a json array
 
-Imported svg shape file type 
+Imported svg shape file type
 ----------------------------
 
-Names: 
+Names:
     - Body
     - Headstock
     - Inlays
-Data: 
+Data:
     - image/svg+xml
-Meta: 
+Meta:
     - kind: str
     - reference: str
     - message: str
@@ -50,11 +50,11 @@ Meta:
 Custom Neck profiles file type
 ------------------------------
 
-Names: 
+Names:
     - NeckProfiles
-Data: 
+Data:
     - application/json
-    
+
 """
 
 from typing import Any, List, Tuple, Union
@@ -76,9 +76,9 @@ def _add_file_prop(obj, name: str, description: str):
     :param str name: Internal file name
     :param str description: Description
     """
-    if not name in obj.PropertiesList:
+    if name not in obj.PropertiesList:
         obj.addProperty('App::PropertyFileIncluded', name, '', description or '', 4)
-    if not f'{name}Meta' in obj.PropertiesList:
+    if f'{name}Meta' not in obj.PropertiesList:
         obj.addProperty('App::PropertyString', f'{name}Meta', '', f'Meta of {name}', 4)
 
 
@@ -97,7 +97,7 @@ def get_doc_files(doc: App.Document = None):
         if group:
             group.touch()
             group.recompute()
-    
+
     return obj
 
 
@@ -132,7 +132,7 @@ def read_doc_file(name: str, mode: str = 'r', doc: App.Document = None) -> Union
             return f.read()
 
 
-def set_doc_file(name: str, path: str, *, meta: List = None, 
+def set_doc_file(name: str, path: str, *, meta: List = None,
                  doc: App.Document = None, description: str = None) -> str:
     """
     Import the file at path into the document
@@ -149,7 +149,7 @@ def set_doc_file(name: str, path: str, *, meta: List = None,
     return getattr(obj, name)
 
 
-def set_doc_file_content(name: str, content: Union[str, bytes], *, meta: List = None, 
+def set_doc_file_content(name: str, content: Union[str, bytes], *, meta: List = None,
                  doc: App.Document = None, description: str = None):
     """
     Saves the content into a file in the document
@@ -200,22 +200,21 @@ class InternalFile(QObject):
     def path(self, doc: App.Document = None) -> str:
         tmp_path, _meta = get_doc_file(self.name, doc=doc)
         return tmp_path
-    
-    def load(self, path: str, meta: List[Any] = None, doc: App.Document = None):
-        tmp_path = set_doc_file(self.name, path, meta=meta, description=self.description, doc=doc)
+
+    def load(self, path: str, meta: List[Any] = None, doc: App.Document = None) -> str:
+        return set_doc_file(self.name, path, meta=meta, description=self.description, doc=doc)
 
     def exists(self, doc: App.Document = None) -> bool:
         return exists_doc_file(self.name, doc=doc)
 
-    def write(self, content: Union[str, bytes], meta: List[Any] = None, doc: App.Document = None):
-        tmp_path = set_doc_file_content(self.name, content, meta=meta, description=self.description, doc=doc)
+    def write(self, content: Union[str, bytes], meta: List[Any] = None, doc: App.Document = None) -> str:
+        return set_doc_file_content(self.name, content, meta=meta, description=self.description, doc=doc)
 
     def __call__(self, doc: App.Document = None):
         return get_doc_file(self.name, doc=doc)
-    
+
     def export(self, filename: str, doc: App.Document = None):
         if not filename.lower().endswith('.svg'):
             filename = f"{filename}.svg"
         export_doc_file(self.name, filename, doc=doc)
 
-        

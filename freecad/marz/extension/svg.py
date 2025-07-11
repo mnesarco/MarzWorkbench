@@ -20,7 +20,7 @@
 
 try:
     from TechDraw import projectToSVG as project_to_svg  # type: ignore
-except:
+except ImportError:
     project_to_svg = None
     print("[Marz] TechDraw.projectToSVG is not available")
 

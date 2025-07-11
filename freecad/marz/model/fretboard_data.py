@@ -20,7 +20,7 @@
 
 from freecad.marz.model.linexy import lineIntersection, linexy
 from freecad.marz.model.vxy import vxy
-import Part
+import Part # type: ignore
 
 class FretboardBox(object):
     """
@@ -86,9 +86,9 @@ class FretboardBox(object):
 
     def translate(self, v):
         # ! Does not change this instance, returns a new translated instance
-        tr = [l.clone().translate(v) for l in (self.bass, self.treble, self.nut, self.bridge)]
+        tr = [line.clone().translate(v) for line in (self.bass, self.treble, self.nut, self.bridge)]
         return FretboardBox(*tr)
-    
+
     def wire(self):
         return Part.Wire([self.nut.edge(), self.bass.edge(), self.bridge.edge(), self.treble.edge()])
 
@@ -108,10 +108,10 @@ class FretboardData:
     # ! this object will be cached as a hash calculated on creation,
     # ! so two instances created with same data will hit the same
     # ! cache entry.
-    __slots__ = ['frame', 'virtStrFrame', 'scaleFrame', 'nutFrame', 'frets', 'bridgePos', 
+    __slots__ = ['frame', 'virtStrFrame', 'scaleFrame', 'nutFrame', 'frets', 'bridgePos',
                  'neckFrame', '_ihash', 'filletRadius', 'heelOffset']
 
-    def __init__(self, frame, virtStrFrame, scaleFrame, nutFrame, 
+    def __init__(self, frame, virtStrFrame, scaleFrame, nutFrame,
                  frets, bridgePos, neckFrame, filletRadius, heelOffset):
         # Set immutable values
         super().__setattr__('frame', frame)
@@ -125,7 +125,7 @@ class FretboardData:
         super().__setattr__('heelOffset', heelOffset)
 
         # Calculate immutable hash
-        ihash = hash((frame, virtStrFrame, scaleFrame, nutFrame, neckFrame, 
+        ihash = hash((frame, virtStrFrame, scaleFrame, nutFrame, neckFrame,
                       (*frets,), bridgePos, filletRadius, heelOffset))
         super().__setattr__('_ihash', ihash)
 
@@ -154,8 +154,8 @@ class FretboardData:
             [f.translate(v) for f in \
              (self.frame, self.virtStrFrame, self.scaleFrame, self.nutFrame, self.bridgePos, self.neckFrame)]
         frets = [f.translate(v) for f in self.frets]
-        return FretboardData(frame, virtStrFrame, scaleFrame, nutFrame, 
-                             frets, bridgePos, neckFrame, 
+        return FretboardData(frame, virtStrFrame, scaleFrame, nutFrame,
+                             frets, bridgePos, neckFrame,
                              self.filletRadius, self.heelOffset)
 
     def widthAt(self, dist):

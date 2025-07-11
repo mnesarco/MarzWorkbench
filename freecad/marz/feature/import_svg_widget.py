@@ -53,16 +53,16 @@ class ImportSvgWidget:
                 with ui.Container(styleSheet=svg_preview_container_style()):
                     self.preview = ui.SvgImageView(
                         uri=path,
-                        minimumHeight=self.height, 
+                        minimumHeight=self.height,
                         maximumHeight=self.height)
 
                 self.table = ui.Table(
                     headers=[
-                        tr('Type'), 
-                        tr('Reference'), 
-                        tr('Validation'), 
-                        tr('>Start'), 
-                        tr('>Depth')], 
+                        tr('Type'),
+                        tr('Reference'),
+                        tr('Validation'),
+                        tr('>Start'),
+                        tr('>Depth')],
                     rows=self.import_table_rows_from_meta(meta),
                     sizePolicy=(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
@@ -85,12 +85,13 @@ class ImportSvgWidget:
                     rows = self.import_table_rows_from_meta(validation)
                     self.table.setRowsData(rows)
         return validation
-    
+
 
     def import_table_rows_from_meta(self, meta):
         if not meta:
             return []
-        fmt = lambda x: '' if x is None else f'{x:.2f} mm'
-        return [(r['kind'], r['reference'], r['message'], fmt(r['start']), fmt(r['depth'])) 
+        def fmt(x):
+            return '' if x is None else f'{x:.2f} mm'
+        return [(r['kind'], r['reference'], r['message'], fmt(r['start']), fmt(r['depth']))
                 for r in meta if r['kind'] != 'Notify']
 

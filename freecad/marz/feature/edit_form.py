@@ -19,7 +19,9 @@
 # +---------------------------------------------------------------------------+
 
 from pathlib import Path
-import json, shutil, tempfile
+import json
+import shutil
+import tempfile
 
 from freecad.marz.extension.fc import App
 from freecad.marz.extension.lang import tr
@@ -38,7 +40,7 @@ import freecad.marz.extension.fcui as ui
 from freecad.marz.extension.qt import QRect, QApplication
 
 from freecad.marz.feature.document import (
-    BodyImports, 
+    BodyImports,
     HeadstockImports,
     File_Svg_Body,
     File_Svg_Headstock,
@@ -62,11 +64,11 @@ class InstrumentForm(InstrumentFormBase):
 
         :param Marz_Instrument obj: Data object
         """
-        
+
         # General properties
         for prop in InstrumentProps.properties:
-            prop.load_model_to_form(obj, self)        
-        
+            prop.load_model_to_form(obj, self)
+
         # Special properties
         self.nut_width.setValue(self.nut_width_calc(obj))
         self.stringSet_gauges_f.setValue([float(f) for f in obj.Stringset_Gauges])
@@ -81,11 +83,11 @@ class InstrumentForm(InstrumentFormBase):
         # General properties
         for prop in InstrumentProps.properties:
             prop.save_form_to_model(obj, self)
-        
+
         # Special properties
         obj.Nut_StringDistanceProj = self.nut_stringDistanceProj_calc()
         obj.Stringset_Gauges = [str(f) for f in self.stringSet_gauges_f.value()]
-        
+
     def message_info(self, message):
         self.log.info(message)
 
@@ -113,13 +115,13 @@ class InstrumentForm(InstrumentFormBase):
             if pref:
                 g = json.loads(pref)
                 self.window.setGeometry(QRect(g['x'], g['y'], g['w'], g['h']))
-        except:
+        except Exception:
             pass # Ignore bad saved window geometry
 
     def open(self):
         App.setActiveDocument(self.Object.Document.Name)
         self.build_ui()
-        self.load_from_obj(self.Object)        
+        self.load_from_obj(self.Object)
         self.window.setModal(False)
         self.window.show()
 
@@ -166,20 +168,20 @@ class InstrumentForm(InstrumentFormBase):
 
     def import_body(self):
         self.import_svg(
-            tr(f'Import a custom body shape'),
-            lambda name: import_custom_shapes(self.Object.Document, name, BodyImports, progress_listener=self.progress), 
+            tr('Import a custom body shape'),
+            lambda name: import_custom_shapes(self.Object.Document, name, BodyImports, progress_listener=self.progress),
             self.body_svg)
 
     def import_headstock(self):
         self.import_svg(
-            tr(f'Import a custom headstock shape'),
-            lambda name: import_custom_shapes(self.Object.Document, name, HeadstockImports, progress_listener=self.progress), 
+            tr('Import a custom headstock shape'),
+            lambda name: import_custom_shapes(self.Object.Document, name, HeadstockImports, progress_listener=self.progress),
             self.headstock_svg)
 
     def import_inlays(self):
         self.import_svg(
-            tr(f'Import custom fretboard inlays'),
-            lambda name: import_fretboard_inlays(self.Object.Document, name, progress_listener=self.progress), 
+            tr('Import custom fretboard inlays'),
+            lambda name: import_fretboard_inlays(self.Object.Document, name, progress_listener=self.progress),
             self.inlays_svg)
 
 
@@ -188,13 +190,13 @@ class InstrumentForm(InstrumentFormBase):
         if not file.exists():
             self.message_warn(tr('There is nothing to export here'))
             return
-        
+
         filename = ui.get_save_file(title, 'Svg files (*.svg)')
         if filename:
             with ui.progress_indicator(title):
                 try:
                     file.export(filename, self.Object.Document)
-                except:
+                except Exception:
                     self.message_err(tr("Error exporting this file"))
 
     def export_body(self):
@@ -208,7 +210,7 @@ class InstrumentForm(InstrumentFormBase):
 
     def stringSet_gauges_floats(self):
         return [float(f) for f in self.stringSet_gauges]
-    
+
     def update_3d(self):
         App.setActiveDocument(self.Object.Document.Name)
         self.save_to_obj(self.Object)
@@ -238,11 +240,11 @@ class InstrumentForm(InstrumentFormBase):
 
     def is_visible(self):
         return self.window is not None and self.window.isVisible()
-    
+
     def hide(self):
         if self.window:
             self.window.hide()
-    
+
     def open_link(self, url):
         if url.startswith('open:'):
             example = resourcePath('examples', url[5:])
@@ -260,7 +262,7 @@ class InstrumentForm(InstrumentFormBase):
             try:
                 import webbrowser
                 webbrowser.open(url)
-            except:
+            except Exception:
                 pass
 
     @timer(interval=200)
