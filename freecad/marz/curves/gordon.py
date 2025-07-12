@@ -100,7 +100,7 @@ class GordonSurfaceBuilder:
 
     tensorProdSurf: Part.BSplineSurface
     skinningSurfProfiles: Part.BSplineSurface
-    skinningSurfProfiles: Part.BSplineSurface
+    skinningSurfGuides: Part.BSplineSurface
     gordonSurf: Part.BSplineSurface
 
     def __init__(
@@ -133,6 +133,7 @@ class GordonSurfaceBuilder:
         self.par_tol = par_tol
         self.gordonSurf = None
         self.skinningSurfProfiles = None
+        self.skinningSurfGuides = None
         self.tensorProdSurf = None
 
     def perform(self):
