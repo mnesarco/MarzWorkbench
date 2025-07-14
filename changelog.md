@@ -1,5 +1,9 @@
 # Marz Workbench Changelog
 
+## 0.1.16 (Jul 14th 2025)
+
+- Add button to reimport last used svg file
+
 ## 0.1.15 (Nov 21th 2024)
 
 - Fix tinted icon colors based on theme

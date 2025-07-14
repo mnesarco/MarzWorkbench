@@ -2,7 +2,7 @@
 <package format="1">
   <name>Marz Workbench</name>
   <description>Parametric Guitar design workbench</description>
-  <version>0.1.15</version>
+  <version>0.1.16</version>
   <maintainer email="twitter: @mnesarco">Frank Martinez</maintainer>
   <license file="LICENSE">GPL-3.0</license>
   <url type="repository" branch="master">https://github.com/mnesarco/MarzWorkbench</url>
@@ -13,7 +13,7 @@
       <name>Marz Workbench</name>
       <classname>MarzWorkbench</classname>
       <description>Parametric Guitar design workbench.</description>
-      <version>0.1.15</version>
+      <version>0.1.16</version>
       <subdirectory>./</subdirectory>
       <icon>Resources/icons/Marz.svg</icon>
       <freecadmin>0.21.0</freecadmin>
