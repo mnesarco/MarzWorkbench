@@ -47,7 +47,11 @@
         "subobjects",
         "tigl",
         "Trussrod",
-        "unpolish"
+        "umax",
+        "umin",
+        "unpolish",
+        "vmax",
+        "vmin"
     ],
     "better-comments.multilineComments": false,
     "better-comments.tags": [

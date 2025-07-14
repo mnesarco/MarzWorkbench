@@ -19,6 +19,7 @@
 # +---------------------------------------------------------------------------+
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable
 
 from freecad.marz.extension.lang import tr
@@ -31,21 +32,30 @@ from freecad.marz.extension.qt import QSizePolicy, QApplication
 class ImportSvgWidget:
     form: Any
     title: str
-    file: InternalFile = None
-    file_property: str = None
+    file: InternalFile | None = None
+    file_property: str | None = None
     height: int = 200
-    table: ui.TableWidget = None
-    preview: ui.SvgImageViewWidget = None
-    import_action: Callable = None
-    export_action: Callable = None
+    table: ui.TableWidget | None = None
+    preview: ui.SvgImageViewWidget | None = None
+    import_action: Callable | None = None
+    export_action: Callable | None = None
+    last_imported_file: str | None = None
+    reimport_btn: ui.QPushButton | None = None
 
     def __post_init__(self):
         path, meta = self.file()
+        self.last_imported_file = None
         with ui.Section(SectionHeader(self.title)):
             with ui.Col():
                 with ui.Row():
                     if self.import_action:
-                        ui.button(label=tr("Import"), icon=FlatIcon('import_svg.svg'))(self.import_action)
+                        btn = ui.button(label=tr("Import"), icon=FlatIcon('import_svg.svg'))
+                        btn(self.on_import)
+                        btn = ui.button(
+                            label=tr("Re-Import"),
+                            icon=FlatIcon('reimport_svg.svg'),
+                            enabled=False)
+                        self.reimport_btn = btn(self.on_reimport)
                     if self.export_action:
                         self._btn_export = ui.button(label=tr("Export"), icon=FlatIcon('export_svg.svg'))(self.export_action)
                     ui.Stretch()
@@ -67,25 +77,41 @@ class ImportSvgWidget:
                     sizePolicy=(QSizePolicy.Expanding, QSizePolicy.Expanding))
 
 
+    def on_import(self, reimport: bool = False) -> None:
+        self.reimport_btn.setEnabled(False)
+        self.reimport_btn.setToolTip("")
+        self.import_action(reimport)
+        if bool(self.last_imported_file) and Path(self.last_imported_file).exists():
+            self.reimport_btn.setEnabled(True)
+            self.reimport_btn.setToolTip(tr("Re-Import file: {}").format(self.last_imported_file))
+
+    def on_reimport(self) -> None:
+        self.import_action(True)
+
     def set_export_enable(self, enabled: bool):
         if hasattr(self, '_btn_export'):
             self._btn_export.setVisible(enabled)
 
-
     def load(self, title, import_action):
-        validation = []
         name = ui.get_open_file(title, tr('Svg files (*.svg)'))
-        if name:
-            with ui.progress_indicator():
-                self.preview.setValue(name)
-                self.table.setRowCount(0)
-                QApplication.processEvents()
-                validation = import_action(name)
-                if validation:
-                    rows = self.import_table_rows_from_meta(validation)
-                    self.table.setRowsData(rows)
-        return validation
+        return self._load(name, import_action) if name else []
 
+    def _load(self, name: str, import_action: Callable[[str], list]):
+        self.last_imported_file = name
+        with ui.progress_indicator():
+            self.preview.setValue(name)
+            self.table.setRowCount(0)
+            QApplication.processEvents()
+            validation = import_action(name)
+            if validation:
+                rows = self.import_table_rows_from_meta(validation)
+                self.table.setRowsData(rows)
+            return validation
+
+    def reload(self, title, import_action):
+        if self.last_imported_file is None:
+            return self.load(title, import_action)
+        return self._load(self.last_imported_file, import_action)
 
     def import_table_rows_from_meta(self, meta):
         if not meta:

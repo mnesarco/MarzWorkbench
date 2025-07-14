@@ -144,10 +144,10 @@ class InstrumentForm(InstrumentFormBase):
             return 0
         return float(gauges[string])
 
-    def import_svg(self, title, import_action, form: ImportSvgWidget):
+    def import_svg(self, title, import_action, form: ImportSvgWidget, reimport: bool = False):
         App.setActiveDocument(self.Object.Document.Name)
         try:
-            validation = form.load(title, import_action)
+            validation = form.reload(title, import_action) if reimport else form.load(title, import_action)
             notification = []
             if validation:
                 for row in validation:
@@ -166,23 +166,26 @@ class InstrumentForm(InstrumentFormBase):
             self.Object.touch()
             recompute(self.Object.Document)
 
-    def import_body(self):
+    def import_body(self, reimport: bool = False):
         self.import_svg(
             tr('Import a custom body shape'),
             lambda name: import_custom_shapes(self.Object.Document, name, BodyImports, progress_listener=self.progress),
-            self.body_svg)
+            self.body_svg,
+            reimport)
 
-    def import_headstock(self):
+    def import_headstock(self, reimport: bool = False):
         self.import_svg(
             tr('Import a custom headstock shape'),
             lambda name: import_custom_shapes(self.Object.Document, name, HeadstockImports, progress_listener=self.progress),
-            self.headstock_svg)
+            self.headstock_svg,
+            reimport)
 
-    def import_inlays(self):
+    def import_inlays(self, reimport: bool = False):
         self.import_svg(
             tr('Import custom fretboard inlays'),
             lambda name: import_fretboard_inlays(self.Object.Document, name, progress_listener=self.progress),
-            self.inlays_svg)
+            self.inlays_svg,
+            reimport)
 
 
     def export_doc_file(self, title: str, file: InternalFile):
