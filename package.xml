@@ -1,25 +1,91 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
-<package format="1">
-  <name>Marz Workbench</name>
-  <description>Parametric Guitar design workbench</description>
-  <version>0.1.16</version>
-  <maintainer email="twitter: @mnesarco">Frank Martinez</maintainer>
-  <license file="LICENSE">GPL-3.0</license>
-  <url type="repository" branch="master">https://github.com/mnesarco/MarzWorkbench</url>
-  <url type="documentation">https://github.com/mnesarco/MarzWorkbench/wiki</url>
+<?xml
+    version = '1.0'
+    encoding = 'UTF-8'
+    standalone = 'no'
+?>
+<package
+    format = '1'
+    xmlns = 'https://wiki.freecad.org/Package_Metadata'
+>
 
-  <content>
-    <workbench>
-      <name>Marz Workbench</name>
-      <classname>MarzWorkbench</classname>
-      <description>Parametric Guitar design workbench.</description>
-      <version>0.1.16</version>
-      <subdirectory>./</subdirectory>
-      <icon>Resources/icons/Marz.svg</icon>
-      <freecadmin>0.21.0</freecadmin>
-      <depend>numpy</depend>
-      <tag>guitar</tag>
-    </workbench>
-  </content>
+    <!--[ Versions ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <freecadmin>0.21.0</freecadmin>
+    <version>0.1.16</version>
+    <date>2024-11-21</date>
+
+    <!--[ Dependencies ]―――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <depend
+        version_gte = '2.3.5'
+        type = 'python'
+    >numpy</depend>
+
+    <!--[ Info ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <description>Parametric Guitar design workbench.</description>
+    <name>Marz</name>
+
+    <!--[ Tags ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <tag>Fillets</tag>
+    <tag>Guitar</tag>
+    <tag>Inlays</tag>
+    <tag>Joints</tag>
+    <tag>Bridge</tag>
+    <tag>Tenon</tag>
+    <tag>Truss</tag>
+    <tag>Fret</tag>
+    <tag>Heel</tag>
+
+    <!--[ Maintainers ]――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <maintainer
+        email = 'mnesarco@gmail.com'
+    >Frank Martinez</maintainer>
+
+    <!--[ Authors ]――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <author
+        email = 'mnesarco@gmail.com'
+    >Frank Martinez</author>
+
+    <!--[ Licenses ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <license
+        file = 'LICENSE'
+    >GPL-3.0-or-later</license>
+
+    <!--[ Icon ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <icon>Resources/icons/Marz.svg</icon>
+
+    <!--[ Urls ]―――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <url
+        type = 'documentation'
+    >https://github.com/mnesarco/MarzWorkbench/wiki</url>
+
+    <url
+        branch = 'master'
+        type = 'repository'
+    >https://github.com/mnesarco/MarzWorkbench</url>
+
+    <url
+        type = 'bugtracker'
+    >https://github.com/mnesarco/MarzWorkbench/issues</url>
+
+    <url
+        type = 'readme'
+    >https://github.com/mnesarco/MarzWorkbench/blob/master/README.md</url>
+
+    <!--[ Content ]――――――――――――――――――――――――――――――――――――――――――――――――――――――――――-->
+
+    <content>
+        <workbench>
+            <subdirectory>.</subdirectory>
+            <classname>MarzWorkbench</classname>
+        </workbench>
+    </content>
 
 </package>
