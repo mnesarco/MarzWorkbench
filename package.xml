@@ -4,7 +4,7 @@
   <description>Parametric Guitar design workbench</description>
   <version>0.1.16</version>
   <maintainer email="twitter: @mnesarco">Frank Martinez</maintainer>
-  <license file="LICENSE">GPL-3.0</license>
+  <license file="LICENSE">GPL-3.0-or-later</license>
   <url type="repository" branch="master">https://github.com/mnesarco/MarzWorkbench</url>
   <url type="documentation">https://github.com/mnesarco/MarzWorkbench/wiki</url>
 
