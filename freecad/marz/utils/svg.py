@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
+# SPDX-FileNotice: Part of the Marz addon.
 
 # +---------------------------------------------------------------------------+
 # |  Copyright (c) 2020 Frank Martinez <mnesarco at gmail.com>                |
