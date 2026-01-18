@@ -44,11 +44,11 @@ from BOPTools import SplitAPI   # type: ignore
 
 NAME_ID_PATTERN = re.compile(r'^(.+?)(?:_w\d*)?$')
 POCKET_ID_PATTERN = re.compile(r'^h([tb]?)\d+_(\d+)_(\d+)(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
-FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*?(?:(_\d+)_w\d*)?$', re.IGNORECASE)
-ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
-ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)(?:(_\d+)_w\d*)?$', re.IGNORECASE)
+FRET_INLAY_ID_PATTERN = re.compile(r'^f(\d+)_.*?(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
+ERGO_CUT_CTL_ID_PATTERN = re.compile(r'^ec([tb])_(\d+)_(\d+)(?:(_\d+)?_w\d*)?$', re.IGNORECASE)
 
-def ImportValidationItem(kind: str, reference: str, message: str, start: float = None, depth: float = None):
+def ImportValidationItem(kind: str, reference: str, message: str, start: float | None = None, depth: float | None = None):
     return dict(kind=kind, reference=reference, message=message, start=start, depth=depth)
 
 
@@ -164,6 +164,8 @@ def match_ergo_cut(obj: App.DocumentObject, cuts: Dict[str, ErgoCutaway]) -> boo
             cutaway.contour = obj
         return True
 
+    return False
+
 
 @with_temp_doc
 def import_custom_shapes(
@@ -171,7 +173,7 @@ def import_custom_shapes(
     tmp_doc: App.Document,
     filename: str,
     targets: ImportTarget,
-    progress_listener: ProgressListener = None,
+    progress_listener: ProgressListener | None = None,
     require_contour: bool = True,
     require_midline: bool = True,
     for_validation: bool = False):
@@ -352,7 +354,7 @@ def import_custom_shapes(
 
 
 @with_temp_doc
-def import_fretboard_inlays(doc, tmpDoc, filename, progress_listener: ProgressListener = None, forValidation=False):
+def import_fretboard_inlays(doc, tmpDoc, filename, progress_listener: ProgressListener | None = None, forValidation=False):
 
     if progress_listener is None:
         progress_listener = ProgressListener()
