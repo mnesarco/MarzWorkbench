@@ -21,10 +21,10 @@
 #                                                                              #
 ################################################################################
 
-__version__ = "0.1.16"
+__version__ = "0.1.17"
 __author__ = "Frank David Martinez M <mnesarco at gmail.com>"
 __copyright__ = "Copyright (c) 2020, Frank David Martinez M."
 __license__ = "GPLv3"
 __maintainer__ = "https://github.com/mnesarco/"
 
-__dep_min_freecad__ = '0.21.1'
+__dep_min_freecad__ = '1.0.0'
