@@ -21,7 +21,7 @@
 #                                                                              #
 ################################################################################
 
-from typing import Tuple
+from typing import Tuple, List
 import Part # type: ignore
 
 from freecad.marz.utils import geom
@@ -119,6 +119,16 @@ def create_body_component(
     return comp
 
 
+def ensure_single_solid(shape: Part.Shape) -> Part.Shape | None:
+    if shape is None or shape.isNull():
+        return None
+    parts = shape.Solids
+    if len(parts) == 1:
+        return shape.Solids[0]
+    fused: Part.Shape = parts[0].multiFuse(parts[1:])
+    return fused.Solids[0]
+
+
 @traced("Make Body")
 def make_body_parts(
     inst: Instrument,
@@ -156,18 +166,25 @@ def make_body_parts(
 
     with traceTime('Building Body parts...', progress_listener):
         back, top, *heel = Task.join(jobs)
+        back = ensure_single_solid(back)
+        top = ensure_single_solid(top)
+        heel = [ensure_single_solid(h) for h in heel]
 
     if top and len(heel) > 0:
         with traceTime('Carving Neck pocket from top...', progress_listener):
             top = top.cut(heel[0])
+            top = ensure_single_solid(top)
 
     if back and len(heel) > 0:
         with traceTime('Carving Neck pocket from back...', progress_listener):
             back = back.cut(heel[0])
+            back = ensure_single_solid(back)
 
     try:
         progress_listener.add("Applying Ergonomic cutaways...")
         top, back = apply_ergo_cutaways(inst, top, top_placement, back, back_placement)
+        back = ensure_single_solid(back)
+        top = ensure_single_solid(top)
     except Exception:
         progress_listener.add("Ergonomic cutaways could not be applied")
 
@@ -184,34 +201,30 @@ def apply_ergo_cutaways(
     back_placement: Placement) -> Tuple[Part.Shape, Part.Shape]:
 
     if top:
-        body: Part.Shape = Part.makeCompound([top, back])
+        body: List[Part.Shape] = [top, back]
     else:
-        body = back
+        body: List[Part.Shape] = [back]
 
     if BodyErgoCutsTop.exists():
         cutaway = BodyErgoCutsTop().Shape.copy()
         cutaway.Placement = Placement(top_placement.Base + Vector(0,0,inst.body.topThickness), top_placement.Rotation)
-        body = body.cut(cutaway)
+        body = [part.cut(cutaway.copy()) for part in body]
 
     if BodyErgoCutsBack.exists():
         cutaway: Part.Shape = BodyErgoCutsBack().Shape.copy()
         cutaway.Placement = back_placement
-        body = body.cut(cutaway)
+        body = [part.cut(cutaway.copy()) for part in body]
 
-    solids = geom.query(body.Solids, order_by=lambda s: -cutaway.BoundBox.ZMax)
+    for shape in body:
+        solids = geom.query(shape.Solids, order_by=lambda s: -cutaway.BoundBox.ZMax)
+        if len(solids) != 1:
+            MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
+            return top, back
 
-    if len(solids) != 1 and inst.body.topThickness == 0:
-        MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
-        return top, back
-
-    if len(solids) != 2 and inst.body.topThickness > 0:
-        MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
-        return top, back
-
-    if len(solids) == 1:
-        return top, solids[0]
+    if len(body) == 1:
+        return top, body[0]
     else:
-        return solids[0], solids[1]
+        return body[0], body[1]
 
 
 class BodyFeature:
