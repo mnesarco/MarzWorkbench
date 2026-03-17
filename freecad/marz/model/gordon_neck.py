@@ -98,7 +98,10 @@ def heel_profile(support_edge: Edge, inst: Instrument, height: float) -> Edge:
     b = a + Vector(0,0,-base_height/2)
     c = b + Vector(0,0,-base_height/2)
     d = c + Vector(0,0,-height)
-    e = mid + Vector(0,0, d.z - height)
+    if height < 20.0:
+        e = mid + Vector(0,0, d.z + 0.1)
+    else:
+        e = mid + Vector(0,0, d.z - height)
     i = support_edge.valueAt(support_edge.LastParameter)
     h = i + Vector(0,0,-base_height/2)
     g = h + Vector(0,0,-base_height/2)
@@ -128,7 +131,7 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
     Vertical edges at the end of the heel
     """
 
-    height = min(max(20, inst.neck.transitionTension), 50)
+    height = min(max(6, inst.neck.transitionTension), 50)
 
     bridge = fbd.neckFrame.bridge.edge()
     mid = edge_mid_point(bridge)
@@ -429,6 +432,12 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     # Exclude some redundant or invalid profiles from the surface
     exclude = 1, 2, 12, 13, 14
     profiles_edges: list[Edge] = [e for i,e in enumerate(all_profiles) if i not in exclude]
+
+    if GORDON_DEBUG:
+        for i, e in enumerate(guides):
+            Part.show(e, f"NeckGordonGuide_{i:0>3}")
+        for i, e in enumerate(profiles_edges):
+            Part.show(e, f"NeckGordonProfile_{i:0>3}")
 
     # Neck gordon surface
     with traceTime("Gordon Neck: InterpolateCurveNetwork"):

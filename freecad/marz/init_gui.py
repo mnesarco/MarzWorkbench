@@ -62,6 +62,7 @@ class MarzWorkbench(Gui.Workbench):
             self.showAbout = False
             from freecad.marz.feature.widget_about import MarzAboutWindow
             MarzAboutWindow.execute(False, 1000)
+        Gui.runCommand('MarzCmdShowParameters', 0)
 
     def Deactivated(self):
         pass
