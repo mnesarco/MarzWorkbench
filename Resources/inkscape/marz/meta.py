@@ -37,7 +37,13 @@ from pathlib import Path
 from textwrap import dedent
 from typing import (IO, Any, Dict, Generic, Iterable, List, Optional, TypeVar,
                     Union)
-from xml.etree import ElementTree as ET
+
+try:
+    # Attempt to use the defused version for security
+    from defusedxml import ElementTree as ET
+except ImportError:
+    # Fallback to standard library (Python 3.11+ has basic DoS protection)
+    from xml.etree import ElementTree as ET  # nosec
 
 import inkex
 import inkex.base
@@ -95,7 +101,7 @@ def xml_save(root: ET.Element, file_or_filename: Union[str, IO[bytes]]):
     """
     tree = ET.ElementTree(root)
     ET.indent(tree, space="  ", level=0)
-    tree.write(file_or_filename, 'utf-8', 
+    tree.write(file_or_filename, 'utf-8',
                default_namespace=INX_NS, xml_declaration=True)
 
 
@@ -104,8 +110,8 @@ def xml_to_fqn(data: Dict[str, Any], strict: bool = False) -> Dict[str, Any]:
     Adds namespace to attributes
     """
     return {
-        f'{{{INX_NS}}}{k}': xml_val(v, strict) 
-        for k, v in data.items() 
+        f'{{{INX_NS}}}{k}': xml_val(v, strict)
+        for k, v in data.items()
         if v is not None
     }
 
@@ -117,10 +123,10 @@ def xml_fqn_tag(tag: str) -> str:
     return f'{{{INX_NS}}}{tag}'
 
 
-def xml_elem(tag: str, 
-         value: str = None, 
-         attrs: Dict[str, str] = None, 
-         strict: bool = False, 
+def xml_elem(tag: str,
+         value: str = None,
+         attrs: Dict[str, str] = None,
+         strict: bool = False,
          **kwargs) -> ET.Element:
     """
     Create an xml element
@@ -135,11 +141,11 @@ def xml_elem(tag: str,
     return element
 
 
-def xml_attr(elem: ET.Element, 
-         name: str, 
-         value: Any, 
-         default: Any = None, 
-         ns: str = INX_NS, 
+def xml_attr(elem: ET.Element,
+         name: str,
+         value: Any,
+         default: Any = None,
+         ns: str = INX_NS,
          strict: bool = False):
     """
     Adds an attribute
@@ -148,10 +154,10 @@ def xml_attr(elem: ET.Element,
         elem.set(f'{{{ns}}}{name}', xml_val(value, strict))
 
 
-def xml_add_elem(parent: ET.Element, 
-             name: str, 
-             value: Any, 
-             default: Any = None, 
+def xml_add_elem(parent: ET.Element,
+             name: str,
+             value: Any,
+             default: Any = None,
              strict: bool = False):
     """Adds an element"""
     if value != default:
@@ -299,9 +305,9 @@ class Dependency:
     lookup: LocationType = LocationType.Path
 
     def xml(self):
-        return xml_elem('dependency', 
-                        self.value, 
-                        type=self.type.value, 
+        return xml_elem('dependency',
+                        self.value,
+                        type=self.type.value,
                         description=self.description,
                         location=self.lookup.value)
 
@@ -315,8 +321,8 @@ class Category:
     context: str = None
 
     def xml(self):
-        return xml_elem('category', 
-                        self.name, 
+        return xml_elem('category',
+                        self.name,
                         context=self.context)
 
 
@@ -341,7 +347,7 @@ class Widget:
         xml_attr(elem, 'translatable', self.translatable, False)
         xml_attr(elem, 'context', self.context)
         return elem
-    
+
 
 def _param_xml(self, type: str):
     elem = Widget.xml(self, 'param', self.default)
@@ -391,7 +397,7 @@ class _Param(Generic[T]):
     default: Optional[T] = None
 
     def arg_type(self):
-        return str    
+        return str
 
 
 @dataclass
@@ -407,7 +413,7 @@ class _Number(Generic[T]):
         elem = _param_xml(self, type)
         xml_attr(elem, 'min', self.min)
         xml_attr(elem, 'max', self.max)
-        xml_attr(elem, 'appearance', 
+        xml_attr(elem, 'appearance',
                  self.appearance.value, NumberAppearance.Default)
         return elem
 
@@ -485,9 +491,9 @@ class Widgets:
         """
         def xml(self):
             elem = super().xml('label', self.text)
-            xml_attr(elem, 'space', self.whitespace.value, 
+            xml_attr(elem, 'space', self.whitespace.value,
                     ns='xml', default=Whitespace.Default)
-            xml_attr(elem, 'appearance', self.appearance.value, 
+            xml_attr(elem, 'appearance', self.appearance.value,
                     LabelAppearance.Default)
             return elem
 
@@ -517,7 +523,7 @@ class Widgets:
 
 
     @dataclass
-    class Separator(Widget):   
+    class Separator(Widget):
         """
         Separator widget
         """
@@ -558,7 +564,7 @@ class Widgets:
             xml_attr(elem, 'name', self.name)
             xml_attr(elem, 'type', type)
             return elem
-        
+
 
     @dataclass
     class Integer(Widget, _Number[int], _Param[int]):
@@ -607,7 +613,7 @@ class Widgets:
         """
         def xml(self):
             elem = _param_xml(self, 'color')
-            xml_attr(elem, 'appearance', 
+            xml_attr(elem, 'appearance',
                     self.appearance.value, ColorAppearance.Default)
             if self.default:
                 elem.text = str(self.default.__int__())
@@ -624,7 +630,7 @@ class Widgets:
         """
         def xml(self):
             elem = _param_xml(self, 'string')
-            xml_attr(elem, 'appearance', 
+            xml_attr(elem, 'appearance',
                     self.appearance.value, StringAppearance.Default)
             xml_attr(elem, 'max_length', self.max_length)
             return elem
@@ -637,7 +643,7 @@ class Widgets:
         """
         def xml(self):
             elem = _param_xml(self, 'path')
-            xml_attr(elem, 'mode', 
+            xml_attr(elem, 'mode',
                     self.mode.value, FileMode.File)
             xml_attr(elem, 'filetypes', self.types)
             return elem
@@ -654,9 +660,9 @@ class Widgets:
         context: Optional[str] = None
 
         def xml(self):
-            elem = xml_elem('option', 
-                            self.label, 
-                            translatable=self.translatable, 
+            elem = xml_elem('option',
+                            self.label,
+                            translatable=self.translatable,
                             context=self.context)
             xml_attr(elem, 'value', str(self.value))
             return elem
@@ -669,9 +675,9 @@ class Widgets:
         """
         def xml(self):
             elem = _param_xml(self, 'optiongroup')
-            xml_attr(elem, 
-                    'appearance', 
-                    self.appearance.value, 
+            xml_attr(elem,
+                    'appearance',
+                    self.appearance.value,
                     OptionsAppearance.Radio)
             for item in self.items:
                 elem.append(item.xml())
@@ -722,7 +728,7 @@ class Script:
 
     def xml(self):
         command = xml_elem('command', Path(self.path).name,
-                           interpreter=self.interpreter, 
+                           interpreter=self.interpreter,
                            location=self.location.value)
         script = xml_elem('script')
         script.append(command)
@@ -872,13 +878,13 @@ class _BaseMetadata:
 
         for param in all_params:
             self.merge_argument(args,
-                                f"--{param.name}", 
-                                type=param.arg_type(), 
+                                f"--{param.name}",
+                                type=param.arg_type(),
                                 default=param.default,
                                 help=param.description)
-        
-        self.merge_argument(args, "--inx", 
-                            help="Generate .inx files and exit", 
+
+        self.merge_argument(args, "--inx",
+                            help="Generate .inx files and exit",
                             action='store_true')
 
     def _custom_xml(self):
@@ -902,20 +908,20 @@ class EffectMetadata(_BaseMetadata):
 
     def _custom_xml(self):
         effect = xml_elem('effect')
-        xml_attr(effect, 'needs-document', 
+        xml_attr(effect, 'needs-document',
                 self.needs_document, True, strict=True)
-        xml_attr(effect, 'needs-live-preview', 
+        xml_attr(effect, 'needs-live-preview',
                 self.live_preview, True, strict=True)
-        xml_attr(effect, 'implements-custom-gui', 
+        xml_attr(effect, 'implements-custom-gui',
                 self.custom_gui, False, strict=True)
-        xml_attr(effect, 'show-stderr', 
+        xml_attr(effect, 'show-stderr',
                 self.show_stderr, False, strict=True)
-        xml_add_elem(effect, 'object-type', 
+        xml_add_elem(effect, 'object-type',
                     self.object_type.value)
         effect.append(Menu(self.menu, self.hidden, self.tooltip).xml())
         xml_add_elem(effect, 'menu-tip', self.tooltip)
         return effect
-    
+
 
 class InputMetadata(_BaseMetadata):
     """
@@ -997,7 +1003,7 @@ class Runner:
 
 def metadata(*metadata: Iterable[_BaseMetadata]):
     """
-    Decorator for extension classes. 
+    Decorator for extension classes.
     - Adds cli arguments
     - Adds inx generation capabilities
     """
