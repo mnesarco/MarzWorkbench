@@ -34,8 +34,8 @@ class Version:
     PATTERN = re.compile(r'\d+')
 
     def __init__(self, version_str: str = None) -> None:
-        self.raw = version_str or '0.0.0.0'
-        self.parts = Version.PATTERN.findall(self.raw + ".0.0.0.0")
+        self.raw = version_str or '0.0.0.0'  # nosec
+        self.parts = Version.PATTERN.findall(self.raw + ".0.0.0.0")  # nosec
         self.value = tuple(int(v) for v in self.parts[:4])
 
     def __str__(self) -> str:

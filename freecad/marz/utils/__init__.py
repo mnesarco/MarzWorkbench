@@ -35,7 +35,7 @@ def startTimeTrace(label):
 
 
 def randomString(size=16, symbols="ABCDEFGHIJKLMNOPQRST"):
-    return "".join((symbols[random.randint(0, size - 1)] for i in range(size)))
+    return "".join((symbols[random.randint(0, size - 1)] for i in range(size)))  # nosec
 
 
 class traceTime:

@@ -60,6 +60,7 @@ Data:
 
 """
 
+from pathlib import Path
 from typing import Any, List, Tuple, Union
 import json
 import tempfile
@@ -162,11 +163,11 @@ def set_doc_file_content(name: str, content: Union[str, bytes], *, meta: List = 
     :param List meta: metadata, defaults to None
     :param App.Document doc: Document, defaults to ActiveDocument
     """
-    tmp = tempfile.mktemp(suffix=".tmp", prefix="marz-")
     mode = 'wb' if isinstance(content, (bytearray, bytes)) else 'w'
-    with open(tmp, mode) as tmp_file:
+    with tempfile.NamedTemporaryFile(suffix=".tmp", prefix="marz-", mode=mode, delete=False) as tmp_file:
         tmp_file.write(content)
-    return set_doc_file(name, str(tmp), meta=meta, doc=doc, description=description)
+        tmp_path = Path(tmp_file.name)
+    return set_doc_file(name, str(tmp_path), meta=meta, doc=doc, description=description)
 
 
 def export_doc_file(name: str, filename: str, doc: App.Document = None):
