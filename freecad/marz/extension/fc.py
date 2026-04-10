@@ -27,3 +27,4 @@
 import FreeCAD as App
 import FreeCADGui as Gui
 from FreeCAD import Base, Placement, Rotation, Vector
+import Part

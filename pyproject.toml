@@ -1,0 +1,76 @@
+[project]
+name = "MarzWorkbench"
+version = "0.1.19"
+description = "Guitar Workbench"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LGPL-3.0-or-later OR LGPL-2.1-or-later"
+
+maintainers = [
+    {name = "Frank David Martínez Muñoz", email = "mnesarco@gmail.com" }
+]
+
+authors = [
+    {name = "Frank David Martínez Muñoz", email = "mnesarco@gmail.com" }
+]
+
+keywords = ["svg", "guitar"]
+
+[project.urls]
+repository = "https://github.com/mnesarco/MarzWorkbench"
+documentation = "https://github.com/mnesarco/MarzWorkbench/wiki/"
+readme = "https://github.com/mnesarco/MarzWorkbench/blob/main/README.md"
+
+
+[dependency-groups]
+dev = [
+    "freecad-stubs>=1.0.17",
+    "PySide6",
+    "ipykernel",
+    "toml",
+    "typer",
+    "packaging",
+    "rich",
+    "bandit[toml]>=1.8.6",
+]
+
+[tool.ruff]
+line-length = 100
+indent-width = 4
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = [
+    "ANN002",
+    "ANN003",
+    "ANN401",
+    "D100",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D200",
+    "D202",
+    "D212",
+    "D400",
+    "D401",
+    "D415",
+    "I001",
+    "N802",
+    "N806",
+    "N813",
+    "PGH003",
+    "SIM108",
+    "SIM117",
+    "TID252",
+    "UP038"
+]
+
+[tool.ruff.lint.flake8-annotations]
+suppress-dummy-args = true
+
+[tool.ruff.lint.pydocstyle]
+ignore-decorators = ["fpo.template", "contextlib.contextmanager"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "freecad/svgwb/vendor/fcapi/devutils"]

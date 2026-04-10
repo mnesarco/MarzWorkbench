@@ -26,7 +26,7 @@ import json
 from typing import Any, Dict, List
 from dataclasses import dataclass
 from freecad.marz.utils import traceTime
-from freecad.marz.extension.fc import App, Gui, Base
+from freecad.marz.extension.fc import App, Gui, Base, Part
 
 @dataclass
 class Group:
@@ -91,25 +91,24 @@ class PartFeature:
     style: PartStyle
     group: Group
 
-    def indexed(self, index = None) -> str:
+    def indexed(self, index: int | str | None = None) -> str:
         name = self.name if index is None else f'{self.name}{index}'
         label = self.label if index is None else f'{self.label}{index}'
         return name, label
 
-    def set(self, shape, *, index = None, visibility: bool = True, keep: bool = False, doc: App.Document = None) -> App.DocumentObject:
+    def set(self, shape: Part.Shape, *, index: int | str | None = None, visibility: bool = True, keep: bool = False, doc: App.Document = None) -> App.DocumentObject:
         doc = doc or App.activeDocument() or App.newDocument()
         if shape is None:
             if keep:
                 return self.get(index=index, doc=doc)
-            else:
-                self.remove(index=index, doc=doc)
-                return None
+            self.remove(index=index, doc=doc)
+            return None
 
         name, label = self.indexed(index)
         style = self.style
         obj = doc.getObject(name)
         if not obj:
-            obj = doc.addObject('Part::FeatureExt', name)
+            obj = doc.addObject("Part::FeatureExt", name)
             obj.Label = label
             if style:
                 style.apply(obj.ViewObject)
@@ -118,12 +117,18 @@ class PartFeature:
         self.group.add(obj, doc=doc)
         return obj
 
-    def get(self, *, index = None, doc: App.Document = None):
+    def get(self, *, index: int | str | None = None, doc: App.Document = None) -> App.DocumentObject | None:
         doc = doc or App.activeDocument() or App.newDocument()
         name, _label = self.indexed(index)
         return doc.getObject(name)
 
-    def remove(self, *, index = None, doc: App.Document = None):
+    def shape(self, *, index: int | str | None = None, doc: App.Document = None) -> Part.Shape | None:
+        obj = self.get(index=index, doc=doc)
+        if obj:
+            return getattr(obj, "Shape", None)
+        return None
+
+    def remove(self, *, index: int | str | None = None, doc: App.Document = None) -> None:
         doc = doc or App.activeDocument() or App.newDocument()
         name, _label = self.indexed(index)
         if doc.getObject(name):

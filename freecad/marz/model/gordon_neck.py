@@ -244,6 +244,33 @@ def create_guides(profiles: List[Edge]) -> List[Edge]:
     +----+----+----+-+----+----+
 
     """
+    from freecad.marz.feature.document import HeadstockContour, HeadstockTransition
+    tan_treble: App.Vector | None = None
+    tan_bass: App.Vector | None = None
+    if HeadstockTransition.exists() and HeadstockContour.exists():
+        hs_contour = HeadstockContour.shape()
+        hs_transition = HeadstockTransition.shape()
+        if hs_contour and hs_transition:
+            dist, vecs, info = hs_transition.distToShape(hs_contour)
+            if isinstance(info, list) and len(info) == 2:
+                (*_, topo0, idx0, par0) = info[0]
+                (*_, topo1, idx1, par1) = info[1]
+                if topo1 == "Edge" and topo0 == "Edge":
+                    edge0 = hs_contour.Edges[idx0]
+                    edge1 = hs_contour.Edges[idx1]
+                    tan0 = edge0.derivative1At(par0)
+                    tan1 = edge1.derivative1At(par1)
+                    check0 = vecs[0][1] + tan0
+                    if check0.x > vecs[0][1].x:
+                        tan0 = tan0 * -1
+                    check1 = vecs[1][1] + tan1
+                    if check1.x > vecs[1][1].x:
+                        tan1 = tan1 * -1
+                    if vecs[0][1].y > vecs[1][1].y:
+                        tan_treble, tan_bass = tan0, tan1
+                    else:
+                        tan_treble, tan_bass = tan1, tan0
+
     num_points = 5
     first_guide = 0
     last_guide = num_points - 1
@@ -259,7 +286,24 @@ def create_guides(profiles: List[Edge]) -> List[Edge]:
                 continue
             p.append(prof[i])
         out.append(p)
-    return [BSplineCurve(prof).toShape() for prof in out]
+
+    bsplines = []
+    last = len(out) - 1
+    for idx, points in enumerate(out):
+        if idx == 0 and tan_treble:
+            c = BSplineCurve()
+            c.interpolate(Points=points, FinalTangent=tan_treble)
+            bsplines.append(c.toShape())
+        elif idx == last and tan_bass:
+            c = BSplineCurve()
+            c.interpolate(Points=points, FinalTangent=tan_bass)
+            bsplines.append(c.toShape())
+        else:
+            c = BSplineCurve()
+            c.interpolate(Points=points)
+            bsplines.append(c.toShape())
+
+    return bsplines
 
 
 def base_headstock_profile_bspline(support_edge: Wire, height: float) -> Edge:

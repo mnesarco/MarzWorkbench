@@ -2,7 +2,7 @@
 <package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
   <name>Marz Workbench</name>
   <description>Parametric Guitar design workbench</description>
-  <version>0.1.18</version>
+  <version>0.1.19</version>
   <author email="twitter: @mnesarco">Frank Martinez</author>
   <maintainer email="twitter: @mnesarco">Frank Martinez</maintainer>
   <license file="LICENSE-GPL">GPL-3.0-or-later</license>
@@ -15,7 +15,7 @@
       <name>Marz Workbench</name>
       <classname>MarzWorkbench</classname>
       <description>Parametric Guitar design workbench.</description>
-      <version>0.1.18</version>
+      <version>0.1.19</version>
       <subdirectory>./</subdirectory>
       <icon>Resources/icons/Marz.svg</icon>
       <freecadmin>1.0.0</freecadmin>
