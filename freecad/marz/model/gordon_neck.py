@@ -32,8 +32,8 @@ from freecad.marz.utils import traced, geom, traceTime
 from freecad.marz.extension.threading import Task, task
 from freecad.marz.extension.fc import App, Vector, Rotation, Placement
 import freecad.marz.curves.gordon as tigl
+from freecad.marz.utils.debug import debug_show_shape
 
-from typing import List, Optional
 import math
 
 from dataclasses import dataclass
@@ -55,12 +55,12 @@ GORDON_DEBUG = False
 
 @dataclass
 class NeckProfiles:
-    edges: List[Edge]
+    edges: list[Edge]
     nut_edge: Edge
 
 @dataclass
 class HeelProfiles:
-    edges: List[Edge]
+    edges: list[Edge]
     last: Edge
 
 @dataclass
@@ -138,7 +138,7 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
 
     steps = 5
     joint_fret_x = neckd.lineToFret(inst.neck.jointFret).end.x
-    delta = abs(mid.x - joint_fret_x) / 5
+    delta = abs(mid.x - joint_fret_x) / steps
     rot = Rotation(Vector(0,0,1), 0)
 
     edge1 = heel_profile(bridge, inst, height)
@@ -151,6 +151,10 @@ def heel_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Heel
         edges.append(edge_n)
 
     sorted_edges = list(reversed(edges))
+    if GORDON_DEBUG:
+        for i, e in enumerate(sorted_edges):
+            debug_show_shape(e.copy(), f"HeelProfile:{i:>03}")
+
     return HeelProfiles(sorted_edges, edge1)
 
 
@@ -191,7 +195,7 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     nut_profile = edges[0]
 
     # Edge towards heel to force tangency
-    offset = length + abs(inst.neck.transitionLength) * 0.5
+    offset = length + 1 # abs(inst.neck.transitionLength) * 0.5
     control_edge = profile_edge(0, offset, points[0] + direction * offset)
     edges.append(control_edge)
 
@@ -203,6 +207,10 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     # Edges before nut to force the guides pass for nut point
     control = -1.2  # Issue #40
     edges.insert(0, profile_edge(0, control, points[0] + direction * control))
+
+    if GORDON_DEBUG:
+        for i, e in enumerate(edges):
+            debug_show_shape(e.copy(), f"NeckProfile:{i:>03}")
 
     return NeckProfiles(edges, nut_profile)
 
@@ -227,7 +235,7 @@ def headstock_end_profile(inst: Instrument, fbd: FretboardData, neckd: NeckData)
 
 
 @traced("Gordon Neck: Guides")
-def create_guides(profiles: List[Edge]) -> List[Edge]:
+def create_guides(profiles: list[Edge]) -> list[Edge]:
     """
     Create BSpline Guides by points on each profile
 
@@ -293,15 +301,17 @@ def create_guides(profiles: List[Edge]) -> List[Edge]:
         if idx == 0 and tan_treble:
             c = BSplineCurve()
             c.interpolate(Points=points, FinalTangent=tan_treble)
-            bsplines.append(c.toShape())
         elif idx == last and tan_bass:
             c = BSplineCurve()
             c.interpolate(Points=points, FinalTangent=tan_bass)
-            bsplines.append(c.toShape())
         else:
             c = BSplineCurve()
             c.interpolate(Points=points)
-            bsplines.append(c.toShape())
+
+        if c.Degree > 3:
+            c.reduceDegree(3)
+
+        bsplines.append(c.toShape())
 
     return bsplines
 
@@ -479,9 +489,7 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
 
     if GORDON_DEBUG:
         for i, e in enumerate(guides):
-            Part.show(e, f"NeckGordonGuide_{i:0>3}")
-        for i, e in enumerate(profiles_edges):
-            Part.show(e, f"NeckGordonProfile_{i:0>3}")
+            debug_show_shape(e, f"NeckGordonGuide_{i:0>3}")
 
     # Neck gordon surface
     with traceTime("Gordon Neck: InterpolateCurveNetwork"):
@@ -492,6 +500,8 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
         gordon = tigl.InterpolateCurveNetwork(prof_curves, guide_curves, tol_3d, tol_2d)
         gordon.max_ctrl_pts = 80
         face_gordon = gordon.surface().toShape()
+        if GORDON_DEBUG:
+            debug_show_shape(face_gordon, f"NeckGordonSurface")
         del(gordon)
 
 
@@ -637,7 +647,7 @@ def top_cut_angled(pos: Vector, angle_rads: float, volute_offset: float) -> Soli
 
 
 @task
-def pocket_cut(angle_rads: float, pos: Vector, depth: float) -> Task[Optional[Solid]]:
+def pocket_cut(angle_rads: float, pos: Vector, depth: float) -> Task[Solid | None]:
     """Create solid to cut pockets from the headstock"""
     pockets = App.ActiveDocument.getObject('Marz_Headstock_Pockets')
     if pockets:
@@ -647,4 +657,4 @@ def pocket_cut(angle_rads: float, pos: Vector, depth: float) -> Task[Optional[So
         else:
             pockets.Placement = Placement(pos + Vector(0, 0, -depth), Rotation(Vector(0, 1, 0), 0))
         return pockets
-
+    return None
