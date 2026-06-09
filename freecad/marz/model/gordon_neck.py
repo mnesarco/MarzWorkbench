@@ -74,6 +74,11 @@ class HeadstockPlate:
     solid : Solid
     normal: Vector
 
+@dataclass
+class InterpolationPoint:
+    point: Vector
+    tan: Vector | None = None
+
 
 def edge_mid_point(edge: Edge) -> Vector:
     mid_param = (edge.FirstParameter + edge.LastParameter) / 2.0
@@ -176,27 +181,33 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     widthAt = neckd.widthAt
     transition_offset = 20.0 # TODO: Bind a parameter
 
-    def profile_edge(i: int, x: float | None = None, point: Vector | None = None, h_delta: float = 0.0):
+    if GORDON_DEBUG:
+        debug_show_shape(edge, "NeckControlLine")
+
+    def profile_edge(i: int, x: float | None = None, point: Vector | None = None):
         if x is None:
             x = i * step
-        h = thicknessAt(x) + h_delta
+        h = thicknessAt(x)
         if point is None:
             point = Vector(points[i].x, points[i].y, points[i].z)
         w = widthAt(x)
         p = profile(w, h, wire=False)
-        if p:
+        if p and not p.isNull():
             p.Placement = Placement(point, rot)
-        return p
+            return p, point, x, i
+        return None
 
     # Edges between nut and transition start
     edges = [profile_edge(i) for i in range(steps + 1)]
-    edges = [w for w in edges if w is not None and not w.isNull()]
+    edges = [w for w in edges if w is not None]
 
-    nut_profile = edges[0]
+    nut_profile = edges[0][0]
 
     # Edge towards heel to force tangency
-    offset = length + 1 # abs(inst.neck.transitionLength) * 0.5
-    control_edge = profile_edge(0, offset, points[0] + direction * offset)
+    # offset = length + 1 # abs(inst.neck.transitionLength) * 0.5
+    offset = edges[-1][2] + 2.0
+    offset_pnt = edges[-1][1] + (direction * 2.0)
+    control_edge = profile_edge(0, offset, offset_pnt)
     edges.append(control_edge)
 
     # space = 1.5
@@ -207,6 +218,8 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     # Edges before nut to force the guides pass for nut point
     control = -1.2  # Issue #40
     edges.insert(0, profile_edge(0, control, points[0] + direction * control))
+
+    edges = [e for e, *_ in edges]
 
     if GORDON_DEBUG:
         for i, e in enumerate(edges):
@@ -279,7 +292,7 @@ def create_guides(profiles: list[Edge]) -> list[Edge]:
                     else:
                         tan_treble, tan_bass = tan1, tan0
 
-    num_points = 5
+    num_points = 6
     first_guide = 0
     last_guide = num_points - 1
     sides = first_guide, last_guide # Side guides
@@ -305,16 +318,55 @@ def create_guides(profiles: list[Edge]) -> list[Edge]:
             c = BSplineCurve()
             c.interpolate(Points=points, FinalTangent=tan_bass)
         else:
-            c = BSplineCurve()
-            c.interpolate(Points=points)
-
-        if c.Degree > 3:
-            c.reduceDegree(3)
+            c = interpolate(points, idx)
 
         bsplines.append(c.toShape())
 
     return bsplines
 
+
+def set_tangents(pts: list[InterpolationPoint], tol: float=1e-7) -> None:
+    """
+    Set tangents each three-in-a-row points
+    """
+
+    n = len(pts)
+    for i in range(1, n - 1):
+        pt0 = pts[i - 1]
+        pt1 = pts[i]
+        pt2 = pts[i + 1]
+        dir_vec = pt2.point - pt0.point
+        dir_vec.normalize()
+        if pt1.point.distanceToLine(pt0.point, dir_vec) < tol:
+            if pt0.tan is not None:
+                pt0.tan = 0.5 * (pt0.tan + dir_vec)
+            else:
+                pt0.tan = dir_vec
+            pt1.tan = dir_vec
+            pt2.tan = dir_vec
+
+
+def interpolate(pts: list[Vector], idx: int, tol: float=1e-7) -> BSplineCurve:
+    """
+    Interpolate a list of points while preserving point alignment
+    """
+    ipl = [InterpolationPoint(pt) for pt in pts]
+    set_tangents(ipl, tol)
+    tanl = []
+    tagl = []
+    for pti, pt in enumerate(ipl):
+        if pt.tan is None:
+            tanl.append(Vector())
+            tagl.append(False)
+        else:
+            tanl.append(pt.tan)
+            tagl.append(True)
+            if GORDON_DEBUG:
+                debug_show_shape(Part.LineSegment(pt.point, pt.point + pt.tan).toShape(), f"Tan{idx}_{pti}")
+
+    bs = BSplineCurve()
+    bs.interpolate(Points=pts, Tangents=tanl, TangentFlags=tagl)
+    return bs
 
 def base_headstock_profile_bspline(support_edge: Wire, height: float) -> Edge:
     """
@@ -473,7 +525,7 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     raw_profiles = (headstock, *profiles.edges, *heel.edges)
 
     # Re-parameterize profiles to make it smooth
-    all_profiles = []
+    all_profiles: list[Edge] = []
     for e in raw_profiles:
         points = e.discretize(Number=100)
         all_profiles.append(BSplineCurve(points).toShape())
@@ -490,6 +542,8 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     if GORDON_DEBUG:
         for i, e in enumerate(guides):
             debug_show_shape(e, f"NeckGordonGuide_{i:0>3}")
+        for i, e in enumerate(profiles_edges):
+            debug_show_shape(e, f"NeckGordonRealEdge_{i:0>3}")
 
     # Neck gordon surface
     with traceTime("Gordon Neck: InterpolateCurveNetwork"):

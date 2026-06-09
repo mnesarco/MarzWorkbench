@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "marzworkbench"
-version = "0.1.20"
+version = "0.1.21"
 source = { virtual = "." }
 
 [package.dev-dependencies]
