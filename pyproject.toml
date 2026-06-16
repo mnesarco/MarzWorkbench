@@ -26,7 +26,6 @@ readme = "https://github.com/mnesarco/MarzWorkbench/blob/main/README.md"
 dev = [
     "freecad-stubs>=1.0.17",
     "PySide6",
-    "ipykernel",
     "toml",
     "typer",
     "packaging",
