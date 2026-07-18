@@ -452,6 +452,24 @@ def edge_to_closed_face(edge: Edge) -> Face:
     return Face(wire)
 
 
+def borders_to_closed_face(side_a: Edge, side_b: Edge) -> Face:
+    """
+    Takes two border edges, creates segments between their extremes and builds a face.
+
+    The borders lie on the z=0 plane, but when the heel end is slanted
+    (multiscale) the gordon surface borders may deviate slightly from it, so a
+    planar face is impossible: in that case use a ruled surface, which is
+    exactly bounded by the borders.
+    """
+    close1 = LineSegment(side_a.valueAt(side_a.FirstParameter), side_b.valueAt(side_b.FirstParameter)).toShape()
+    close2 = LineSegment(side_a.valueAt(side_a.LastParameter), side_b.valueAt(side_b.LastParameter)).toShape()
+    wire = Wire([side_a, close1, side_b, close2])
+    try:
+        return Face(wire)
+    except Part.OCCError:
+        return Part.makeRuledSurface(side_a, side_b)
+
+
 @traced("Gordon Neck: Headstock profile rotation")
 def apply_headstock_angle(edge: Edge, angle_deg: float, fbd: FretboardData) -> Edge:
     """
@@ -559,15 +577,18 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
         del(gordon)
 
 
-    # Extract terminal edges to create faces for the shell
-    heel_edge, headstock_edge = geom.query(face_gordon.Edges,
-                   where=lambda x: not geom.is_planar(x, normal=Vector(0,0,1)),
-                   order_by=lambda f: f.CenterOfGravity.x,
-                   limit=2)
+    # Extract terminal edges (heel and headstock) and border edges (sides) to
+    # create faces for the shell. The terminal edges have a large Z span while
+    # the two side borders lie (approximately) on the z=0 plane. Do not rely
+    # on exact planarity here: the gordon surface borders may deviate slightly
+    # from z=0 when the heel end is slanted (multiscale).
+    terminals = geom.query(face_gordon.Edges,
+                   where=lambda x: x.BoundBox.ZLength > 1.0,
+                   order_by=lambda f: f.CenterOfGravity.x)
+    heel_edge, headstock_edge = terminals[0], terminals[-1]
 
-    # Extract border edges to create faces for the shell
     sides = geom.query(face_gordon.Edges,
-                   where=lambda x: geom.is_planar(x, normal=Vector(0,0,1)),
+                   where=lambda x: x.BoundBox.ZLength <= 1.0,
                    limit=2)
 
     # Assemble the solid gluing the 4 faces
@@ -576,20 +597,17 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     face_headstock = edge_to_closed_face(headstock_edge)
 
     side_a, side_b = sides
-    close1 = LineSegment(side_a.valueAt(side_a.FirstParameter), side_b.valueAt(side_b.FirstParameter)).toShape()
-    close2 = LineSegment(side_a.valueAt(side_a.LastParameter), side_b.valueAt(side_b.LastParameter)).toShape()
-    wire = Wire([side_a, close1, side_b, close2])
-    face_fretboard = Face(wire)
+    face_fretboard = borders_to_closed_face(side_a, side_b)
 
     shell = Shell([face_heel, face_gordon, face_fretboard, face_headstock])
     solid = Solid(shell)
 
     # Cut the excess part of the heel
-    pnt = heel.edges[-1].valueAt(heel.edges[-1].FirstParameter)
-    cut_plane_size = abs(pnt.x) * 0.9
-    pnt.y = -cut_plane_size/2
-    pnt.x -= 20
-    pnt.z = -inst.body.neckPocketDepth - inst.neck.topOffset
+    # ! The heel end may be slanted (multiscale), so the plane must cover the
+    # ! deepest point of the terminal heel edge, not just its first vertex.
+    heel_end_x = heel.edges[-1].BoundBox.XMin
+    cut_plane_size = abs(heel_end_x) * 0.9
+    pnt = Vector(heel_end_x - 20, -cut_plane_size/2, -inst.body.neckPocketDepth - inst.neck.topOffset)
     plane = Part.makePlane(cut_plane_size, cut_plane_size, pnt, Vector(0,0,1), Vector(1,0,0))
     res = split_api.slice(solid, [plane], 'CompSolid')
     part = geom.query_one(res.Solids, order_by=lambda s: -s.CenterOfMass.z)
