@@ -177,9 +177,14 @@ def buildFretboardData(inst: Instrument) -> FretboardData:
         # Heel offset
         x += inst.neck.heelOffset
 
-        perp = linexy(vxy(x, 0), vxy(x, 1))                 # Vertical line to intersect sides at x
+        perp = linexy(vxy(x, 0), vxy(x, 1))                 # Vertical line to intersect bass side at x
         p = lineIntersection(frame.bass, perp)              # bass side point
-        q = lineIntersection(frame.treble, perp)            # treble side point
+
+        # Bridge line parallel to the fretboard frame's end line, so the heel
+        # and neck pocket contours follow the fretboard end (slanted when the
+        # instrument is multiscale, perpendicular otherwise).
+        dirv = frame.bridge.vector
+        q = lineIntersection(linexy(p.point.clone(), p.point.clone().add(dirv)), frame.treble)
         bridge = linexy(q.point, p.point)                   # bridge line
 
         bass = linexy(bridge.end.clone(), nut.start.clone())
