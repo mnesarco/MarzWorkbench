@@ -24,7 +24,6 @@
 from typing import Tuple, List
 import Part # type: ignore
 
-from freecad.marz.utils import geom
 from freecad.marz.model.instrument import Instrument
 from freecad.marz.extension.fc import App, Placement, Vector
 from freecad.marz.feature.progress import ProgressListener
@@ -84,36 +83,46 @@ def create_body_component(
             Vector( 0,-w2, 0),
             Vector( 0, w2, 0)
         ]
-        comp = Part.Face( Part.makePolygon(points) ).extrude(Vector(0, 0, height))
+        comp = Part.Face(Part.makePolygon(points)).extrude(Vector(0, 0, height))
+        comp = comp.removeSplitter()
 
     pockets = BodyPockets()
     if pockets:
-        shape = pockets.Shape.copy()
+        shape = pockets.Shape.copy().removeSplitter()
         shape.translate(Vector(0, 0, height + topThickness if back else height))
-        try:
-            comp = comp.cut(shape)
-        except Exception:
-            MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+        for solid in shape.Solids:
+            try:
+                comp = comp.cut(solid)
+            except Exception:
+                MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+            else:
+                comp = comp.removeSplitter()
 
     if top:
         pockets = BodyTopPockets()
         if pockets:
-            shape = pockets.Shape.copy()
+            shape = pockets.Shape.copy().removeSplitter()
             shape.translate(Vector(0, 0, height))
-            try:
-                comp = comp.cut(shape)
-            except Exception:
-                MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+            for solid in shape.Solids:
+                try:
+                    comp = comp.cut(solid)
+                except Exception:
+                    MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+                else:
+                    comp = comp.removeSplitter()
 
     if back:
         pockets = BodyBackPockets()
         if pockets:
-            shape = pockets.Shape.copy()
+            shape = pockets.Shape.copy().removeSplitter()
             shape.translate(Vector(0, 0, height))
-            try:
-                comp = comp.cut(shape)
-            except Exception:
-                MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+            for solid in shape.Solids:
+                try:
+                    comp = comp.cut(solid)
+                except Exception:
+                    MarzLogger.warn(f'Ignoring some pockets: {pockets.Name}')
+                else:
+                    comp = comp.removeSplitter()
 
     comp.Placement = placement
     return comp
@@ -220,8 +229,7 @@ def apply_ergo_cutaways(
         body = [part.cut(cutaway.copy()) for part in body]
 
     for shape in body:
-        solids = geom.query(shape.Solids, order_by=lambda s: -cutaway.BoundBox.ZMax)
-        if len(solids) != 1:
+        if len(shape.Solids) != 1:
             MarzLogger.warn("Ergonomic cutaways breaks the body, skipping")
             return top, back
 

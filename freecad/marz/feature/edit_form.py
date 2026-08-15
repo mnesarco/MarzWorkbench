@@ -51,6 +51,19 @@ from freecad.marz.feature.document import (
 from freecad.marz.utils import randomString
 
 
+def _to_float(value: str) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_gauges(gauges: list[str] | None) -> list[float]:
+    if not gauges:
+        return []
+    return [f for f in map(_to_float, gauges) if f is not None]
+
+
 class InstrumentForm(InstrumentFormBase):
     """
     Instrument Properties Editor
@@ -74,7 +87,7 @@ class InstrumentForm(InstrumentFormBase):
 
         # Special properties
         self.nut_width.setValue(self.nut_width_calc(obj))
-        self.stringSet_gauges_f.setValue([float(f) for f in obj.Stringset_Gauges])
+        self.stringSet_gauges_f.setValue(_safe_gauges(obj.Stringset_Gauges))
 
 
     def save_to_obj(self, obj):
@@ -129,8 +142,8 @@ class InstrumentForm(InstrumentFormBase):
         self.window.show()
 
     def nut_width_calc(self, obj):
-        gauges = obj.Stringset_Gauges
-        string_gauges = (float(gauges[0]) + float(gauges[-1])) / 2.0
+        gauges = _safe_gauges(obj.Stringset_Gauges)
+        string_gauges = (gauges[0] + gauges[-1]) / 2.0 if gauges else 0.0
         dist = obj.Nut_StringDistanceProj.Value
         margins = obj.Fretboard_SideMargin.Value * 2
         return string_gauges + margins + dist
@@ -164,7 +177,7 @@ class InstrumentForm(InstrumentFormBase):
             if notification:
                 ui.show_info(" ".join(notification), parent=self.window)
         except Exception as ex:
-            self.message_err(ex.args[0])
+            self.message_err(str(ex) or "SVG import failed.")
         finally:
             self.Object.touch()
             recompute(self.Object.Document)

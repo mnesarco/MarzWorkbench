@@ -83,7 +83,7 @@ wheels = [
 
 [[package]]
 name = "marzworkbench"
-version = "0.1.21"
+version = "0.1.22"
 source = { virtual = "." }
 
 [package.dev-dependencies]

@@ -130,6 +130,10 @@ def heel_fillet(heel, radius):
                      where=lambda e: is_planar(e, coplanar=Z),
                      order_by=lambda e: e.CenterOfMass.x)
 
+    if face is None:
+        MarzLogger.warn("Heel fillet was not possible due to a missing face")
+        return heel
+
     # Two side edges
     selected = query(face.Edges,
                      order_by=lambda e: -abs(e.CenterOfMass.y), limit=2)
@@ -192,7 +196,6 @@ class NeckFeature:
                 try:
                     neck = neck.cut(truss, 1e-3)
                 except Exception:
-                    Part.show(truss, "DebugTruss")
                     MarzLogger.warn(
                         "Truss rod channel was not carved: degenerate neck geometry. "
                         "Check the truss rod and neck parameters.")

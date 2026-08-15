@@ -123,8 +123,12 @@ def heel_support_edge(cut_edge: Edge, box: FretboardBox) -> Edge:
     :return Edge: An edge to be used as support
     """
     dist, vecs, info = cut_edge.distToShape(box.bass.edge())
+    if not vecs:
+        raise ModelException("Cannot compute the heel support edge: check the neck frame.")
     (a, _), *rest = vecs
     dist, vecs, info = cut_edge.distToShape(box.treble.edge())
+    if not vecs:
+        raise ModelException("Cannot compute the heel support edge: check the neck frame.")
     (b, _), *rest = vecs
     return LineSegment(b, a).toShape() # !Important b,a order is important
 
@@ -587,11 +591,15 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     terminals = geom.query(face_gordon.Edges,
                    where=lambda x: x.BoundBox.ZLength > 1.0,
                    order_by=lambda f: f.CenterOfGravity.x)
-    heel_edge, headstock_edge = terminals[0], terminals[-1]
 
     sides = geom.query(face_gordon.Edges,
                    where=lambda x: x.BoundBox.ZLength <= 1.0,
                    limit=2)
+
+    if len(terminals) < 2 or len(sides) < 2:
+        raise ModelException("Cannot identify neck terminal edges: check neck profile/thickness.")
+
+    heel_edge, headstock_edge = terminals[0], terminals[-1]
 
     # Assemble the solid gluing the 4 faces
 

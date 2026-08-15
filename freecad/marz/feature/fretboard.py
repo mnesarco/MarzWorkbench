@@ -89,7 +89,10 @@ def fretboardSection(c: Vector, r: float, w: float, t: float, v: Vector) -> Part
     """
 
     # Half angle of the top Arc
-    alpha = math.asin(w/(2*r))
+    if r <= 0 or w <= 0 or w >= 2 * r:
+        raise ModelException("Fretboard radius is too small for its width: check radius settings.")
+    chord = w / (2 * r)
+    alpha = math.asin(chord)
     alpha_deg = rad_to_deg(alpha)
 
     # Guess top Arc
@@ -177,7 +180,10 @@ def fretboardCone(startRadius, endRadius, thickness, fbd, top):
     radiusSlope = (endRadius - startRadius) / (fbd.scaleFrame.midLine.length/2)
 
     # b = Distance from fret0 to neck start
-    b = linexy(lineIntersection(line, fbd.frets[0]).point, line.start).length
+    b_point = lineIntersection(line, fbd.frets[0]).point
+    if b_point is None:
+        raise ModelException("Fret 0 does not intersect the fretboard midline: check fan settings.")
+    b = linexy(b_point, line.start).length
 
     # Radius at x
     def radiusFn(x: float) -> float:
