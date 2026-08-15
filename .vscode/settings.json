@@ -173,6 +173,6 @@
         "editor.wordBasedSuggestions": "off"
     },
     "ruff.nativeServer": true,
-    "ruff.lineLength": 80
+    "ruff.lineLength": 100
 
 }

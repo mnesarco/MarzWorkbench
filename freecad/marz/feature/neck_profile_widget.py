@@ -56,12 +56,11 @@ def get_neck_profile_preview(
         head_channel_depth: float,
         head_channel_width: float,
         scale: float) -> NeckProfilePreview:
-
     """
     Convert OCCT Neck profile geometry to Qt 2D geometry
     """
     profile = getNeckProfile(name)
-    curve = profile(width, -height, False).Curve
+    curve = profile(width, -height, wire=False).Curve
     beziers = curve.toBezier()
 
     channel_rect = QRectF(0, -channel_width/2, channel_depth, channel_width)

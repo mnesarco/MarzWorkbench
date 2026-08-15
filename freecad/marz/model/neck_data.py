@@ -22,6 +22,7 @@
 ################################################################################
 
 
+from freecad.marz.model.instrument import ModelException
 from freecad.marz.model.linexy import lineIntersection, linexy
 from freecad.marz.model.neck_profile import getNeckProfile
 
@@ -100,6 +101,9 @@ class NeckData(object):
 
     def pointAtFret(self, fret):
         """Returns a point on intersection between `fret` and neck's midLine"""
+        last = len(self.fbd.frets) - 1
+        if not (0 <= fret <= last):
+            raise ModelException(f"Joint fret {fret} is out of range (0..{last}).")
         return lineIntersection(self.fbd.frets[fret], self.fbd.neckFrame.midLine).point
 
     def lineToFret(self, fret):

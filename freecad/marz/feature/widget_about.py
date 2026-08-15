@@ -24,10 +24,10 @@
 from freecad.marz import __author__, __version__, __copyright__
 from freecad.marz.extension import paths
 from freecad.marz.extension.fc import Gui
-from freecad.marz.extension.qt import QtGui, QtCore
+from freecad.marz.extension.qt import QtWidgets, QtGui, QtCore
 
 
-class MarzAboutWindow(QtGui.QDialog):
+class MarzAboutWindow(QtWidgets.QDialog):
 
     def __init__(self, frame=True, timeout=False):
         super().__init__(Gui.getMainWindow())
@@ -39,7 +39,7 @@ class MarzAboutWindow(QtGui.QDialog):
 
         # Window
         try:
-            sg = QtGui.QDesktopWidget().screenGeometry()
+            sg = QtWidgets.QDesktopWidget().screenGeometry()
         except Exception:
             sg = QtGui.QGuiApplication.primaryScreen().availableGeometry()
         screenWidth = sg.width()
@@ -53,12 +53,12 @@ class MarzAboutWindow(QtGui.QDialog):
         self.setFixedSize(self.size())
 
         # Layout
-        layout = QtGui.QStackedLayout(self)
+        layout = QtWidgets.QStackedLayout(self)
         layout.setAlignment(QtCore.Qt.AlignBottom)
         self.setLayout(layout)
 
         # Content
-        content = QtGui.QLabel(self)
+        content = QtWidgets.QLabel(self)
         content.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         content.setOpenExternalLinks(True)
         content.setText(f"""<p>

@@ -315,13 +315,20 @@ class Fretboard(Feature):
         self.filletRadius = filletRadius
 
     @property
+    def frets(self):
+        return self._frets
+
+    @frets.setter
+    def frets(self, v):
+        self._frets = max(3, v)
+
+    @property
     def perpendicularFret(self):
         return self._perpendicularFret
 
     @perpendicularFret.setter
     def perpendicularFret(self, v):
-        if (0 <= v and v <= self.frets):
-            self._perpendicularFret = v
+        self._perpendicularFret = max(0, v)
 
     @property
     def isZeroFret(self):
@@ -547,5 +554,5 @@ class ModelException(Exception):
     """
 
     def __init__(self, msg):
-        super().__init__()
+        super().__init__(msg)
         self.message = msg

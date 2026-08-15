@@ -23,7 +23,7 @@
 
 from __future__ import annotations
 
-from freecad.marz.model.instrument import Instrument
+from freecad.marz.model.instrument import Instrument, ModelException
 from freecad.marz.model.neck_data import NeckData
 from freecad.marz.model.fretboard_data import FretboardBox, FretboardData
 from freecad.marz.model.neck_profile import getNeckProfile
@@ -171,7 +171,7 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     steps = 9
     edge = neckd.lineToFret(inst.neck.jointFret).edge()
     curve = edge.Curve
-    length = edge.Length - abs(inst.neck.transitionLength)
+    length = max(edge.Length - abs(inst.neck.transitionLength), edge.Length * 0.05)
     step = length / steps
     points = edge.discretize(Distance=step)
     direction = curve.Direction
@@ -200,6 +200,8 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     # Edges between nut and transition start
     edges = [profile_edge(i) for i in range(steps + 1)]
     edges = [w for w in edges if w is not None]
+    if not edges:
+        raise ModelException("Neck profiles are degenerate: check thickness and width settings.")
 
     nut_profile = edges[0][0]
 
@@ -219,7 +221,7 @@ def neck_profiles(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Neck
     control = -1.2  # Issue #40
     edges.insert(0, profile_edge(0, control, points[0] + direction * control))
 
-    edges = [e for e, *_ in edges]
+    edges = [e[0] for e in edges if e is not None]
 
     if GORDON_DEBUG:
         for i, e in enumerate(edges):

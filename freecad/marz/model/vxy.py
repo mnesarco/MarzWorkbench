@@ -24,7 +24,7 @@
 import math
 
 #! TODO: Deprecate this file
-#! This file is very old, It was created because I ported my existing 
+#! This file is very old, It was created because I ported my existing
 #! Javascript code but all the code here can be replaced with the FreeCAD.Vector
 #! class.
 
@@ -220,16 +220,6 @@ class vxy:
     def fromArray(self, array, offset=0):
         self.x = array[offset]
         self.y = array[offset + 1]
-        return self
-
-    def toArray(self, array=[], offset=0):
-        array[offset] = self.x
-        array[offset + 1] = self.y
-        return array
-
-    def fromBufferAttribute(self, attribute, index):
-        self.x = attribute.getX(index)
-        self.y = attribute.getY(index)
         return self
 
     def rotateAround(self, center, angle):

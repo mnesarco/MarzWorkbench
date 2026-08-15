@@ -35,7 +35,7 @@ except ImportError:
         import PySide2
         sys.modules['PySide'] = PySide2
 
-from PySide import QtCore, QtGui # type: ignore
+from PySide import QtCore, QtGui, QtWidgets # type: ignore
 
 # Most used in this project
 
@@ -47,9 +47,12 @@ from PySide.QtCore import (  # type: ignore
     Signal,
 )
 
-from PySide.QtGui import (  # type: ignore
+from PySide.QtWidgets import (  # type: ignore
     QSizePolicy,
     QApplication,
+)
+
+from PySide.QtGui import (  # type: ignore
     QAction,
     QPainter,
     QColor,
