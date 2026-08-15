@@ -104,7 +104,10 @@ class NeckData(object):
         last = len(self.fbd.frets) - 1
         if not (0 <= fret <= last):
             raise ModelException(f"Joint fret {fret} is out of range (0..{last}).")
-        return lineIntersection(self.fbd.frets[fret], self.fbd.neckFrame.midLine).point
+        point = lineIntersection(self.fbd.frets[fret], self.fbd.neckFrame.midLine).point
+        if point is None:
+            raise ModelException("Fret line does not intersect the neck midline: check settings.")
+        return point
 
     def lineToFret(self, fret):
         """Returns a line between neck's midLine start and `fret`"""

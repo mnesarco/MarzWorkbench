@@ -43,12 +43,17 @@ def trussRodCavity(startPoint, endPoint, width, offset, depth):
     def cyl(pnt, radius, depth):
         return Part.makeCylinder(radius, depth+offset, Vector(pnt.x, pnt.y, offset), Vector(0,0,-1))
     headRadius = width/2.0
-    base = linexy(startPoint, endPoint).rectSym(width)
+    line = linexy(startPoint, endPoint)
+    # Shrink the box so the end caps overlap its volume; a fuse of solids that
+    # only touch on a coplanar face yields an unorientable shape in the kernel.
+    overlap = min(width * 0.1, line.length * 0.25)
+    base = line.extendSym(-overlap).rectSym(width)
     base = geom.extrusion(base, offset, (0,0,-depth-offset))
     tip = cyl(startPoint, headRadius, depth)
     base = base.fuse(tip)
     tip = cyl(endPoint, headRadius, depth)
     base = base.fuse(tip)
+    base = base.removeSplitter()
     return base
 
 @task
@@ -90,22 +95,28 @@ def trussRodChannel(line, start, length, width, depth,
             tools.append(tail)
 
         if tools:
-            base = base.fuse(tools, 1e-5)
+            for tool in tools:
+                try:
+                    base = base.fuse(tool, 1e-5)
+                except Exception:
+                    pass
+                else:
+                    base = base.removeSplitter()
+            base = base.removeSplitter()
 
         return base
 
 
 def make_neck_pocket(inst: Instrument, fbd: FretboardData):
-    face = Part.Face(fbd.neckFrame.wire())
-    geom.move_rel(face, z=10)
-    solid = face.extrude(Vector(0,0, -10 -inst.body.neckPocketDepth -inst.neck.topOffset))
     try:
-        solid = heel_fillet(
-            solid,
-            inst.neck.heelFillet)
+        face = Part.Face(fbd.neckFrame.wire())
+        geom.move_rel(face, z=10)
+        solid = face.extrude(Vector(0,0, -10 -inst.body.neckPocketDepth -inst.neck.topOffset))
+        solid = heel_fillet(solid, inst.neck.heelFillet)
+        return solid.removeSplitter()
     except Exception:
-        MarzLogger.error("Error filleting the heel with radius: {}", inst.neck.heelFillet)
-    return solid.removeSplitter()
+        MarzLogger.warn("Neck pocket was not generated: degenerate neck geometry.")
+        return None
 
 
 def heel_fillet(heel, radius):
@@ -176,11 +187,17 @@ class NeckFeature:
         with traceTime("Carving truss rod channel...", progress_listener):
             truss = trussRodJob.get()
             if truss:
-                neck = neck.cut(truss, 1e-3)
+                # Repair orientation issues before the boolean (gordon surface can be unorientable)
+                neck.fix(0.1, 0, 1)
+                try:
+                    neck = neck.cut(truss, 1e-3)
+                except Exception:
+                    Part.show(truss, "DebugTruss")
+                    MarzLogger.warn(
+                        "Truss rod channel was not carved: degenerate neck geometry. "
+                        "Check the truss rod and neck parameters.")
 
         QApplication.processEvents()
-
-        neck.fix(0.1, 0, 1)
 
         progress_listener.add("Neck done.")
         return neck.removeSplitter()

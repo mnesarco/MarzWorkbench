@@ -613,6 +613,8 @@ def neck_blank(inst: Instrument, fbd: FretboardData, neckd: NeckData) -> Task[Ne
     plane = Part.makePlane(cut_plane_size, cut_plane_size, pnt, Vector(0,0,1), Vector(1,0,0))
     res = split_api.slice(solid, [plane], 'CompSolid')
     part = geom.query_one(res.Solids, order_by=lambda s: -s.CenterOfMass.z)
+    if part is None:
+        raise ModelException("Could not separate the heel from the neck: check joint/heel config.")
 
     return NeckBase(heel, profiles, part)
 
@@ -671,6 +673,8 @@ def extrude_headstock_plate(contour: Wire, thickness: float, transition_edge: Wi
     # Remove the left part
     parts = split_api.slice(face, [transition_edge], "Standard", 1e-5)
     selected = geom.query_one(parts.Faces, order_by=lambda f: -f.CenterOfMass.x)
+    if selected is None:
+        raise ModelException("Could not separate the headstock plate: check the transition edge.")
 
     # Extrude
     return HeadstockPlate(selected.extrude(normal * thickness), normal)

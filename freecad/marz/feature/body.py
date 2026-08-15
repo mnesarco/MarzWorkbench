@@ -125,8 +125,12 @@ def ensure_single_solid(shape: Part.Shape) -> Part.Shape | None:
     parts = shape.Solids
     if len(parts) == 1:
         return shape.Solids[0]
+    if not parts:
+        return None
     fused: Part.Shape = parts[0].multiFuse(parts[1:])
-    return fused.Solids[0]
+    if fused.Solids:
+        return fused.Solids[0]
+    return None
 
 
 @traced("Make Body")
@@ -168,7 +172,7 @@ def make_body_parts(
         back, top, *heel = Task.join(jobs)
         back = ensure_single_solid(back)
         top = ensure_single_solid(top)
-        heel = [ensure_single_solid(h) for h in heel]
+        heel = [ensure_single_solid(h) for h in heel if h]
 
     if top and len(heel) > 0:
         with traceTime('Carving Neck pocket from top...', progress_listener):

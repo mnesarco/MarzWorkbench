@@ -115,8 +115,9 @@ class BodyData(object):
         b = Vector(x,y,0)
 
         if bridge_ref:
-            ref_x = find_x_on_midline(bridge_ref.Shape) + x
+            ref_x = find_x_on_midline(bridge_ref.Shape)
             if ref_x is not None:
+                ref_x += x
                 mod_x = find_x_on_midline(self.neckd.fbd.bridgePos.edge())
                 if mod_x is not None:
                     adjust = mod_x - ref_x

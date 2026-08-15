@@ -26,6 +26,7 @@ import math
 import Part # type: ignore
 
 from freecad.marz.extension.fc import Vector, App
+from freecad.marz.model.instrument import ModelException
 from freecad.marz.utils import geom as geom
 
 
@@ -94,7 +95,7 @@ def getContour():
 def getTransition():
     """Get the custom transition reference wire"""
     t = App.ActiveDocument.getObject('Marz_Headstock_Transition')
-    if t:
+    if t and t.Shape and t.Shape.Edges:
         return t.Shape.Edges[0].copy()
 
 
@@ -119,6 +120,10 @@ def getTop(pos, angle, width, length, profile, defaultTransitionLength):
         transition = getTransition()
         if transition is None:
             transition = getDefaultTopTransition(contour, pos, defaultTransitionLength)
+        if transition is None:
+            raise ModelException(
+                "Custom headstock contour does not cross the transition line. "
+                "Check the imported contour.")
         return (place(contour, pos, angle), place(transition, pos, angle))
     else:
         return getDefaultTop(pos, width, length, profile, angle, defaultTransitionLength)

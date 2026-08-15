@@ -24,7 +24,8 @@
 import math
 
 from freecad.marz.model.fretboard_data import FretboardBox, FretboardData
-from freecad.marz.model.instrument import FretboardCut, fret, NutPosition, NeckJoint, Instrument
+from freecad.marz.model.instrument import (
+    FretboardCut, fret, Instrument, ModelException, NeckJoint, NutPosition)
 from freecad.marz.model.linexy import line, lineFrom, lineIntersection, lineTo, linexy
 from freecad.marz.model.vxy import vxy
 
@@ -41,6 +42,8 @@ def buildFretboardData(inst: Instrument) -> FretboardData:
         # Bass string length from nut to bridge (include nut offset before zero fret)
         length = inst.scale.max + inst.nut.offset
         # Side angle
+        if length <= 0 or abs(spread) > length:
+            raise ModelException("Invalid string fan: check the scale length and string spacing.")
         angle = math.asin(spread / length)
         bass = line(vxy(0, 0), vxy(-length, 0)).rotate(-angle)
         bass.translateTo(bass.lerpPointAt(-inst.nut.offset))
