@@ -21,7 +21,7 @@
 #                                                                              #
 ################################################################################
 
-__version__ = "0.1.22"
+__version__ = "0.1.23"
 __author__ = "Frank David Martinez M <mnesarco at gmail.com>"
 __copyright__ = "Copyright (c) 2020, Frank David Martinez M."
 __license__ = "GPLv3"

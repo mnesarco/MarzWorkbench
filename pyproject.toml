@@ -1,6 +1,6 @@
 [project]
 name = "MarzWorkbench"
-version = "0.1.22"
+version = "0.1.23"
 description = "Guitar Workbench"
 readme = "README.md"
 requires-python = ">=3.10"

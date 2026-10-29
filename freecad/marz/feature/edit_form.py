@@ -238,7 +238,7 @@ class InstrumentForm(InstrumentFormBase):
         self.Object.touch()
         recompute(self.Object.Document)
 
-    def update_2d(self, save=True, make_visible=True):
+    def update_2d(self, *, save=True, make_visible=True):
         App.setActiveDocument(self.Object.Document.Name)
         if save:
             self.save_to_obj(self.Object)
